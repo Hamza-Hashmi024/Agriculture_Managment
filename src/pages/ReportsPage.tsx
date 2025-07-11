@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  FileBarChart3,
+  FileBarChart,
   Users,
   ShoppingCart,
   Truck,
@@ -46,7 +45,7 @@ const reportTypes = [
   { id: "buyer-ledger", name: "Buyer Ledger", icon: ShoppingCart, description: "Buyer invoices and payments" },
   { id: "vendor-ledger", name: "Vendor Ledger", icon: Truck, description: "Vendor purchases and payments" },
   { id: "advances-report", name: "Advances Report", icon: TrendingUp, description: "All advances given to farmers" },
-  { id: "sales-report", name: "Sales Report", icon: FileBarChart3, description: "Sales transactions and commissions" },
+  { id: "sales-report", name: "Sales Report", icon: FileBarChart, description: "Sales transactions and commissions" },
   { id: "receivables-aging", name: "Receivables Aging", icon: CalendarCheck, description: "Outstanding buyer payments" },
   { id: "payables-aging", name: "Payables Aging", icon: AlertTriangle, description: "Outstanding vendor payments" },
   { id: "cashbook", name: "Cashbook", icon: Banknote, description: "Cash transactions record" },
@@ -101,8 +100,8 @@ export function ReportsPage() {
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
       {/* Enhanced Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-card-foreground">Reports & Analytics</h1>
-        <p className="text-muted-foreground">Generate comprehensive reports for your agricultural business</p>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground font-inter">Reports & Analytics</h1>
+        <p className="text-muted-foreground font-inter">Generate comprehensive reports for your agricultural business</p>
       </div>
 
       {/* Quick Access Report Cards */}
@@ -113,8 +112,8 @@ export function ReportsPage() {
             <Card 
               key={report.id} 
               className={cn(
-                "enhanced-card hover-lift cursor-pointer transition-all duration-200",
-                selectedReport === report.id && "ring-2 ring-primary bg-info-muted/30"
+                "cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border-border bg-card",
+                selectedReport === report.id && "ring-2 ring-primary bg-primary/5"
               )}
               onClick={() => handleQuickReport(report.id)}
             >
@@ -124,8 +123,8 @@ export function ReportsPage() {
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
                 </div>
-                <CardTitle className="text-sm font-medium leading-tight">{report.name}</CardTitle>
-                <CardDescription className="text-xs leading-tight">{report.description}</CardDescription>
+                <CardTitle className="text-sm font-medium leading-tight font-inter text-foreground">{report.name}</CardTitle>
+                <CardDescription className="text-xs leading-tight text-muted-foreground font-inter">{report.description}</CardDescription>
               </CardHeader>
             </Card>
           );
@@ -133,13 +132,13 @@ export function ReportsPage() {
       </div>
 
       {/* Report Generation Controls */}
-      <Card className="enhanced-card">
+      <Card className="border-border bg-card shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileBarChart3 className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-foreground font-inter">
+            <FileBarChart className="h-5 w-5" />
             Generate Report
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-muted-foreground font-inter">
             Select report type, set date range, and generate your business reports
           </CardDescription>
         </CardHeader>
@@ -220,12 +219,12 @@ export function ReportsPage() {
             <Button 
               onClick={() => selectedReport && console.log("Generate report")} 
               disabled={!selectedReport}
-              className="btn-primary flex items-center gap-2"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-inter flex items-center gap-2 shadow-sm"
             >
-              <FileBarChart3 className="h-4 w-4" />
+              <FileBarChart className="h-4 w-4" />
               Generate Report
             </Button>
-            <Button variant="outline" className="btn-secondary flex items-center gap-2">
+            <Button variant="outline" className="border-border text-foreground hover:bg-accent font-inter flex items-center gap-2">
               <Download className="h-4 w-4" />
               Export All
             </Button>
