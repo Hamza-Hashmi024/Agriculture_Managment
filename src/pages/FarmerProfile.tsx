@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Edit, Plus, Printer, Download, User } from "lucide-react";
 
 const mockFarmer = {
@@ -48,10 +55,81 @@ const mockAdvances = [
   }
 ];
 
+const mockSettlements = [
+  {
+    id: 1,
+    date: "2024-07-12",
+    description: "Wheat Sale",
+    debit: 504000,
+    credit: 0,
+    balance: 504000
+  },
+  {
+    id: 2,
+    date: "2024-07-12",
+    description: "Less: Advances",
+    debit: 35000,
+    credit: 0,
+    balance: 469000
+  },
+  {
+    id: 3,
+    date: "2024-07-12",
+    description: "Less: Expenses",
+    debit: 7500,
+    credit: 0,
+    balance: 461500
+  },
+  {
+    id: 4,
+    date: "2024-07-14",
+    description: "Payment to Farmer",
+    debit: 0,
+    credit: 200000,
+    balance: 261500
+  },
+  {
+    id: 5,
+    date: "2024-07-20",
+    description: "Payment to Farmer",
+    debit: 0,
+    credit: 261500,
+    balance: 0
+  }
+];
+
 export function FarmerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("advances");
+  const [paymentDialog, setPaymentDialog] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({
+    amount: "",
+    paymentMode: "cash",
+    bankAccount: "",
+    refNo: "",
+    date: new Date().toISOString().split('T')[0],
+    uploadProof: "",
+    notes: ""
+  });
+
+  const currentBalance = mockSettlements[mockSettlements.length - 1]?.balance || 0;
+
+  const handlePaymentSubmit = () => {
+    // Handle payment submission logic here
+    console.log("Payment submitted:", paymentForm);
+    setPaymentDialog(false);
+    // Reset form
+    setPaymentForm({
+      amount: "",
+      paymentMode: "cash",
+      bankAccount: "",
+      refNo: "",
+      date: new Date().toISOString().split('T')[0],
+      uploadProof: "",
+      notes: ""
+    });
+  };
 
   return (
     <div className="p-6">
@@ -228,24 +306,160 @@ export function FarmerProfile() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Settlements & Payments for {mockFarmer.name}</CardTitle>
               <div className="flex gap-2">
+                <Dialog open={paymentDialog} onOpenChange={setPaymentDialog}>
+                  <DialogTrigger asChild>
+                    <Button disabled={currentBalance <= 0}>
+                      Pay Farmer
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Pay Farmer</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Farmer</Label>
+                        <Input value={mockFarmer.name} disabled className="bg-muted" />
+                      </div>
+                      
+                      <div>
+                        <Label>Amount to pay (max: {currentBalance.toLocaleString()})</Label>
+                        <Input 
+                          type="number" 
+                          max={currentBalance}
+                          value={paymentForm.amount}
+                          onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
+                          placeholder="Enter amount"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Payment Mode</Label>
+                        <RadioGroup 
+                          value={paymentForm.paymentMode} 
+                          onValueChange={(value) => setPaymentForm({...paymentForm, paymentMode: value})}
+                          className="flex gap-4 mt-2"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="cash" id="cash" />
+                            <Label htmlFor="cash">Cash</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="bank" id="bank" />
+                            <Label htmlFor="bank">Bank</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      {paymentForm.paymentMode === "bank" && (
+                        <div>
+                          <Label>Select Bank Account</Label>
+                          <Select value={paymentForm.bankAccount} onValueChange={(value) => setPaymentForm({...paymentForm, bankAccount: value})}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select bank account" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="account1">Main Business Account - ***4567</SelectItem>
+                              <SelectItem value="account2">Secondary Account - ***8901</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      <div>
+                        <Label>Reference No. (optional)</Label>
+                        <Input 
+                          value={paymentForm.refNo}
+                          onChange={(e) => setPaymentForm({...paymentForm, refNo: e.target.value})}
+                          placeholder="Enter reference number"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Date</Label>
+                        <Input 
+                          type="date"
+                          value={paymentForm.date}
+                          onChange={(e) => setPaymentForm({...paymentForm, date: e.target.value})}
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Upload Proof (optional)</Label>
+                        <Input 
+                          type="file"
+                          onChange={(e) => setPaymentForm({...paymentForm, uploadProof: e.target.value})}
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Notes (optional)</Label>
+                        <Textarea 
+                          value={paymentForm.notes}
+                          onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
+                          placeholder="Enter any notes"
+                          rows={3}
+                        />
+                      </div>
+
+                      <div className="flex gap-2 pt-4">
+                        <Button onClick={handlePaymentSubmit} className="flex-1">
+                          Save Payment
+                        </Button>
+                        <Button variant="outline" onClick={() => setPaymentDialog(false)} className="flex-1">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                
                 <Button variant="outline" size="sm">
                   <Printer className="h-4 w-4 mr-2" />
-                  Print Report
+                  Print Statement
                 </Button>
                 <Button variant="outline" size="sm">
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
-                <Button asChild>
-                  <Link to={`/settlements/add?farmerId=${id}`}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Payment for {mockFarmer.name}
-                  </Link>
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">No settlement records found for this farmer.</p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Debit (to farmer)</TableHead>
+                    <TableHead className="text-right">Credit (paid)</TableHead>
+                    <TableHead className="text-right">Balance</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockSettlements.map((settlement) => (
+                    <TableRow key={settlement.id}>
+                      <TableCell>{settlement.date}</TableCell>
+                      <TableCell>{settlement.description}</TableCell>
+                      <TableCell className="text-right">
+                        {settlement.debit > 0 ? `PKR ${settlement.debit.toLocaleString()}` : ''}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {settlement.credit > 0 ? `PKR ${settlement.credit.toLocaleString()}` : ''}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        PKR {settlement.balance.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex justify-between items-center text-lg font-semibold">
+                  <span>Net Amount Due:</span>
+                  <span>PKR {currentBalance.toLocaleString()}</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
