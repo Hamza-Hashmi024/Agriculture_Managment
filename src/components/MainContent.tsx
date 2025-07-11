@@ -6,6 +6,10 @@ import { FarmerProfile } from "@/pages/FarmerProfile";
 import { AddEditFarmer } from "@/pages/AddEditFarmer";
 import { AdvancesPage } from "@/pages/AdvancesPage";
 import { AddAdvance } from "@/pages/AddAdvance";
+import { SalesLotsPage } from "@/pages/SalesLotsPage";
+import { AddSaleLot } from "@/pages/AddSaleLot";
+import { BuyerInvoice } from "@/pages/BuyerInvoice";
+import { FarmerStatement } from "@/pages/FarmerStatement";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 
 export function MainContent() {
@@ -20,7 +24,10 @@ export function MainContent() {
         <Route path="/advances" element={<AdvancesPage />} />
         <Route path="/advances/add" element={<AddAdvance />} />
         <Route path="/advances/add/:farmerId" element={<AddAdvance />} />
-        <Route path="/sales" element={<PlaceholderPage title="Sales/Lots" />} />
+        <Route path="/sales" element={<SalesLotsPage />} />
+        <Route path="/sales/add" element={<AddSaleLot />} />
+        <Route path="/sales/invoice/:id" element={<BuyerInvoice />} />
+        <Route path="/sales/statement/:id" element={<FarmerStatement />} />
         <Route path="/buyers" element={<PlaceholderPage title="Buyers" />} />
         <Route path="/receivables" element={<PlaceholderPage title="Receivables" />} />
         <Route path="/vendors" element={<PlaceholderPage title="Vendors" />} />
