@@ -19,6 +19,7 @@ import { VendorsPage } from "@/pages/VendorsPage";
 import { VendorProfile } from "@/pages/VendorProfile";
 import { BuyersPage } from "@/pages/BuyersPage";
 import { BuyerProfile } from "@/pages/BuyerProfile";
+import { ExpensesPage } from "@/pages/ExpensesPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 
 export function MainContent() {
@@ -46,7 +47,7 @@ export function MainContent() {
         <Route path="/payables" element={<PayablesPage />} />
         <Route path="/payables/farmer/:id" element={<FarmerPayableCard />} />
         <Route path="/payables/vendor/:id" element={<VendorPayableCard />} />
-        <Route path="/expenses" element={<PlaceholderPage title="Expenses" />} />
+        <Route path="/expenses" element={<ExpensesPage />} />
         <Route path="/cash-bank" element={<PlaceholderPage title="Cash/Bank" />} />
         <Route path="/reports" element={<PlaceholderPage title="Reports" />} />
         <Route path="/missing-docs" element={<PlaceholderPage title="Missing Docs" />} />
