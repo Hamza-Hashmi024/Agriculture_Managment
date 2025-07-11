@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Download, FileText } from "lucide-react";
+import { ArrowLeft, Download, FileText } from "lucide-react";
 
 const mockVendorPayables = {
   "1": {
@@ -150,10 +150,6 @@ export function VendorPayableCard() {
           
           <div className="flex gap-2">
             <Button onClick={openPaymentModal} disabled={vendor.netPayable <= 0}>
-              Pay Vendor
-            </Button>
-            <Button onClick={openPaymentModal} variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
               Add Payment
             </Button>
             <Button variant="outline" size="sm">

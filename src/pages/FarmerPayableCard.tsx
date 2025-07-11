@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Printer, Download, FileText } from "lucide-react";
+import { ArrowLeft, Printer, Download, FileText } from "lucide-react";
 
 const mockFarmerPayables = {
   "1": {
@@ -23,9 +23,9 @@ const mockFarmerPayables = {
         id: 1,
         date: "2024-07-12",
         crop: "Wheat",
-        netAmount: 461500,
-        paid: 200000,
-        balance: 261500
+        amount: 504000,
+        commission: 42500,
+        statement: "Statement-001"
       }
     ],
     payments: [
@@ -49,9 +49,9 @@ const mockFarmerPayables = {
         id: 1,
         date: "2024-07-13",
         crop: "Rice",
-        netAmount: 420000,
-        paid: 0,
-        balance: 420000
+        amount: 420000,
+        commission: 0,
+        statement: "Statement-002"
       }
     ],
     payments: []
@@ -142,10 +142,6 @@ export function FarmerPayableCard() {
           
           <div className="flex gap-2">
             <Button onClick={openPaymentModal} disabled={farmer.netPayable <= 0}>
-              Pay Farmer
-            </Button>
-            <Button onClick={openPaymentModal} variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
               Add Payment
             </Button>
             <Button variant="outline" size="sm">
@@ -177,9 +173,8 @@ export function FarmerPayableCard() {
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Crop</TableHead>
-                    <TableHead>Net Amt</TableHead>
-                    <TableHead>Paid</TableHead>
-                    <TableHead>Balance</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Commission</TableHead>
                     <TableHead>Statement</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -188,9 +183,8 @@ export function FarmerPayableCard() {
                     <TableRow key={sale.id}>
                       <TableCell>{sale.date}</TableCell>
                       <TableCell>{sale.crop}</TableCell>
-                      <TableCell>PKR {sale.netAmount.toLocaleString()}</TableCell>
-                      <TableCell>PKR {sale.paid.toLocaleString()}</TableCell>
-                      <TableCell>PKR {sale.balance.toLocaleString()}</TableCell>
+                      <TableCell>PKR {sale.amount.toLocaleString()}</TableCell>
+                      <TableCell>PKR {sale.commission.toLocaleString()}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm">
                           <FileText className="h-4 w-4" />
