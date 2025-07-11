@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -199,8 +198,24 @@ export function FarmerProfile() {
 
         <TabsContent value="sales" className="mt-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Crop Lots & Sales</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Crop Lots & Sales for {mockFarmer.name}</CardTitle>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Report
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+                <Button asChild>
+                  <Link to={`/sales/add?farmerId=${id}`}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Sale for {mockFarmer.name}
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">No sales records found for this farmer.</p>
@@ -210,8 +225,24 @@ export function FarmerProfile() {
 
         <TabsContent value="settlements" className="mt-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Settlements & Payments</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Settlements & Payments for {mockFarmer.name}</CardTitle>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Report
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+                <Button asChild>
+                  <Link to={`/settlements/add?farmerId=${id}`}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New Payment for {mockFarmer.name}
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">No settlement records found for this farmer.</p>
