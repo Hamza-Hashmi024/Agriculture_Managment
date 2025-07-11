@@ -6,11 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, Printer, Download } from "lucide-react";
+import { ArrowLeft, Plus, Printer, Download, User, MapPin, Phone } from "lucide-react";
 import { AddPaymentModal } from "@/components/AddPaymentModal";
 
 const mockBuyerData: Record<string, {
   name: string;
+  address: string;
+  phone: string;
+  mobile: string;
   totalUnpaid: number;
   unpaidInstallments: Array<{
     id: string;
@@ -33,6 +36,9 @@ const mockBuyerData: Record<string, {
 }> = {
   "1": {
     name: "Pak Foods",
+    address: "123 Industrial Area, Lahore, Pakistan",
+    phone: "042-111-2222",
+    mobile: "0300-1234567",
     totalUnpaid: 210000,
     unpaidInstallments: [
       {
@@ -80,6 +86,42 @@ const mockBuyerData: Record<string, {
         notes: "Full pay"
       }
     ]
+  },
+  "2": {
+    name: "Noor Traders",
+    address: "456 Main Street, Karachi, Pakistan",
+    phone: "021-333-4444",
+    mobile: "0321-9876543",
+    totalUnpaid: 85000,
+    unpaidInstallments: [
+      {
+        id: "1",
+        invoiceNo: "#INV125",
+        crop: "Cotton",
+        amount: 85000,
+        dueDate: "22-Jul-2025",
+        status: "Due Soon"
+      }
+    ],
+    payments: []
+  },
+  "3": {
+    name: "Safeer Bros.",
+    address: "789 Market Road, Faisalabad, Pakistan",
+    phone: "041-555-6666",
+    mobile: "0345-1122334",
+    totalUnpaid: 120000,
+    unpaidInstallments: [
+      {
+        id: "1",
+        invoiceNo: "#INV126",
+        crop: "Rice",
+        amount: 120000,
+        dueDate: "10-Jul-2025",
+        status: "Overdue"
+      }
+    ],
+    payments: []
   }
 };
 
@@ -140,10 +182,44 @@ export function BuyerReceivableCard() {
       </div>
 
       <div className="space-y-6">
+        {/* Buyer Information Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Buyer Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <h4 className="font-semibold text-sm text-muted-foreground">Name</h4>
+                <p className="text-base">{buyer.name}</p>
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  Address
+                </h4>
+                <p className="text-base">{buyer.address}</p>
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm text-muted-foreground flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  Contact Numbers
+                </h4>
+                <p className="text-base">Phone: {buyer.phone}</p>
+                <p className="text-base">Mobile: {buyer.mobile}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Receivables Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex justify-between items-center">
-              <span>Buyer: {buyer.name}</span>
+              <span>Receivables Summary</span>
               <span className="text-lg">Total Unpaid: PKR {buyer.totalUnpaid.toLocaleString()}</span>
             </CardTitle>
           </CardHeader>
