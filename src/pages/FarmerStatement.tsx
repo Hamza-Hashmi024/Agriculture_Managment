@@ -44,95 +44,95 @@ export function FarmerStatement() {
   const netPayable = statement.grossSale - statement.advances - totalExpenses;
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate('/sales')}>
+          <Button variant="ghost" onClick={() => navigate('/sales')} className="text-blue-600 hover:text-blue-800">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Sales
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Farmer Statement</h1>
-            <p className="text-muted-foreground">Settlement statement for {statement.farmer}</p>
+            <h1 className="text-xl font-bold text-gray-900">Farmer Statement</h1>
+            <p className="text-sm text-gray-600">Settlement statement for {statement.farmer}</p>
           </div>
         </div>
         
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className="text-gray-700 border-gray-300">
           <Printer className="h-4 w-4 mr-2" />
           Print Statement
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-center">FARMER STATEMENT</CardTitle>
+      <Card className="max-w-4xl mx-auto bg-white shadow-sm">
+        <CardHeader className="text-center pb-4">
+          <CardTitle className="text-lg font-bold text-gray-900">FARMER STATEMENT</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Basic Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
+        <CardContent className="px-8 pb-8">
+          {/* Basic Details in 2 columns */}
+          <div className="grid grid-cols-2 gap-8 mb-8">
+            <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="font-medium">Date:</span>
-                <span>{statement.date}</span>
+                <span className="font-medium text-gray-700">Date:</span>
+                <span className="text-gray-900">{statement.date}</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-medium">Farmer:</span>
-                <span>{statement.farmer}</span>
+                <span className="font-medium text-gray-700">Farmer:</span>
+                <span className="text-gray-900">{statement.farmer}</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-medium">Crop:</span>
-                <span>{statement.crop}</span>
+                <span className="font-medium text-gray-700">Crop:</span>
+                <span className="text-gray-900">{statement.crop}</span>
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="font-medium">Weight:</span>
-                <span>{statement.weight} manns</span>
+                <span className="font-medium text-gray-700">Weight:</span>
+                <span className="text-gray-900">{statement.weight} manns</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-medium">Rate:</span>
-                <span>PKR {statement.rate.toLocaleString()}/mann</span>
+                <span className="font-medium text-gray-700">Rate:</span>
+                <span className="text-gray-900">PKR {statement.rate.toLocaleString()}/mann</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-medium">Commission:</span>
-                <span>{statement.commission}%</span>
+                <span className="font-medium text-gray-700">Commission:</span>
+                <span className="text-gray-900">{statement.commission}%</span>
               </div>
             </div>
           </div>
 
           {/* Financial Summary */}
-          <div className="border-t pt-6 space-y-4">
-            <div className="flex justify-between text-lg">
-              <span className="font-medium">Gross Sale:</span>
-              <span>PKR {statement.grossSale.toLocaleString()}</span>
+          <div className="space-y-4">
+            <div className="flex justify-between py-2">
+              <span className="font-medium text-gray-700">Gross Sale:</span>
+              <span className="text-gray-900 font-medium">PKR {statement.grossSale.toLocaleString()}</span>
             </div>
 
             <div className="space-y-2">
-              <div className="flex justify-between text-destructive">
-                <span>Less Advances:</span>
-                <span>PKR {statement.advances.toLocaleString()}</span>
+              <div className="flex justify-between">
+                <span className="text-red-600">Less Advances:</span>
+                <span className="text-red-600">PKR {statement.advances.toLocaleString()}</span>
               </div>
               
               <div className="space-y-1">
-                <div className="flex justify-between text-destructive">
-                  <span>Less Expenses:</span>
-                  <span>PKR {totalExpenses.toLocaleString()}</span>
+                <div className="flex justify-between">
+                  <span className="text-red-600">Less Expenses:</span>
+                  <span className="text-red-600">PKR {totalExpenses.toLocaleString()}</span>
                 </div>
                 <div className="ml-4 space-y-1">
                   {statement.expenses.map((expense, index) => (
-                    <div key={index} className="flex justify-between text-sm text-muted-foreground">
-                      <span>• {expense.description}:</span>
-                      <span>PKR {expense.amount.toLocaleString()}</span>
+                    <div key={index} className="flex justify-between text-sm">
+                      <span className="text-gray-600">• {expense.description}:</span>
+                      <span className="text-gray-600">PKR {expense.amount.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="border-t pt-4">
-              <div className="flex justify-between text-xl font-bold">
-                <span>Net Payable:</span>
-                <span className={netPayable >= 0 ? "text-green-600" : "text-red-600"}>
+            <div className="border-t border-gray-200 pt-4 mt-6">
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-700">Net Payable:</span>
+                <span className="text-green-600 font-bold text-lg">
                   PKR {netPayable.toLocaleString()}
                 </span>
               </div>
@@ -140,13 +140,11 @@ export function FarmerStatement() {
           </div>
 
           {/* Settlement Status */}
-          <div className="border-t pt-4">
+          <div className="border-t border-gray-200 pt-4 mt-6">
             <div className="flex justify-between items-center">
-              <span className="font-medium">Settlement Status:</span>
-              <span className={`px-3 py-1 rounded-full text-sm ${
-                netPayable > 0 ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
-              }`}>
-                {netPayable > 0 ? "Pending Payment" : "Settled"}
+              <span className="font-medium text-gray-700">Settlement Status:</span>
+              <span className="px-3 py-1 rounded text-sm bg-yellow-100 text-yellow-800 border border-yellow-200">
+                Pending Payment
               </span>
             </div>
           </div>
