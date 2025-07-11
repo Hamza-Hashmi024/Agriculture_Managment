@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -15,20 +15,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  FileText, 
-  Users, 
-  ShoppingCart, 
-  Building2, 
+import {
+  FileBarChart3,
+  Users,
+  ShoppingCart,
+  Truck,
+  TrendingUp,
+  Calendar as CalendarCheck,
+  AlertTriangle,
   CreditCard,
-  Receipt,
-  Clock,
-  TrendingDown,
   Banknote,
-  Wallet,
-  BarChart3,
+  PieChart,
   Download
 } from "lucide-react";
+
+// Import all report components
 import { FarmerLedgerReport } from "@/components/reports/FarmerLedgerReport";
 import { BuyerLedgerReport } from "@/components/reports/BuyerLedgerReport";
 import { VendorLedgerReport } from "@/components/reports/VendorLedgerReport";
@@ -41,16 +42,16 @@ import { BankbookReport } from "@/components/reports/BankbookReport";
 import { ProfitLossReport } from "@/components/reports/ProfitLossReport";
 
 const reportTypes = [
-  { id: "farmer-ledger", title: "Farmer Ledger", icon: Users, description: "Individual farmer transactions" },
-  { id: "buyer-ledger", title: "Buyer Ledger", icon: ShoppingCart, description: "Buyer invoices and payments" },
-  { id: "vendor-ledger", title: "Vendor Ledger", icon: Building2, description: "Vendor purchases and payments" },
-  { id: "advances", title: "Advances Report", icon: CreditCard, description: "All farmer advances" },
-  { id: "sales", title: "Sales Report", icon: Receipt, description: "Sales and commission data" },
-  { id: "receivables-aging", title: "Receivables Aging", icon: Clock, description: "Outstanding buyer payments" },
-  { id: "payables-aging", title: "Payables Aging", icon: TrendingDown, description: "Outstanding vendor payments" },
-  { id: "cashbook", title: "Cashbook", icon: Wallet, description: "All cash transactions" },
-  { id: "bankbook", title: "Bankbook", icon: Banknote, description: "All bank transactions" },
-  { id: "profit-loss", title: "Profit & Loss", icon: BarChart3, description: "Financial summary" },
+  { id: "farmer-ledger", name: "Farmer Ledger", icon: Users, description: "Individual farmer transaction history" },
+  { id: "buyer-ledger", name: "Buyer Ledger", icon: ShoppingCart, description: "Buyer invoices and payments" },
+  { id: "vendor-ledger", name: "Vendor Ledger", icon: Truck, description: "Vendor purchases and payments" },
+  { id: "advances-report", name: "Advances Report", icon: TrendingUp, description: "All advances given to farmers" },
+  { id: "sales-report", name: "Sales Report", icon: FileBarChart3, description: "Sales transactions and commissions" },
+  { id: "receivables-aging", name: "Receivables Aging", icon: CalendarCheck, description: "Outstanding buyer payments" },
+  { id: "payables-aging", name: "Payables Aging", icon: AlertTriangle, description: "Outstanding vendor payments" },
+  { id: "cashbook", name: "Cashbook", icon: Banknote, description: "Cash transactions record" },
+  { id: "bankbook", name: "Bankbook", icon: CreditCard, description: "Bank account transactions" },
+  { id: "profit-loss", name: "Profit & Loss", icon: PieChart, description: "Financial performance summary" },
 ];
 
 export function ReportsPage() {
@@ -77,9 +78,9 @@ export function ReportsPage() {
         return <BuyerLedgerReport {...commonProps} />;
       case "vendor-ledger":
         return <VendorLedgerReport {...commonProps} />;
-      case "advances":
+      case "advances-report":
         return <AdvancesReport {...commonProps} />;
-      case "sales":
+      case "sales-report":
         return <SalesReport {...commonProps} />;
       case "receivables-aging":
         return <ReceivablesAgingReport {...commonProps} />;
@@ -97,158 +98,144 @@ export function ReportsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Reports</h1>
-          <p className="text-muted-foreground">Generate comprehensive business reports</p>
-        </div>
-        <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Export All
-        </Button>
+    <div className="p-6 space-y-8 max-w-7xl mx-auto">
+      {/* Enhanced Header */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight text-card-foreground">Reports & Analytics</h1>
+        <p className="text-muted-foreground">Generate comprehensive reports for your agricultural business</p>
       </div>
 
-      {!selectedReport ? (
-        <>
-          {/* Quick Report Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {reportTypes.map((report) => (
-              <Card 
-                key={report.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleQuickReport(report.id)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center space-x-2">
-                    <report.icon className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-sm">{report.title}</CardTitle>
+      {/* Quick Access Report Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {reportTypes.map((report) => {
+          const Icon = report.icon;
+          return (
+            <Card 
+              key={report.id} 
+              className={cn(
+                "enhanced-card hover-lift cursor-pointer transition-all duration-200",
+                selectedReport === report.id && "ring-2 ring-primary bg-info-muted/30"
+              )}
+              onClick={() => handleQuickReport(report.id)}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Icon className="h-5 w-5 text-primary" />
                   </div>
-                  <CardDescription className="text-xs">
-                    {report.description}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-
-          {/* Report Generation Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Generate Report</CardTitle>
-              <CardDescription>Select report type and date range</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Select Report</Label>
-                  <Select value={selectedReport} onValueChange={setSelectedReport}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose report type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {reportTypes.map((report) => (
-                        <SelectItem key={report.id} value={report.id}>
-                          {report.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
+                <CardTitle className="text-sm font-medium leading-tight">{report.name}</CardTitle>
+                <CardDescription className="text-xs leading-tight">{report.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          );
+        })}
+      </div>
 
-                <div className="space-y-2">
-                  <Label>From Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !fromDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {fromDate ? format(fromDate, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={fromDate}
-                        onSelect={setFromDate}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+      {/* Report Generation Controls */}
+      <Card className="enhanced-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileBarChart3 className="h-5 w-5" />
+            Generate Report
+          </CardTitle>
+          <CardDescription>
+            Select report type, set date range, and generate your business reports
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Report Type</Label>
+              <Select value={selectedReport} onValueChange={setSelectedReport}>
+                <SelectTrigger className="focus-ring">
+                  <SelectValue placeholder="Choose a report type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reportTypes.map((report) => (
+                    <SelectItem key={report.id} value={report.id}>
+                      {report.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                <div className="space-y-2">
-                  <Label>To Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !toDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {toDate ? format(toDate, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={toDate}
-                        onSelect={setToDate}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">From Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal focus-ring",
+                      !fromDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {fromDate ? format(fromDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={fromDate}
+                    onSelect={setFromDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => selectedReport && handleQuickReport(selectedReport)}
-                  disabled={!selectedReport}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Generate Report
-                </Button>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export PDF
-                </Button>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export XLSX
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Button variant="outline" onClick={() => setSelectedReport("")}>
-              ← Back to Reports
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </Button>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export XLSX
-              </Button>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">To Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal focus-ring",
+                      !toDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {toDate ? format(toDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={toDate}
+                    onSelect={setToDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
-          
+
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => selectedReport && console.log("Generate report")} 
+              disabled={!selectedReport}
+              className="btn-primary flex items-center gap-2"
+            >
+              <FileBarChart3 className="h-4 w-4" />
+              Generate Report
+            </Button>
+            <Button variant="outline" className="btn-secondary flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Export All
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Report Display */}
+      {selectedReport && (
+        <div className="animate-fade-in">
           {renderSelectedReport()}
         </div>
       )}
