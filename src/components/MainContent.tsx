@@ -17,6 +17,8 @@ import { ReceivablesPage } from "@/pages/ReceivablesPage";
 import { BuyerReceivableCard } from "@/pages/BuyerReceivableCard";
 import { VendorsPage } from "@/pages/VendorsPage";
 import { VendorProfile } from "@/pages/VendorProfile";
+import { BuyersPage } from "@/pages/BuyersPage";
+import { BuyerProfile } from "@/pages/BuyerProfile";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 
 export function MainContent() {
@@ -35,7 +37,8 @@ export function MainContent() {
         <Route path="/sales/add" element={<AddSaleLot />} />
         <Route path="/sales/invoice/:id" element={<BuyerInvoice />} />
         <Route path="/sales/statement/:id" element={<FarmerStatement />} />
-        <Route path="/buyers" element={<PlaceholderPage title="Buyers" />} />
+        <Route path="/buyers" element={<BuyersPage />} />
+        <Route path="/buyers/:id" element={<BuyerProfile />} />
         <Route path="/receivables" element={<ReceivablesPage />} />
         <Route path="/receivables/buyer/:id" element={<BuyerReceivableCard />} />
         <Route path="/vendors" element={<VendorsPage />} />
