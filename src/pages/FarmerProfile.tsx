@@ -14,89 +14,154 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Edit, Plus, Printer, Download, User } from "lucide-react";
 
-const mockFarmer = {
-  id: 1,
-  name: "Akbar Ali",
-  cnic: "35201-1234567-1",
-  village: "Chak 12",
-  contacts: ["03001234567", "03451234567"],
-  bankDetails: {
-    bank: "Meezan Bank",
-    account: "0123456789",
-    iban: "PK36MEZN0003950101234567"
+const mockFarmers = {
+  "1": {
+    id: 1,
+    name: "Akbar Ali",
+    cnic: "35201-1234567-1",
+    village: "Chak 12",
+    contacts: ["03001234567", "03451234567"],
+    bankDetails: {
+      bank: "Meezan Bank",
+      account: "0123456789",
+      iban: "PK36MEZN0003950101234567"
+    },
+    wallet: {
+      provider: "JazzCash",
+      number: "0321-1234567"
+    },
+    profilePhoto: null,
+    advances: [
+      {
+        id: 1,
+        date: "2024-07-10",
+        type: "Cash",
+        amount: 50000,
+        balance: 10000,
+        source: "Bank",
+        vendor: "—",
+        reference: "TXN001"
+      },
+      {
+        id: 2,
+        date: "2024-06-01",
+        type: "In-Kind",
+        amount: 35000,
+        balance: 5000,
+        source: "Credit",
+        vendor: "AgriMart",
+        reference: "INV002"
+      }
+    ],
+    settlements: [
+      {
+        id: 1,
+        date: "2024-07-12",
+        description: "Wheat Sale",
+        debit: 504000,
+        credit: 0,
+        balance: 504000
+      },
+      {
+        id: 2,
+        date: "2024-07-12",
+        description: "Less: Advances",
+        debit: 35000,
+        credit: 0,
+        balance: 469000
+      },
+      {
+        id: 3,
+        date: "2024-07-12",
+        description: "Less: Expenses",
+        debit: 7500,
+        credit: 0,
+        balance: 461500
+      },
+      {
+        id: 4,
+        date: "2024-07-14",
+        description: "Payment to Farmer",
+        debit: 0,
+        credit: 200000,
+        balance: 261500
+      }
+    ]
   },
-  wallet: {
-    provider: "JazzCash",
-    number: "0321-1234567"
-  },
-  profilePhoto: null
+  "2": {
+    id: 2,
+    name: "Muhammad Hassan",
+    cnic: "35201-9876543-2",
+    village: "Chak 45",
+    contacts: ["03009876543", "03459876543"],
+    bankDetails: {
+      bank: "HBL Bank",
+      account: "9876543210",
+      iban: "PK24HABB0003950109876543"
+    },
+    wallet: {
+      provider: "EasyPaisa",
+      number: "0300-9876543"
+    },
+    profilePhoto: null,
+    advances: [
+      {
+        id: 1,
+        date: "2024-07-15",
+        type: "Cash",
+        amount: 75000,
+        balance: 15000,
+        source: "Bank",
+        vendor: "—",
+        reference: "TXN003"
+      },
+      {
+        id: 2,
+        date: "2024-06-20",
+        type: "In-Kind",
+        amount: 45000,
+        balance: 8000,
+        source: "Credit",
+        vendor: "FarmSupply",
+        reference: "INV004"
+      }
+    ],
+    settlements: [
+      {
+        id: 1,
+        date: "2024-07-18",
+        description: "Rice Sale",
+        debit: 680000,
+        credit: 0,
+        balance: 680000
+      },
+      {
+        id: 2,
+        date: "2024-07-18",
+        description: "Less: Advances",
+        debit: 45000,
+        credit: 0,
+        balance: 635000
+      },
+      {
+        id: 3,
+        date: "2024-07-18",
+        description: "Less: Expenses",
+        debit: 12000,
+        credit: 0,
+        balance: 623000
+      },
+      {
+        id: 4,
+        date: "2024-07-20",
+        description: "Payment to Farmer",
+        debit: 0,
+        credit: 300000,
+        balance: 323000
+      }
+    ]
+  }
 };
-
-const mockAdvances = [
-  {
-    id: 1,
-    date: "2024-07-10",
-    type: "Cash",
-    amount: 50000,
-    balance: 10000,
-    source: "Bank",
-    vendor: "—",
-    reference: "TXN001"
-  },
-  {
-    id: 2,
-    date: "2024-06-01",
-    type: "In-Kind",
-    amount: 35000,
-    balance: 5000,
-    source: "Credit",
-    vendor: "AgriMart",
-    reference: "INV002"
-  }
-];
-
-const mockSettlements = [
-  {
-    id: 1,
-    date: "2024-07-12",
-    description: "Wheat Sale",
-    debit: 504000,
-    credit: 0,
-    balance: 504000
-  },
-  {
-    id: 2,
-    date: "2024-07-12",
-    description: "Less: Advances",
-    debit: 35000,
-    credit: 0,
-    balance: 469000
-  },
-  {
-    id: 3,
-    date: "2024-07-12",
-    description: "Less: Expenses",
-    debit: 7500,
-    credit: 0,
-    balance: 461500
-  },
-  {
-    id: 4,
-    date: "2024-07-14",
-    description: "Payment to Farmer",
-    debit: 0,
-    credit: 200000,
-    balance: 261500
-  },
-  {
-    id: 5,
-    date: "2024-07-20",
-    description: "Payment to Farmer",
-    debit: 0,
-    credit: 261500,
-    balance: 0
-  }
-];
 
 export function FarmerProfile() {
   const { id } = useParams();
@@ -113,7 +178,22 @@ export function FarmerProfile() {
     notes: ""
   });
 
-  const currentBalance = mockSettlements[mockSettlements.length - 1]?.balance || 0;
+  const farmer = mockFarmers[id as keyof typeof mockFarmers];
+  
+  if (!farmer) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Farmer Not Found</h1>
+          <Button asChild className="mt-4">
+            <Link to="/farmers">Back to Farmers</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentBalance = farmer.settlements[farmer.settlements.length - 1]?.balance || 0;
 
   const handlePaymentSubmit = () => {
     // Handle payment submission logic here
@@ -161,20 +241,20 @@ export function FarmerProfile() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Name</label>
-                <p className="text-lg font-semibold">{mockFarmer.name}</p>
+                <p className="text-lg font-semibold">{farmer.name}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">CNIC</label>
-                <p className="font-mono">{mockFarmer.cnic}</p>
+                <p className="font-mono">{farmer.cnic}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Village</label>
-                <p>{mockFarmer.village}</p>
+                <p>{farmer.village}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Contacts</label>
                 <div className="space-y-1">
-                  {mockFarmer.contacts.map((contact, index) => (
+                  {farmer.contacts.map((contact, index) => (
                     <p key={index} className="font-mono text-sm">{contact}</p>
                   ))}
                 </div>
@@ -185,14 +265,14 @@ export function FarmerProfile() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Bank Details</label>
-                  <p className="text-sm">{mockFarmer.bankDetails.bank}</p>
-                  <p className="text-sm font-mono">Acc: {mockFarmer.bankDetails.account}</p>
-                  <p className="text-sm font-mono">IBAN: {mockFarmer.bankDetails.iban}</p>
+                  <p className="text-sm">{farmer.bankDetails.bank}</p>
+                  <p className="text-sm font-mono">Acc: {farmer.bankDetails.account}</p>
+                  <p className="text-sm font-mono">IBAN: {farmer.bankDetails.iban}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Mobile Wallet</label>
-                  <p className="text-sm">{mockFarmer.wallet.provider}</p>
-                  <p className="text-sm font-mono">{mockFarmer.wallet.number}</p>
+                  <p className="text-sm">{farmer.wallet.provider}</p>
+                  <p className="text-sm font-mono">{farmer.wallet.number}</p>
                 </div>
               </div>
             </div>
@@ -221,7 +301,7 @@ export function FarmerProfile() {
         <TabsContent value="advances" className="mt-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Advances History for {mockFarmer.name}</CardTitle>
+              <CardTitle>Advances History for {farmer.name}</CardTitle>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm">
                   <Printer className="h-4 w-4 mr-2" />
@@ -234,7 +314,7 @@ export function FarmerProfile() {
                 <Button asChild>
                   <Link to={`/advances/add/${id}`}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Advance for {mockFarmer.name}
+                    Add Advance for {farmer.name}
                   </Link>
                 </Button>
               </div>
@@ -253,7 +333,7 @@ export function FarmerProfile() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockAdvances.map((advance) => (
+                  {farmer.advances.map((advance) => (
                     <TableRow key={advance.id}>
                       <TableCell>{advance.date}</TableCell>
                       <TableCell>
@@ -277,7 +357,7 @@ export function FarmerProfile() {
         <TabsContent value="sales" className="mt-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Crop Lots & Sales for {mockFarmer.name}</CardTitle>
+              <CardTitle>Crop Lots & Sales for {farmer.name}</CardTitle>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm">
                   <Printer className="h-4 w-4 mr-2" />
@@ -290,7 +370,7 @@ export function FarmerProfile() {
                 <Button asChild>
                   <Link to={`/sales/add?farmerId=${id}`}>
                     <Plus className="h-4 w-4 mr-2" />
-                    New Sale for {mockFarmer.name}
+                    New Sale for {farmer.name}
                   </Link>
                 </Button>
               </div>
@@ -304,7 +384,7 @@ export function FarmerProfile() {
         <TabsContent value="settlements" className="mt-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Settlements & Payments for {mockFarmer.name}</CardTitle>
+              <CardTitle>Settlements & Payments for {farmer.name}</CardTitle>
               <div className="flex gap-2">
                 <Dialog open={paymentDialog} onOpenChange={setPaymentDialog}>
                   <DialogTrigger asChild>
@@ -319,7 +399,7 @@ export function FarmerProfile() {
                     <div className="space-y-4">
                       <div>
                         <Label>Farmer</Label>
-                        <Input value={mockFarmer.name} disabled className="bg-muted" />
+                        <Input value={farmer.name} disabled className="bg-muted" />
                       </div>
                       
                       <div>
@@ -436,7 +516,7 @@ export function FarmerProfile() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockSettlements.map((settlement) => (
+                  {farmer.settlements.map((settlement) => (
                     <TableRow key={settlement.id}>
                       <TableCell>{settlement.date}</TableCell>
                       <TableCell>{settlement.description}</TableCell>
