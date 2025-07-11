@@ -6,8 +6,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Printer, MessageSquare, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const mockInvoiceData = {
-  1: {
+const mockInvoiceData: Record<string, {
+  date: string;
+  buyer: string;
+  farmer: string;
+  crop: string;
+  weight: number;
+  rate: number;
+  commission: number;
+  buyerExpenses: Array<{ description: string; amount: number; source: string }>;
+  upfrontPaid: number;
+  paymentMode: string;
+  installments: Array<{ amount: number; dueDate: string; status: string }>;
+}> = {
+  "1": {
     date: "12-Jul-2025",
     buyer: "Pak Foods",
     farmer: "Akbar Ali",
@@ -31,7 +43,7 @@ const mockInvoiceData = {
 export function BuyerInvoice() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const invoice = mockInvoiceData[id as keyof typeof mockInvoiceData];
+  const invoice = id ? mockInvoiceData[id] : undefined;
 
   if (!invoice) {
     return <div>Invoice not found</div>;

@@ -4,8 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Printer } from "lucide-react";
 
-const mockStatementData = {
-  1: {
+const mockStatementData: Record<string, {
+  date: string;
+  farmer: string;
+  crop: string;
+  weight: number;
+  rate: number;
+  commission: number;
+  grossSale: number;
+  advances: number;
+  expenses: Array<{ description: string; amount: number }>;
+}> = {
+  "1": {
     date: "12-Jul-2025",
     farmer: "Akbar Ali",
     crop: "Wheat",
@@ -24,7 +34,7 @@ const mockStatementData = {
 export function FarmerStatement() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const statement = mockStatementData[id as keyof typeof mockStatementData];
+  const statement = id ? mockStatementData[id] : undefined;
 
   if (!statement) {
     return <div>Statement not found</div>;
