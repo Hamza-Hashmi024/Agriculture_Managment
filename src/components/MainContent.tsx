@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import { Dashboard } from "@/pages/Dashboard";
 import { FarmersPage } from "@/pages/FarmersPage";
@@ -21,6 +22,7 @@ import { BuyerProfile } from "@/pages/BuyerProfile";
 import { ExpensesPage } from "@/pages/ExpensesPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { CashBankPage } from "@/pages/CashBankPage";
+import { ReportsPage } from "@/pages/ReportsPage";
 
 export function MainContent() {
   return (
@@ -49,7 +51,7 @@ export function MainContent() {
         <Route path="/payables/vendor/:id" element={<VendorPayableCard />} />
         <Route path="/expenses" element={<ExpensesPage />} />
         <Route path="/cash-bank" element={<CashBankPage />} />
-        <Route path="/reports" element={<PlaceholderPage title="Reports" />} />
+        <Route path="/reports" element={<ReportsPage />} />
         <Route path="/missing-docs" element={<PlaceholderPage title="Missing Docs" />} />
         <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
       </Routes>
