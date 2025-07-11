@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 interface Expense {
   id: string;
   description: string;
+  customDescription?: string;
   amount: number;
   source: string;
   bankAccount?: string;
@@ -21,6 +22,7 @@ interface Expense {
 
 interface Installment {
   id: string;
+  percentage: number;
   amount: number;
   dueWithinDays: number;
   dueDate: string;
@@ -52,6 +54,27 @@ export function AddSaleLot() {
     const saleAmount = (parseFloat(weight) || 0) * (parseFloat(rate) || 0);
     const buyerExpenseTotal = buyerExpenses.reduce((sum, exp) => sum + exp.amount, 0);
     return saleAmount + buyerExpenseTotal;
+  };
+
+  const calculateRemainingAmount = () => {
+    const totalPayable = calculateTotalBuyerPayable();
+    const upfront = parseFloat(upfrontPayment) || 0;
+    return totalPayable - upfront;
+  };
+
+  const calculateInstallmentSubtotal = () => {
+    return installments.reduce((sum, inst) => sum + inst.amount, 0);
+  };
+
+  const isStep1Valid = () => {
+    return farmer && crop && arrivalDate && weight && rate && commission;
+  };
+
+  const isPaymentBalanced = () => {
+    const totalPayable = calculateTotalBuyerPayable();
+    const upfront = parseFloat(upfrontPayment) || 0;
+    const installmentTotal = calculateInstallmentSubtotal();
+    return Math.abs((upfront + installmentTotal) - totalPayable) < 0.01; // Allow for floating point precision
   };
 
   const addExpense = (type: 'farmer' | 'buyer') => {
@@ -89,11 +112,47 @@ export function AddSaleLot() {
   const addInstallment = () => {
     const newInstallment: Installment = {
       id: Date.now().toString(),
+      percentage: 0,
       amount: 0,
       dueWithinDays: 30,
       dueDate: ""
     };
     setInstallments([...installments, newInstallment]);
+  };
+
+  const updateInstallment = (id: string, field: string, value: number) => {
+    setInstallments(installments.map(inst => {
+      if (inst.id === id) {
+        const updated = { ...inst, [field]: value };
+        
+        // Auto-calculate amount when percentage changes
+        if (field === 'percentage') {
+          const remainingAmount = calculateRemainingAmount();
+          updated.amount = (remainingAmount * value) / 100;
+        }
+        
+        // Auto-calculate percentage when amount changes
+        if (field === 'amount') {
+          const remainingAmount = calculateRemainingAmount();
+          updated.percentage = remainingAmount > 0 ? (value / remainingAmount) * 100 : 0;
+        }
+        
+        return updated;
+      }
+      return inst;
+    }));
+  };
+
+  const removeInstallment = (id: string) => {
+    setInstallments(installments.filter(inst => inst.id !== id));
+  };
+
+  const handleSaveAndGenerate = () => {
+    if (!isPaymentBalanced()) {
+      alert("Error: The sum of upfront payment and installments must equal the total buyer payable amount.");
+      return;
+    }
+    navigate('/sales');
   };
 
   const renderStep1 = () => (
@@ -104,8 +163,8 @@ export function AddSaleLot() {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="farmer">Farmer</Label>
-            <Select value={farmer} onValueChange={setFarmer}>
+            <Label htmlFor="farmer" className="text-red-500">Farmer *</Label>
+            <Select value={farmer} onValueChange={setFarmer} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select farmer" />
               </SelectTrigger>
@@ -117,8 +176,8 @@ export function AddSaleLot() {
             </Select>
           </div>
           <div>
-            <Label htmlFor="crop">Crop</Label>
-            <Select value={crop} onValueChange={setCrop}>
+            <Label htmlFor="crop" className="text-red-500">Crop *</Label>
+            <Select value={crop} onValueChange={setCrop} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select crop" />
               </SelectTrigger>
@@ -131,144 +190,184 @@ export function AddSaleLot() {
             </Select>
           </div>
           <div>
-            <Label htmlFor="arrivalDate">Arrival Date</Label>
+            <Label htmlFor="arrivalDate" className="text-red-500">Arrival Date *</Label>
             <Input
               id="arrivalDate"
               type="date"
               value={arrivalDate}
               onChange={(e) => setArrivalDate(e.target.value)}
+              required
             />
           </div>
           <div>
-            <Label htmlFor="weight">Weight (manns)</Label>
+            <Label htmlFor="weight" className="text-red-500">Weight (manns) *</Label>
             <Input
               id="weight"
               type="number"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
               placeholder="Enter weight"
+              required
             />
           </div>
           <div>
-            <Label htmlFor="rate">Rate per mann</Label>
+            <Label htmlFor="rate" className="text-red-500">Rate per mann *</Label>
             <Input
               id="rate"
               type="number"
               value={rate}
               onChange={(e) => setRate(e.target.value)}
               placeholder="Enter rate"
+              required
             />
           </div>
           <div>
-            <Label htmlFor="commission">Commission %</Label>
+            <Label htmlFor="commission" className="text-red-500">Commission % *</Label>
             <Input
               id="commission"
               type="number"
               value={commission}
               onChange={(e) => setCommission(e.target.value)}
               placeholder="Enter commission percentage"
+              required
             />
           </div>
         </div>
+        {!isStep1Valid() && (
+          <p className="text-red-500 text-sm">* All fields are mandatory</p>
+        )}
       </CardContent>
     </Card>
   );
 
-  const renderExpenseTable = (expenses: Expense[], type: 'farmer' | 'buyer') => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">
-          {type === 'farmer' ? 'Farmer-side Expenses' : 'Buyer-side Expenses'}
-        </h3>
-        <Button onClick={() => addExpense(type)} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Add {type === 'farmer' ? 'Farmer' : 'Buyer'} Expense
-        </Button>
-      </div>
-      
-      {expenses.length > 0 && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Description</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>Bank Account</TableHead>
-              <TableHead>Ref No.</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {expenses.map((expense) => (
-              <TableRow key={expense.id}>
-                <TableCell>
-                  <Input
-                    value={expense.description}
-                    onChange={(e) => updateExpense(expense.id, 'description', e.target.value, type)}
-                    placeholder="Description"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={expense.amount || ''}
-                    onChange={(e) => updateExpense(expense.id, 'amount', parseFloat(e.target.value) || 0, type)}
-                    placeholder="Amount"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={expense.source}
-                    onValueChange={(value) => updateExpense(expense.id, 'source', value, type)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cashbox">Cashbox</SelectItem>
-                      <SelectItem value="bank">Bank</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  {expense.source === 'bank' && (
+  const renderExpenseTable = (expenses: Expense[], type: 'farmer' | 'buyer') => {
+    const expenseOptions = type === 'farmer' 
+      ? [
+          { value: "transport", label: "Transport" },
+          { value: "offloading", label: "Offloading" },
+          { value: "other", label: "Other" }
+        ]
+      : [
+          { value: "packing", label: "Packing" },
+          { value: "transport", label: "Transport" },
+          { value: "other", label: "Other" }
+        ];
+
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium">
+            {type === 'farmer' ? 'Farmer-side Expenses' : 'Buyer-side Expenses'}
+          </h3>
+          <Button onClick={() => addExpense(type)} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Add {type === 'farmer' ? 'Farmer' : 'Buyer'} Expense
+          </Button>
+        </div>
+        
+        {expenses.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Description</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Bank Account</TableHead>
+                <TableHead>Ref No.</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {expenses.map((expense) => (
+                <TableRow key={expense.id}>
+                  <TableCell>
+                    <div className="space-y-2">
+                      <Select
+                        value={expense.description}
+                        onValueChange={(value) => updateExpense(expense.id, 'description', value, type)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select description" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {expenseOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {expense.description === 'other' && (
+                        <Input
+                          value={expense.customDescription || ''}
+                          onChange={(e) => updateExpense(expense.id, 'customDescription', e.target.value, type)}
+                          placeholder="Enter custom description"
+                        />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={expense.amount || ''}
+                      onChange={(e) => updateExpense(expense.id, 'amount', parseFloat(e.target.value) || 0, type)}
+                      placeholder="Amount"
+                    />
+                  </TableCell>
+                  <TableCell>
                     <Select
-                      value={expense.bankAccount || ''}
-                      onValueChange={(value) => updateExpense(expense.id, 'bankAccount', value, type)}
+                      value={expense.source}
+                      onValueChange={(value) => updateExpense(expense.id, 'source', value, type)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select bank" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="meezan-1234">Meezan - 1234</SelectItem>
-                        <SelectItem value="hbl-4432">HBL - 4432</SelectItem>
+                        <SelectItem value="cashbox">Cashbox</SelectItem>
+                        <SelectItem value="bank">Bank</SelectItem>
                       </SelectContent>
                     </Select>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={expense.refNo || ''}
-                    onChange={(e) => updateExpense(expense.id, 'refNo', e.target.value, type)}
-                    placeholder="Reference No."
-                  />
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeExpense(expense.id, type)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </div>
-  );
+                  </TableCell>
+                  <TableCell>
+                    {expense.source === 'bank' && (
+                      <Select
+                        value={expense.bankAccount || ''}
+                        onValueChange={(value) => updateExpense(expense.id, 'bankAccount', value, type)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select bank" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="meezan-1234">Meezan - 1234</SelectItem>
+                          <SelectItem value="hbl-4432">HBL - 4432</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={expense.refNo || ''}
+                      onChange={(e) => updateExpense(expense.id, 'refNo', e.target.value, type)}
+                      placeholder="Reference No."
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeExpense(expense.id, type)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+    );
+  };
 
   const renderStep2 = () => (
     <Card>
@@ -362,7 +461,9 @@ export function AddSaleLot() {
 
         <div>
           <div className="flex justify-between items-center mb-4">
-            <h4 className="text-md font-medium">Installments</h4>
+            <h4 className="text-md font-medium">
+              Installments (Remaining: PKR {calculateRemainingAmount().toLocaleString()})
+            </h4>
             <Button onClick={addInstallment} size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Add Installment
@@ -370,69 +471,96 @@ export function AddSaleLot() {
           </div>
           
           {installments.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Due Within (days)</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {installments.map((installment) => (
-                  <TableRow key={installment.id}>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={installment.amount || ''}
-                        onChange={(e) => {
-                          const newInstallments = installments.map(inst =>
-                            inst.id === installment.id 
-                              ? { ...inst, amount: parseFloat(e.target.value) || 0 }
-                              : inst
-                          );
-                          setInstallments(newInstallments);
-                        }}
-                        placeholder="Amount"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={installment.dueWithinDays || ''}
-                        onChange={(e) => {
-                          const newInstallments = installments.map(inst =>
-                            inst.id === installment.id 
-                              ? { ...inst, dueWithinDays: parseInt(e.target.value) || 0 }
-                              : inst
-                          );
-                          setInstallments(newInstallments);
-                        }}
-                        placeholder="Days"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {installment.dueWithinDays ? 
-                          new Date(Date.now() + installment.dueWithinDays * 24 * 60 * 60 * 1000).toLocaleDateString() 
-                          : 'Not set'
-                        }
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setInstallments(installments.filter(inst => inst.id !== installment.id))}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            <div className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Percentage (%)</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Due Within (days)</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {installments.map((installment) => (
+                    <TableRow key={installment.id}>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={installment.percentage || ''}
+                          onChange={(e) => updateInstallment(installment.id, 'percentage', parseFloat(e.target.value) || 0)}
+                          placeholder="Percentage"
+                          min="0"
+                          max="100"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={installment.amount || ''}
+                          onChange={(e) => updateInstallment(installment.id, 'amount', parseFloat(e.target.value) || 0)}
+                          placeholder="Amount"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={installment.dueWithinDays || ''}
+                          onChange={(e) => {
+                            const newInstallments = installments.map(inst =>
+                              inst.id === installment.id 
+                                ? { ...inst, dueWithinDays: parseInt(e.target.value) || 0 }
+                                : inst
+                            );
+                            setInstallments(newInstallments);
+                          }}
+                          placeholder="Days"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {installment.dueWithinDays ? 
+                            new Date(Date.now() + installment.dueWithinDays * 24 * 60 * 60 * 1000).toLocaleDateString() 
+                            : 'Not set'
+                          }
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeInstallment(installment.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center text-sm">
+                  <span>Upfront Payment:</span>
+                  <span>PKR {(parseFloat(upfrontPayment) || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>Installments Subtotal:</span>
+                  <span>PKR {calculateInstallmentSubtotal().toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-lg font-semibold border-t pt-2">
+                  <span>Total:</span>
+                  <span>PKR {((parseFloat(upfrontPayment) || 0) + calculateInstallmentSubtotal()).toLocaleString()}</span>
+                </div>
+                {!isPaymentBalanced() && (
+                  <p className="text-red-500 text-sm mt-2">
+                    ⚠️ Total payment ({((parseFloat(upfrontPayment) || 0) + calculateInstallmentSubtotal()).toLocaleString()}) 
+                    does not match buyer payable ({calculateTotalBuyerPayable().toLocaleString()})
+                  </p>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </CardContent>
@@ -469,7 +597,10 @@ export function AddSaleLot() {
           
           <div className="flex gap-2">
             {currentStep < 4 ? (
-              <Button onClick={() => setCurrentStep(currentStep + 1)}>
+              <Button 
+                onClick={() => setCurrentStep(currentStep + 1)}
+                disabled={currentStep === 1 && !isStep1Valid()}
+              >
                 Next
               </Button>
             ) : (
@@ -477,7 +608,7 @@ export function AddSaleLot() {
                 <Button variant="outline" onClick={() => navigate('/sales')}>
                   Cancel
                 </Button>
-                <Button onClick={() => navigate('/sales')}>
+                <Button onClick={handleSaveAndGenerate}>
                   Save & Generate Invoice
                 </Button>
               </>
