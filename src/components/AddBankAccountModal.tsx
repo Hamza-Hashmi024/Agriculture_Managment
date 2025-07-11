@@ -10,6 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AddBankAccountModalProps {
   open: boolean;
@@ -18,8 +25,27 @@ interface AddBankAccountModalProps {
   onClose: () => void;
 }
 
+const banks = [
+  "Meezan Bank",
+  "HBL (Habib Bank Limited)",
+  "UBL (United Bank Limited)",
+  "MCB (Muslim Commercial Bank)",
+  "NBP (National Bank of Pakistan)",
+  "Allied Bank",
+  "Bank Alfalah",
+  "Standard Chartered",
+  "Faysal Bank",
+  "JS Bank",
+  "Askari Bank",
+  "Bank Al Habib",
+  "Soneri Bank",
+  "Summit Bank",
+  "Silk Bank"
+];
+
 export function AddBankAccountModal({ open, onOpenChange, account, onClose }: AddBankAccountModalProps) {
   const [formData, setFormData] = useState({
+    bank: "",
     title: "",
     accountNo: "",
     branch: "",
@@ -32,6 +58,7 @@ export function AddBankAccountModal({ open, onOpenChange, account, onClose }: Ad
   useEffect(() => {
     if (account) {
       setFormData({
+        bank: account.bank || "",
         title: account.title || "",
         accountNo: account.number || "",
         branch: account.branch || "",
@@ -42,6 +69,7 @@ export function AddBankAccountModal({ open, onOpenChange, account, onClose }: Ad
       });
     } else {
       setFormData({
+        bank: "",
         title: "",
         accountNo: "",
         branch: "",
@@ -62,6 +90,7 @@ export function AddBankAccountModal({ open, onOpenChange, account, onClose }: Ad
   const handleClose = () => {
     onClose();
     setFormData({
+      bank: "",
       title: "",
       accountNo: "",
       branch: "",
@@ -83,12 +112,32 @@ export function AddBankAccountModal({ open, onOpenChange, account, onClose }: Ad
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="bank">Bank *</Label>
+            <Select
+              value={formData.bank}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, bank: value }))}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Bank" />
+              </SelectTrigger>
+              <SelectContent>
+                {banks.map((bank) => (
+                  <SelectItem key={bank} value={bank}>
+                    {bank}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="title">Account Title *</Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Meezan Current"
+              placeholder="Current Account"
               required
             />
           </div>
