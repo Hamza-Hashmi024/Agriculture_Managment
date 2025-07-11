@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -186,8 +185,10 @@ export function FarmerPayableCard() {
                       <TableCell>PKR {sale.amount.toLocaleString()}</TableCell>
                       <TableCell>PKR {sale.commission.toLocaleString()}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4" />
+                        <Button asChild variant="ghost" size="sm">
+                          <Link to={`/sales/statement/${sale.id}`}>
+                            <FileText className="h-4 w-4" />
+                          </Link>
                         </Button>
                       </TableCell>
                     </TableRow>
