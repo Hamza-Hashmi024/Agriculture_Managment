@@ -1,21 +1,8 @@
+
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  FileBarChart,
   Users,
   ShoppingCart,
   Truck,
@@ -25,14 +12,15 @@ import {
   CreditCard,
   Banknote,
   PieChart,
-  Download
+  FileBarChart
 } from "lucide-react";
 
-// Import all report components
-import { FarmerLedgerReport } from "@/components/reports/FarmerLedgerReport";
-import { BuyerLedgerReport } from "@/components/reports/BuyerLedgerReport";
+// Import modal components
+import { FarmerLedgerModal } from "@/components/reports/FarmerLedgerModal";
+import { BuyerLedgerModal } from "@/components/reports/BuyerLedgerModal";
+import { AdvancesModal } from "@/components/reports/AdvancesModal";
+import { SimpleReportModal } from "@/components/reports/SimpleReportModal";
 import { VendorLedgerReport } from "@/components/reports/VendorLedgerReport";
-import { AdvancesReport } from "@/components/reports/AdvancesReport";
 import { SalesReport } from "@/components/reports/SalesReport";
 import { ReceivablesAgingReport } from "@/components/reports/ReceivablesAgingReport";
 import { PayablesAgingReport } from "@/components/reports/PayablesAgingReport";
@@ -54,46 +42,14 @@ const reportTypes = [
 ];
 
 export function ReportsPage() {
-  const [selectedReport, setSelectedReport] = useState<string>("");
-  const [fromDate, setFromDate] = useState<Date | undefined>(new Date());
-  const [toDate, setToDate] = useState<Date | undefined>(new Date());
+  const [activeModal, setActiveModal] = useState<string | null>(null);
 
-  const handleQuickReport = (reportId: string) => {
-    setSelectedReport(reportId);
+  const handleReportClick = (reportId: string) => {
+    setActiveModal(reportId);
   };
 
-  const dateRange = {
-    from: fromDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
-    to: toDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0]
-  };
-
-  const renderSelectedReport = () => {
-    const commonProps = { dateRange };
-    
-    switch (selectedReport) {
-      case "farmer-ledger":
-        return <FarmerLedgerReport {...commonProps} />;
-      case "buyer-ledger":
-        return <BuyerLedgerReport {...commonProps} />;
-      case "vendor-ledger":
-        return <VendorLedgerReport {...commonProps} />;
-      case "advances-report":
-        return <AdvancesReport {...commonProps} />;
-      case "sales-report":
-        return <SalesReport {...commonProps} />;
-      case "receivables-aging":
-        return <ReceivablesAgingReport {...commonProps} />;
-      case "payables-aging":
-        return <PayablesAgingReport {...commonProps} />;
-      case "cashbook":
-        return <CashbookReport {...commonProps} />;
-      case "bankbook":
-        return <BankbookReport {...commonProps} />;
-      case "profit-loss":
-        return <ProfitLossReport {...commonProps} />;
-      default:
-        return null;
-    }
+  const closeModal = () => {
+    setActiveModal(null);
   };
 
   return (
@@ -101,21 +57,18 @@ export function ReportsPage() {
       {/* Enhanced Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-foreground font-inter">Reports & Analytics</h1>
-        <p className="text-muted-foreground font-inter">Generate comprehensive reports for your agricultural business</p>
+        <p className="text-muted-foreground font-inter">Click on any report to generate it with custom parameters</p>
       </div>
 
-      {/* Quick Access Report Cards */}
+      {/* Report Cards - Now clickable to open modals */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {reportTypes.map((report) => {
           const Icon = report.icon;
           return (
             <Card 
               key={report.id} 
-              className={cn(
-                "cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border-border bg-card",
-                selectedReport === report.id && "ring-2 ring-primary bg-primary/5"
-              )}
-              onClick={() => handleQuickReport(report.id)}
+              className="cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border-border bg-card hover:bg-accent/50"
+              onClick={() => handleReportClick(report.id)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center space-x-2">
@@ -131,113 +84,70 @@ export function ReportsPage() {
         })}
       </div>
 
-      {/* Report Generation Controls */}
-      <Card className="border-border bg-card shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-foreground font-inter">
-            <FileBarChart className="h-5 w-5" />
-            Generate Report
-          </CardTitle>
-          <CardDescription className="text-muted-foreground font-inter">
-            Select report type, set date range, and generate your business reports
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Report Type</Label>
-              <Select value={selectedReport} onValueChange={setSelectedReport}>
-                <SelectTrigger className="focus-ring">
-                  <SelectValue placeholder="Choose a report type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {reportTypes.map((report) => (
-                    <SelectItem key={report.id} value={report.id}>
-                      {report.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Modals */}
+      <FarmerLedgerModal 
+        isOpen={activeModal === "farmer-ledger"} 
+        onClose={closeModal} 
+      />
+      
+      <BuyerLedgerModal 
+        isOpen={activeModal === "buyer-ledger"} 
+        onClose={closeModal} 
+      />
+      
+      <AdvancesModal 
+        isOpen={activeModal === "advances-report"} 
+        onClose={closeModal} 
+      />
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">From Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal focus-ring",
-                      !fromDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {fromDate ? format(fromDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={fromDate}
-                    onSelect={setFromDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+      <SimpleReportModal
+        isOpen={activeModal === "vendor-ledger"}
+        onClose={closeModal}
+        title="Vendor Ledger Report"
+        reportComponent={VendorLedgerReport}
+      />
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">To Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal focus-ring",
-                      !toDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {toDate ? format(toDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={toDate}
-                    onSelect={setToDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
+      <SimpleReportModal
+        isOpen={activeModal === "sales-report"}
+        onClose={closeModal}
+        title="Sales Report"
+        reportComponent={SalesReport}
+      />
 
-          <div className="flex gap-3">
-            <Button 
-              onClick={() => selectedReport && console.log("Generate report")} 
-              disabled={!selectedReport}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-inter flex items-center gap-2 shadow-sm"
-            >
-              <FileBarChart className="h-4 w-4" />
-              Generate Report
-            </Button>
-            <Button variant="outline" className="border-border text-foreground hover:bg-accent font-inter flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Export All
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <SimpleReportModal
+        isOpen={activeModal === "receivables-aging"}
+        onClose={closeModal}
+        title="Receivables Aging Report"
+        reportComponent={ReceivablesAgingReport}
+      />
 
-      {/* Report Display */}
-      {selectedReport && (
-        <div className="animate-fade-in">
-          {renderSelectedReport()}
-        </div>
-      )}
+      <SimpleReportModal
+        isOpen={activeModal === "payables-aging"}
+        onClose={closeModal}
+        title="Payables Aging Report"
+        reportComponent={PayablesAgingReport}
+      />
+
+      <SimpleReportModal
+        isOpen={activeModal === "cashbook"}
+        onClose={closeModal}
+        title="Cashbook Report"
+        reportComponent={CashbookReport}
+      />
+
+      <SimpleReportModal
+        isOpen={activeModal === "bankbook"}
+        onClose={closeModal}
+        title="Bankbook Report"
+        reportComponent={BankbookReport}
+      />
+
+      <SimpleReportModal
+        isOpen={activeModal === "profit-loss"}
+        onClose={closeModal}
+        title="Profit & Loss Report"
+        reportComponent={ProfitLossReport}
+      />
     </div>
   );
 }
