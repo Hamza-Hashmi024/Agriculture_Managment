@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,8 +40,9 @@ export function FarmerStatement() {
     return <div>Statement not found</div>;
   }
 
+  const commissionAmount = (statement.grossSale * statement.commission) / 100;
   const totalExpenses = statement.expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const netPayable = statement.grossSale - statement.advances - totalExpenses;
+  const netPayable = statement.grossSale - commissionAmount - statement.advances - totalExpenses;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -107,6 +109,11 @@ export function FarmerStatement() {
             </div>
 
             <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-red-600">Less Commission ({statement.commission}%):</span>
+                <span className="text-red-600">PKR {commissionAmount.toLocaleString()}</span>
+              </div>
+              
               <div className="flex justify-between">
                 <span className="text-red-600">Less Advances:</span>
                 <span className="text-red-600">PKR {statement.advances.toLocaleString()}</span>
