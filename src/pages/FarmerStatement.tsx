@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +20,7 @@ const mockStatementData: Record<string, {
     crop: "Wheat",
     weight: 120,
     rate: 4200,
-    commission: 2.5,
+    commission: 1.5,
     grossSale: 504000,
     advances: 35000,
     expenses: [
