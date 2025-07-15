@@ -21,15 +21,28 @@ const mockFarmers = {
     cnic: "35201-1234567-1",
     village: "Chak 12",
     contacts: ["03001234567", "03451234567"],
-    bankDetails: {
-      bank: "Meezan Bank",
-      account: "0123456789",
-      iban: "PK36MEZN0003950101234567"
-    },
-    wallet: {
-      provider: "JazzCash",
-      number: "0321-1234567"
-    },
+    bankAccounts: [
+      {
+        bank: "Meezan Bank",
+        account: "0123456789",
+        iban: "PK36MEZN0003950101234567"
+      },
+      {
+        bank: "HBL Bank", 
+        account: "9876543210",
+        iban: "PK24HABB0003950109876543"
+      }
+    ],
+    wallets: [
+      {
+        provider: "JazzCash",
+        number: "0321-1234567"
+      },
+      {
+        provider: "Easypaisa",
+        number: "0300-1234567"
+      }
+    ],
     profilePhoto: null,
     advances: [
       {
@@ -94,15 +107,19 @@ const mockFarmers = {
     cnic: "35201-9876543-2",
     village: "Chak 45",
     contacts: ["03009876543", "03459876543"],
-    bankDetails: {
-      bank: "HBL Bank",
-      account: "9876543210",
-      iban: "PK24HABB0003950109876543"
-    },
-    wallet: {
-      provider: "EasyPaisa",
-      number: "0300-9876543"
-    },
+    bankAccounts: [
+      {
+        bank: "HBL Bank",
+        account: "9876543210",
+        iban: "PK24HABB0003950109876543"
+      }
+    ],
+    wallets: [
+      {
+        provider: "EasyPaisa",
+        number: "0300-9876543"
+      }
+    ],
     profilePhoto: null,
     advances: [
       {
@@ -262,17 +279,29 @@ export function FarmerProfile() {
             </div>
 
             <div className="pt-4 border-t">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Bank Details</label>
-                  <p className="text-sm">{farmer.bankDetails.bank}</p>
-                  <p className="text-sm font-mono">Acc: {farmer.bankDetails.account}</p>
-                  <p className="text-sm font-mono">IBAN: {farmer.bankDetails.iban}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Bank Accounts</label>
+                  <div className="space-y-3 mt-2">
+                    {farmer.bankAccounts.map((account, index) => (
+                      <div key={index} className="p-3 border rounded-lg bg-muted/50">
+                        <p className="text-sm font-medium">{account.bank}</p>
+                        <p className="text-sm font-mono">Acc: {account.account}</p>
+                        <p className="text-sm font-mono">IBAN: {account.iban}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Mobile Wallet</label>
-                  <p className="text-sm">{farmer.wallet.provider}</p>
-                  <p className="text-sm font-mono">{farmer.wallet.number}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Mobile Wallets</label>
+                  <div className="space-y-3 mt-2">
+                    {farmer.wallets.map((wallet, index) => (
+                      <div key={index} className="p-3 border rounded-lg bg-muted/50">
+                        <p className="text-sm font-medium">{wallet.provider}</p>
+                        <p className="text-sm font-mono">{wallet.number}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
