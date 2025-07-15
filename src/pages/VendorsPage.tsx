@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Plus, Download, Search, Filter } from "lucide-react";
+import { Eye, Plus, Download, Search, Filter, Trash2 } from "lucide-react";
 
 const mockVendors = [
   {
@@ -56,11 +56,8 @@ export function VendorsPage() {
     name: "",
     type: "supplier",
     contacts: [""],
-    bankName: "",
-    accountNo: "",
-    iban: "",
-    walletNumber: "",
-    walletType: "",
+    bankAccounts: [{ bankName: "", accountNo: "", iban: "" }],
+    wallets: [{ provider: "", number: "" }],
     notes: ""
   });
 
@@ -95,6 +92,56 @@ export function VendorsPage() {
     });
   };
 
+  const addBankAccount = () => {
+    setVendorForm(prev => ({
+      ...prev,
+      bankAccounts: [...prev.bankAccounts, { bankName: "", accountNo: "", iban: "" }]
+    }));
+  };
+
+  const removeBankAccount = (index: number) => {
+    if (vendorForm.bankAccounts.length > 1) {
+      setVendorForm(prev => ({
+        ...prev,
+        bankAccounts: prev.bankAccounts.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const updateBankAccount = (index: number, field: string, value: string) => {
+    setVendorForm(prev => ({
+      ...prev,
+      bankAccounts: prev.bankAccounts.map((account, i) => 
+        i === index ? { ...account, [field]: value } : account
+      )
+    }));
+  };
+
+  const addWallet = () => {
+    setVendorForm(prev => ({
+      ...prev,
+      wallets: [...prev.wallets, { provider: "", number: "" }]
+    }));
+  };
+
+  const removeWallet = (index: number) => {
+    if (vendorForm.wallets.length > 1) {
+      setVendorForm(prev => ({
+        ...prev,
+        wallets: prev.wallets.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const updateWallet = (index: number, field: string, value: string) => {
+    setVendorForm(prev => ({
+      ...prev,
+      wallets: prev.wallets.map((wallet, i) => 
+        i === index ? { ...wallet, [field]: value } : wallet
+      )
+    }));
+  };
+
   const handleSaveVendor = () => {
     console.log("Saving vendor:", vendorForm);
     setAddVendorDialog(false);
@@ -103,11 +150,8 @@ export function VendorsPage() {
       name: "",
       type: "supplier",
       contacts: [""],
-      bankName: "",
-      accountNo: "",
-      iban: "",
-      walletNumber: "",
-      walletType: "",
+      bankAccounts: [{ bankName: "", accountNo: "", iban: "" }],
+      wallets: [{ provider: "", number: "" }],
       notes: ""
     });
   };
@@ -295,37 +339,115 @@ export function VendorsPage() {
               </Button>
             </div>
 
-            <div className="space-y-2">
-              <Label>Bank Account</Label>
-              <Input
-                value={vendorForm.bankName}
-                onChange={(e) => setVendorForm({...vendorForm, bankName: e.target.value})}
-                placeholder="Bank name"
-              />
-              <Input
-                value={vendorForm.accountNo}
-                onChange={(e) => setVendorForm({...vendorForm, accountNo: e.target.value})}
-                placeholder="Account number"
-              />
-              <Input
-                value={vendorForm.iban}
-                onChange={(e) => setVendorForm({...vendorForm, iban: e.target.value})}
-                placeholder="IBAN"
-              />
+            <div>
+              <Label>Bank Accounts</Label>
+              {vendorForm.bankAccounts.map((account, index) => (
+                <div key={index} className="border rounded-lg p-3 space-y-3 mt-2">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium text-sm">Bank Account {index + 1}</h4>
+                    {vendorForm.bankAccounts.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeBankAccount(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <Select 
+                    value={account.bankName} 
+                    onValueChange={(value) => updateBankAccount(index, 'bankName', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select bank" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hbl">HBL</SelectItem>
+                      <SelectItem value="ubl">UBL</SelectItem>
+                      <SelectItem value="mcb">MCB</SelectItem>
+                      <SelectItem value="meezan">Meezan Bank</SelectItem>
+                      <SelectItem value="allied">Allied Bank</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Input
+                    value={account.accountNo}
+                    onChange={(e) => updateBankAccount(index, 'accountNo', e.target.value)}
+                    placeholder="Account number"
+                  />
+                  
+                  <Input
+                    value={account.iban}
+                    onChange={(e) => updateBankAccount(index, 'iban', e.target.value)}
+                    placeholder="IBAN"
+                  />
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addBankAccount}
+                className="mt-2"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Bank Account
+              </Button>
             </div>
 
-            <div className="space-y-2">
-              <Label>Wallet</Label>
-              <Input
-                value={vendorForm.walletNumber}
-                onChange={(e) => setVendorForm({...vendorForm, walletNumber: e.target.value})}
-                placeholder="Wallet number"
-              />
-              <Input
-                value={vendorForm.walletType}
-                onChange={(e) => setVendorForm({...vendorForm, walletType: e.target.value})}
-                placeholder="Wallet type (e.g., JazzCash)"
-              />
+            <div>
+              <Label>Mobile Wallets</Label>
+              {vendorForm.wallets.map((wallet, index) => (
+                <div key={index} className="border rounded-lg p-3 space-y-3 mt-2">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium text-sm">Mobile Wallet {index + 1}</h4>
+                    {vendorForm.wallets.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeWallet(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <Select 
+                    value={wallet.provider} 
+                    onValueChange={(value) => updateWallet(index, 'provider', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select wallet provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="jazzcash">JazzCash</SelectItem>
+                      <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                      <SelectItem value="sadapay">SadaPay</SelectItem>
+                      <SelectItem value="nayapay">NayaPay</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Input
+                    value={wallet.number}
+                    onChange={(e) => updateWallet(index, 'number', e.target.value)}
+                    placeholder="Wallet number"
+                  />
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addWallet}
+                className="mt-2"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Mobile Wallet
+              </Button>
             </div>
 
             <div>

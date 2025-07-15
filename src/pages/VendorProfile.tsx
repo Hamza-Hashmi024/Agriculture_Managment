@@ -17,11 +17,15 @@ const mockVendorData: Record<string, {
   name: string;
   type: string;
   contacts: string[];
-  bankName: string;
-  accountNo: string;
-  iban: string;
-  walletNumber: string;
-  walletType: string;
+  bankAccounts: Array<{
+    bank: string;
+    account: string;
+    iban: string;
+  }>;
+  wallets: Array<{
+    provider: string;
+    number: string;
+  }>;
   netPayable: number;
   purchases: Array<{
     id: number;
@@ -45,11 +49,28 @@ const mockVendorData: Record<string, {
     name: "AgriMart",
     type: "Supplier",
     contacts: ["0312-1234567", "0345-9876543"],
-    bankName: "Meezan Bank",
-    accountNo: "0123456789",
-    iban: "PK36MEZN0000000123456789",
-    walletNumber: "0321-1111111",
-    walletType: "JazzCash",
+    bankAccounts: [
+      {
+        bank: "Meezan Bank",
+        account: "0123456789",
+        iban: "PK36MEZN0000000123456789"
+      },
+      {
+        bank: "HBL Bank",
+        account: "9876543210", 
+        iban: "PK24HABB0000009876543210"
+      }
+    ],
+    wallets: [
+      {
+        provider: "JazzCash",
+        number: "0321-1111111"
+      },
+      {
+        provider: "Easypaisa",
+        number: "0300-1111111"
+      }
+    ],
     netPayable: 112000,
     purchases: [
       {
@@ -85,11 +106,19 @@ const mockVendorData: Record<string, {
     name: "Kissan Agri",
     type: "Supplier",
     contacts: ["0300-2222222"],
-    bankName: "HBL",
-    accountNo: "9876543210",
-    iban: "PK24HABB0000009876543210",
-    walletNumber: "0333-2222222",
-    walletType: "EasyPaisa",
+    bankAccounts: [
+      {
+        bank: "HBL",
+        account: "9876543210",
+        iban: "PK24HABB0000009876543210"
+      }
+    ],
+    wallets: [
+      {
+        provider: "EasyPaisa",
+        number: "0333-2222222"
+      }
+    ],
     netPayable: 47500,
     purchases: [
       {
@@ -175,11 +204,11 @@ export function VendorProfile() {
       name: vendor.name,
       type: vendor.type.toLowerCase(),
       contacts: vendor.contacts,
-      bankName: vendor.bankName,
-      accountNo: vendor.accountNo,
-      iban: vendor.iban,
-      walletNumber: vendor.walletNumber,
-      walletType: vendor.walletType,
+      bankName: vendor.bankAccounts[0]?.bank || "",
+      accountNo: vendor.bankAccounts[0]?.account || "",
+      iban: vendor.bankAccounts[0]?.iban || "",
+      walletNumber: vendor.wallets[0]?.number || "",
+      walletType: vendor.wallets[0]?.provider || "",
       notes: ""
     });
     setEditDialog(true);
@@ -230,23 +259,35 @@ export function VendorProfile() {
                 ))}
               </div>
               
-              <div>
-                <h4 className="font-semibold text-sm text-muted-foreground flex items-center gap-1">
+              <div className="lg:col-span-2">
+                <h4 className="font-semibold text-sm text-muted-foreground flex items-center gap-1 mb-3">
                   <CreditCard className="h-3 w-3" />
-                  Bank Account
+                  Bank Accounts
                 </h4>
-                <p className="text-base">{vendor.bankName}</p>
-                <p className="text-sm text-muted-foreground">{vendor.accountNo}</p>
-                <p className="text-sm text-muted-foreground">{vendor.iban}</p>
+                <div className="space-y-3">
+                  {vendor.bankAccounts.map((account, index) => (
+                    <div key={index} className="p-3 border rounded-lg bg-muted/50">
+                      <p className="text-sm font-medium">{account.bank}</p>
+                      <p className="text-sm text-muted-foreground">Acc: {account.account}</p>
+                      <p className="text-sm text-muted-foreground">IBAN: {account.iban}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
               
               <div>
-                <h4 className="font-semibold text-sm text-muted-foreground flex items-center gap-1">
+                <h4 className="font-semibold text-sm text-muted-foreground flex items-center gap-1 mb-3">
                   <Wallet className="h-3 w-3" />
-                  Wallet
+                  Mobile Wallets
                 </h4>
-                <p className="text-base">{vendor.walletNumber}</p>
-                <p className="text-sm text-muted-foreground">{vendor.walletType}</p>
+                <div className="space-y-3">
+                  {vendor.wallets.map((wallet, index) => (
+                    <div key={index} className="p-3 border rounded-lg bg-muted/50">
+                      <p className="text-sm font-medium">{wallet.provider}</p>
+                      <p className="text-sm text-muted-foreground">{wallet.number}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
               
               <div>
