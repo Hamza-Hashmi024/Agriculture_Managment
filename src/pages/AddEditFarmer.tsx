@@ -21,11 +21,8 @@ export function AddEditFarmer() {
     village: "",
     contacts: [""],
     profilePhoto: null as File | null,
-    bankName: "",
-    accountNo: "",
-    iban: "",
-    walletProvider: "",
-    walletNumber: ""
+    bankAccounts: [{ bankName: "", accountNo: "", iban: "" }],
+    wallets: [{ provider: "", number: "" }]
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -69,6 +66,56 @@ export function AddEditFarmer() {
     setFormData(prev => ({
       ...prev,
       contacts: prev.contacts.map((contact, i) => i === index ? value : contact)
+    }));
+  };
+
+  const addBankAccount = () => {
+    setFormData(prev => ({
+      ...prev,
+      bankAccounts: [...prev.bankAccounts, { bankName: "", accountNo: "", iban: "" }]
+    }));
+  };
+
+  const removeBankAccount = (index: number) => {
+    if (formData.bankAccounts.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        bankAccounts: prev.bankAccounts.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const updateBankAccount = (index: number, field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      bankAccounts: prev.bankAccounts.map((account, i) => 
+        i === index ? { ...account, [field]: value } : account
+      )
+    }));
+  };
+
+  const addWallet = () => {
+    setFormData(prev => ({
+      ...prev,
+      wallets: [...prev.wallets, { provider: "", number: "" }]
+    }));
+  };
+
+  const removeWallet = (index: number) => {
+    if (formData.wallets.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        wallets: prev.wallets.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const updateWallet = (index: number, field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      wallets: prev.wallets.map((wallet, i) => 
+        i === index ? { ...wallet, [field]: value } : wallet
+      )
     }));
   };
 
@@ -184,76 +231,135 @@ export function AddEditFarmer() {
 
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Bank Details (Optional)</CardTitle>
+              <CardTitle>Bank Accounts (Optional)</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="bankName">Bank Name</Label>
-                <Select value={formData.bankName} onValueChange={(value) => setFormData(prev => ({ ...prev, bankName: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select bank" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hbl">HBL</SelectItem>
-                    <SelectItem value="ubl">UBL</SelectItem>
-                    <SelectItem value="mcb">MCB</SelectItem>
-                    <SelectItem value="meezan">Meezan Bank</SelectItem>
-                    <SelectItem value="allied">Allied Bank</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <CardContent className="space-y-6">
+              {formData.bankAccounts.map((account, index) => (
+                <div key={index} className="border rounded-lg p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium">Bank Account {index + 1}</h4>
+                    {formData.bankAccounts.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeBankAccount(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label>Bank Name</Label>
+                    <Select 
+                      value={account.bankName} 
+                      onValueChange={(value) => updateBankAccount(index, 'bankName', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select bank" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hbl">HBL</SelectItem>
+                        <SelectItem value="ubl">UBL</SelectItem>
+                        <SelectItem value="mcb">MCB</SelectItem>
+                        <SelectItem value="meezan">Meezan Bank</SelectItem>
+                        <SelectItem value="allied">Allied Bank</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <Label htmlFor="accountNo">Account Number</Label>
-                <Input
-                  id="accountNo"
-                  value={formData.accountNo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, accountNo: e.target.value }))}
-                  placeholder="Enter account number"
-                />
-              </div>
+                  <div>
+                    <Label>Account Number</Label>
+                    <Input
+                      value={account.accountNo}
+                      onChange={(e) => updateBankAccount(index, 'accountNo', e.target.value)}
+                      placeholder="Enter account number"
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="iban">IBAN</Label>
-                <Input
-                  id="iban"
-                  value={formData.iban}
-                  onChange={(e) => setFormData(prev => ({ ...prev, iban: e.target.value }))}
-                  placeholder="PK36SCBL0000001123456702"
-                />
-              </div>
+                  <div>
+                    <Label>IBAN</Label>
+                    <Input
+                      value={account.iban}
+                      onChange={(e) => updateBankAccount(index, 'iban', e.target.value)}
+                      placeholder="PK36SCBL0000001123456702"
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addBankAccount}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Bank Account
+              </Button>
             </CardContent>
           </Card>
 
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Mobile Wallet (Optional)</CardTitle>
+              <CardTitle>Mobile Wallets (Optional)</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="walletProvider">Provider</Label>
-                <Select value={formData.walletProvider} onValueChange={(value) => setFormData(prev => ({ ...prev, walletProvider: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select wallet provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="jazzcash">JazzCash</SelectItem>
-                    <SelectItem value="easypaisa">Easypaisa</SelectItem>
-                    <SelectItem value="sadapay">SadaPay</SelectItem>
-                    <SelectItem value="nayapay">NayaPay</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <CardContent className="space-y-6">
+              {formData.wallets.map((wallet, index) => (
+                <div key={index} className="border rounded-lg p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium">Mobile Wallet {index + 1}</h4>
+                    {formData.wallets.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeWallet(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label>Provider</Label>
+                    <Select 
+                      value={wallet.provider} 
+                      onValueChange={(value) => updateWallet(index, 'provider', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select wallet provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="jazzcash">JazzCash</SelectItem>
+                        <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                        <SelectItem value="sadapay">SadaPay</SelectItem>
+                        <SelectItem value="nayapay">NayaPay</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <Label htmlFor="walletNumber">Number</Label>
-                <Input
-                  id="walletNumber"
-                  value={formData.walletNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, walletNumber: e.target.value }))}
-                  placeholder="0321-1234567"
-                />
-              </div>
+                  <div>
+                    <Label>Number</Label>
+                    <Input
+                      value={wallet.number}
+                      onChange={(e) => updateWallet(index, 'number', e.target.value)}
+                      placeholder="0321-1234567"
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addWallet}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Mobile Wallet
+              </Button>
             </CardContent>
           </Card>
 
