@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Plus, Download, Eye, CreditCard } from "lucide-react";
 import { AddPaymentModal } from "@/components/AddPaymentModal";
+import { RegisterBuyer } from "@/Api/Api";
 
 // Mock data for buyers
 const mockBuyers = [
@@ -67,8 +68,51 @@ export function BuyersPage() {
     return matchesSearch && matchesFilter;
   });
 
-  const handleAddBuyer = () => {
-    console.log("Adding buyer:", newBuyer);
+  // const handleAddBuyer = () => {
+  //   console.log("Adding buyer:", newBuyer);
+  //   setIsAddModalOpen(false);
+  //   setNewBuyer({
+  //     name: "",
+  //     contacts: "",
+  //     bankName: "",
+  //     accountNo: "",
+  //     iban: "",
+  //     walletNumber: "",
+  //     walletType: "",
+  //     notes: ""
+  //   });
+  // };
+
+
+  
+const handleAddBuyer = async () => {
+  const buyerData = {
+    tenantId: 1, // or fetch dynamically
+    name: newBuyer.name,
+    notes: newBuyer.notes,
+    contacts: [
+      { phoneNumber: newBuyer.contacts }
+    ],
+    bankAccounts: [
+      {
+        bankName: newBuyer.bankName,
+        accountNumber: newBuyer.accountNo,
+        iban: newBuyer.iban
+      }
+    ],
+    wallets: [
+      {
+        walletNumber: newBuyer.walletNumber,
+        provider: newBuyer.walletType
+      }
+    ]
+  };
+
+  try {
+    const response = await RegisterBuyer(buyerData);
+    console.log("Buyer registered successfully:", response);
+    
+
     setIsAddModalOpen(false);
     setNewBuyer({
       name: "",
@@ -80,7 +124,12 @@ export function BuyersPage() {
       walletType: "",
       notes: ""
     });
-  };
+  } catch (error) {
+    console.error("Error registering buyer:", error);
+   
+  }
+};
+
 
   const handleAddPayment = (buyerId: string) => {
     setSelectedBuyerId(buyerId);

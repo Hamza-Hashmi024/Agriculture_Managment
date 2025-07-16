@@ -1,6 +1,6 @@
 import { Base_Url } from "@/Globle/Base_URL";
 import axios from "axios";
-import { register } from "module";
+
 
 export const RegisterFarmer = async (data) => {
   try {
@@ -21,3 +21,15 @@ export const  RegisterVendor = async (data) => {
     throw error;
   }
 }
+
+
+export const RegisterBuyer = async (data) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/buyer/register`, data);
+    return response.data;
+  } catch (error) {
+    console.error("Register Buyer API error:", error);
+    throw error;
+  }
+};
+
