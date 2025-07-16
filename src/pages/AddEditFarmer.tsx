@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { RegisterFarmer } from "@/Api/Api"; 
 
 export function AddEditFarmer() {
   const navigate = useNavigate();
@@ -25,26 +26,57 @@ export function AddEditFarmer() {
     wallets: [{ provider: "", number: "" }]
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.cnic || !formData.village || !formData.contacts[0]) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
-    }
+  
 
-    // Here you would typically save to database
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!formData.name || !formData.cnic || !formData.village || !formData.contacts[0]) {
+    toast({
+      title: "Validation Error",
+      description: "Please fill in all required fields.",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  const submissionData = {
+    tenant_id: 1, // Replace this with actual tenant_id (e.g., from context or user session)
+    name: formData.name,
+    cnic: formData.cnic,
+    village: formData.village,
+    profile_photo_url: "", // You need to handle image upload separately, or remove this if not used
+    contacts: formData.contacts.filter(Boolean),
+    bankAccounts: formData.bankAccounts.filter(acc => acc.bankName || acc.accountNo || acc.iban),
+    wallets: formData.wallets.filter(wallet => wallet.provider || wallet.number)
+  };
+
+  try {
+    await RegisterFarmer(submissionData);
+
     toast({
       title: isEditing ? "Farmer Updated" : "Farmer Added",
       description: `${formData.name} has been ${isEditing ? 'updated' : 'added'} successfully.`,
     });
 
     navigate("/farmers");
-  };
+  } catch (err) {
+    toast({
+      title: "Error",
+      description: "Something went wrong while saving the farmer.",
+      variant: "destructive"
+    });
+  }
+};
+
+
+
+
+
+
+
+
 
   const addContact = () => {
     setFormData(prev => ({
