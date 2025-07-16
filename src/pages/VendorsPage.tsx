@@ -144,20 +144,6 @@ export function VendorsPage() {
     }));
   };
 
-  // const handleSaveVendor = () => {
-  //   console.log("Saving vendor:", vendorForm);
-  //   setAddVendorDialog(false);
-  //   // Reset form
-  //   setVendorForm({
-  //     name: "",
-  //     type: "supplier",
-  //     contacts: [""],
-  //     bankAccounts: [{ bankName: "", accountNo: "", iban: "" }],
-  //     wallets: [{ provider: "", number: "" }],
-  //     notes: ""
-  //   });
-  // };
-
 const handleSaveVendor = async () => {
   try {
     console.log("Submitting vendor:", vendorForm);
