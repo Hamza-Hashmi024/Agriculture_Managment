@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Eye, Plus, Download, Search, Filter, Trash2 } from "lucide-react";
+import { RegisterVendor } from "@/Api/Api";
+
 
 const mockVendors = [
   {
@@ -142,10 +144,30 @@ export function VendorsPage() {
     }));
   };
 
-  const handleSaveVendor = () => {
-    console.log("Saving vendor:", vendorForm);
+  // const handleSaveVendor = () => {
+  //   console.log("Saving vendor:", vendorForm);
+  //   setAddVendorDialog(false);
+  //   // Reset form
+  //   setVendorForm({
+  //     name: "",
+  //     type: "supplier",
+  //     contacts: [""],
+  //     bankAccounts: [{ bankName: "", accountNo: "", iban: "" }],
+  //     wallets: [{ provider: "", number: "" }],
+  //     notes: ""
+  //   });
+  // };
+
+const handleSaveVendor = async () => {
+  try {
+    console.log("Submitting vendor:", vendorForm);
+    await RegisterVendor({
+      tenant_id: 1, 
+      ...vendorForm
+    });
+
+    // Close modal and reset form
     setAddVendorDialog(false);
-    // Reset form
     setVendorForm({
       name: "",
       type: "supplier",
@@ -154,7 +176,16 @@ export function VendorsPage() {
       wallets: [{ provider: "", number: "" }],
       notes: ""
     });
-  };
+
+    
+
+  } catch (error) {
+    console.error("Error saving vendor:", error);
+    
+  }
+};
+
+
 
   return (
     <div className="p-6">
