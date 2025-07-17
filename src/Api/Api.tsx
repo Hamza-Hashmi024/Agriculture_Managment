@@ -42,3 +42,22 @@ export const RecordAccount = async (data)=>{
     console.error("Record Account API error:", error);
   }
 }
+
+
+export const CreateTransfer = async (data)=> {
+  try {
+    const response = await axios.post(`${Base_Url}/api/accounts/transfer` , data );
+    return response.data;
+  }catch(error){
+    console.error("Record Tranfer API error:", error);
+  }
+}
+
+export const GetBankAccountsWithBalance = async()=>{
+  try{
+    const response = await axios.get(`${Base_Url}/api/accounts/banks-with-balance`);
+    return response.data;
+  }catch(error){
+    console.error("Get Bank Accounts API error");
+  }
+}

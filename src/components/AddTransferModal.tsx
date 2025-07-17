@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState  , useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,14 +17,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CreateTransfer , GetBankAccountsWithBalance } from "@/Api/Api";
 
 interface AddTransferModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  accounts: any[];
+  
 }
 
-export function AddTransferModal({ open, onOpenChange, accounts }: AddTransferModalProps) {
+export function AddTransferModal({ open, onOpenChange}: AddTransferModalProps) {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     fromAccount: "",
@@ -35,39 +36,58 @@ export function AddTransferModal({ open, onOpenChange, accounts }: AddTransferMo
   });
 
   const [errors, setErrors] = useState<string[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const newErrors: string[] = [];
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (formData.fromAccount === formData.toAccount) {
-      newErrors.push("Cannot transfer to the same account");
-    }
+  const newErrors: string[] = [];
 
-    if (!formData.fromAccount || !formData.toAccount) {
-      newErrors.push("Please select both from and to accounts");
-    }
+  if (formData.fromAccount === formData.toAccount) {
+    newErrors.push("Cannot transfer to the same account");
+  }
 
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      newErrors.push("Please enter a valid amount");
-    }
+  if (!formData.fromAccount || !formData.toAccount) {
+    newErrors.push("Please select both from and to accounts");
+  }
 
-    // Check if from account has sufficient balance
-    const fromAccount = accounts.find(acc => acc.id === formData.fromAccount);
-    if (fromAccount && parseFloat(formData.amount) > fromAccount.balance) {
-      newErrors.push("Insufficient balance in source account");
-    }
+  if (!formData.amount || parseFloat(formData.amount) <= 0) {
+    newErrors.push("Please enter a valid amount");
+  }
 
-    if (newErrors.length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+  const fromAccount = accounts.find(acc => acc.id === Number(formData.fromAccount));
+  if (fromAccount && parseFloat(formData.amount) > fromAccount.balance) {
+    newErrors.push("Insufficient balance in source account");
+  }
 
-    console.log("Transfer data:", formData);
-    handleClose();
+  if (newErrors.length > 0) {
+    setErrors(newErrors);
+    return;
+  }
+
+  const payload = {
+    fromAccount: Number(formData.fromAccount),
+    toAccount: Number(formData.toAccount),
+    amount: parseFloat(formData.amount).toFixed(2),
+    date: formData.date,
+    referenceNo: formData.referenceNo || null,
+    notes: formData.notes || null
   };
 
+  try {
+    const result = await CreateTransfer(payload);
+
+    if (result?.transferId) {
+      console.log("Transfer successful:", result);
+      handleClose();
+    } else {
+      setErrors(["Transfer failed. Please try again."]);
+    }
+  } catch (error) {
+    console.error("Transfer error:", error);
+    setErrors(["An unexpected error occurred."]);
+  }
+};
   const handleClose = () => {
     onOpenChange(false);
     setFormData({
@@ -85,7 +105,22 @@ export function AddTransferModal({ open, onOpenChange, accounts }: AddTransferMo
     return accounts.filter(acc => acc.id !== formData.fromAccount);
   };
 
-  const selectedFromAccount = accounts.find(acc => acc.id === formData.fromAccount);
+  const selectedFromAccount = accounts.find(acc => acc.id.toString() === formData.fromAccount);
+
+  useEffect(() => {
+  const fetchAccounts = async () => {
+    try {
+      const data = await GetBankAccountsWithBalance();
+      if (data) {
+        setAccounts(data);
+      }
+    } catch (err) {
+      console.error("Failed to load accounts:", err);
+    }
+  };
+
+  if (open) fetchAccounts();
+}, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,9 +163,9 @@ export function AddTransferModal({ open, onOpenChange, accounts }: AddTransferMo
               </SelectTrigger>
               <SelectContent>
                 {accounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.title} - PKR {account.balance.toLocaleString()}
-                  </SelectItem>
+               <SelectItem key={account.id} value={account.id.toString()}>
+  {account.title} - PKR {account.balance.toLocaleString()}
+</SelectItem>
                 ))}
               </SelectContent>
             </Select>
