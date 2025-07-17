@@ -5,6 +5,7 @@ const db = require("./config/db")
 const FarmerRoutes = require("./Routes/Farmer_Routes");
 const VendorRoutes = require("./Routes/VendorRoutes");
 const BuyerRoute = require("./Routes/Buyer_Route")
+const AccountRoutes = require("./Routes/Account_Routes")
 
 dotenv.config(); 
 
@@ -16,7 +17,9 @@ app.use(cors());
 app.use(express.json()); 
 app.use("/api/farmer" , FarmerRoutes );
 app.use("/api/vendor" ,  VendorRoutes);
-app.use("/api/buyer" , BuyerRoute)
+app.use("/api/buyer" , BuyerRoute);
+app.use("/api/accounts" , AccountRoutes);
+
 
 
 
