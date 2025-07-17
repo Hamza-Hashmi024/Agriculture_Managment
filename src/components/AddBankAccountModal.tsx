@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RecordAccount } from "@/Api/Api";
 
 interface AddBankAccountModalProps {
   open: boolean;
@@ -80,11 +81,40 @@ export function AddBankAccountModal({ open, onOpenChange, account, onClose }: Ad
     }
   }, [account, open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Bank account data:", formData);
-    handleClose();
-  };
+  // const handleSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   console.log("Bank account data:", formData);
+  //   handleClose();
+  // };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+    const payload = {
+      bank: formData.bank,
+      title: formData.title,
+      accountNo: formData.accountNo,
+      branch: formData.branch,
+      iban: formData.iban,
+      openingBalance: formData.openingBalance,
+      openingDate: formData.openingDate,
+      notes: formData.notes,
+    };
+
+    const result = await RecordAccount(payload);
+
+    if (result?.accountId) {
+      console.log("Bank account created:", result);
+      handleClose();
+    } else {
+      console.error("Failed to add bank account.");
+    }
+  } catch (error) {
+    console.error("Error while submitting bank account:", error);
+  }
+};
+  
 
   const handleClose = () => {
     onClose();

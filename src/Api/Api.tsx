@@ -33,3 +33,12 @@ export const RegisterBuyer = async (data) => {
   }
 };
 
+
+export const RecordAccount = async (data)=>{
+  try {
+    const response = await axios.post(`${Base_Url}/api/accounts/create` , data );
+    return response.data;
+  }catch(error){
+    console.error("Record Account API error:", error);
+  }
+}
