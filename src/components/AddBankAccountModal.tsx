@@ -26,25 +26,15 @@ interface AddBankAccountModalProps {
 }
 
 const banks = [
-  "Meezan Bank",
-  "HBL (Habib Bank Limited)",
-  "UBL (United Bank Limited)",
-  "MCB (Muslim Commercial Bank)",
-  "NBP (National Bank of Pakistan)",
-  "Allied Bank",
-  "Bank Alfalah",
-  "Standard Chartered",
-  "Faysal Bank",
-  "JS Bank",
-  "Askari Bank",
-  "Bank Al Habib",
-  "Soneri Bank",
-  "Summit Bank",
-  "Silk Bank"
+  "Meezan Bank", "HBL (Habib Bank Limited)", "UBL (United Bank Limited)",
+  "MCB (Muslim Commercial Bank)", "NBP (National Bank of Pakistan)", "Allied Bank",
+  "Bank Alfalah", "Standard Chartered", "Faysal Bank", "JS Bank", "Askari Bank",
+  "Bank Al Habib", "Soneri Bank", "Summit Bank", "Silk Bank"
 ];
 
 export function AddBankAccountModal({ open, onOpenChange, account, onClose }: AddBankAccountModalProps) {
   const [formData, setFormData] = useState({
+    type: "bank",
     bank: "",
     title: "",
     accountNo: "",
@@ -58,67 +48,24 @@ export function AddBankAccountModal({ open, onOpenChange, account, onClose }: Ad
   useEffect(() => {
     if (account) {
       setFormData({
+        type: account.type || "bank",
         bank: account.bank || "",
         title: account.title || "",
-        accountNo: account.number || "",
+        accountNo: account.account_number || "",
         branch: account.branch || "",
         iban: account.iban || "",
-        openingBalance: account.openingBalance?.toString() || "",
-        openingDate: account.openingDate || new Date().toISOString().split('T')[0],
+        openingBalance: account.opening_balance?.toString() || "",
+        openingDate: account.opening_date || new Date().toISOString().split('T')[0],
         notes: account.notes || ""
       });
     } else {
-      setFormData({
-        bank: "",
-        title: "",
-        accountNo: "",
-        branch: "",
-        iban: "",
-        openingBalance: "",
-        openingDate: new Date().toISOString().split('T')[0],
-        notes: ""
-      });
+      resetForm();
     }
   }, [account, open]);
 
-  // const handleSubmit = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   console.log("Bank account data:", formData);
-  //   handleClose();
-  // };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  try {
-    const payload = {
-      bank: formData.bank,
-      title: formData.title,
-      accountNo: formData.accountNo,
-      branch: formData.branch,
-      iban: formData.iban,
-      openingBalance: formData.openingBalance,
-      openingDate: formData.openingDate,
-      notes: formData.notes,
-    };
-
-    const result = await RecordAccount(payload);
-
-    if (result?.accountId) {
-      console.log("Bank account created:", result);
-      handleClose();
-    } else {
-      console.error("Failed to add bank account.");
-    }
-  } catch (error) {
-    console.error("Error while submitting bank account:", error);
-  }
-};
-  
-
-  const handleClose = () => {
-    onClose();
+  const resetForm = () => {
     setFormData({
+      type: "bank",
       bank: "",
       title: "",
       accountNo: "",
@@ -130,43 +77,99 @@ export function AddBankAccountModal({ open, onOpenChange, account, onClose }: Ad
     });
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const payload = {
+        type: formData.type,
+        title: formData.title,
+        account_number: formData.accountNo,
+        branch: formData.branch,
+        iban: formData.iban,
+        opening_balance: formData.openingBalance,
+        opening_date: formData.openingDate,
+        notes: formData.notes,
+        bank: formData.type === "bank" ? formData.bank : null
+      };
+
+      const result = await RecordAccount(payload);
+
+      if (result?.accountId) {
+        console.log("Account created:", result);
+        handleClose();
+      } else {
+        console.error("Failed to add account.");
+      }
+    } catch (error) {
+      console.error("Error while submitting:", error);
+    }
+  };
+
+  const handleClose = () => {
+    onClose();
+    resetForm();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {account ? "Edit Bank Account" : "Add Bank Account"}
+            {account ? "Edit Account" : "Add Account"}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Type Selection */}
           <div className="space-y-2">
-            <Label htmlFor="bank">Bank *</Label>
+            <Label>Type *</Label>
             <Select
-              value={formData.bank}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, bank: value }))}
-              required
+              value={formData.type}
+              onValueChange={(value: "bank" | "cashbox") => {
+                setFormData(prev => ({ ...prev, type: value }));
+              }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select Bank" />
+                <SelectValue placeholder="Select Account Type" />
               </SelectTrigger>
               <SelectContent>
-                {banks.map((bank) => (
-                  <SelectItem key={bank} value={bank}>
-                    {bank}
-                  </SelectItem>
-                ))}
+                <SelectItem value="bank">Bank</SelectItem>
+                <SelectItem value="cashbox">Cashbox</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
+          {/* Bank Dropdown - only for bank type */}
+          {formData.type === "bank" && (
+            <div className="space-y-2">
+              <Label htmlFor="bank">Bank *</Label>
+              <Select
+                value={formData.bank}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, bank: value }))}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Bank" />
+                </SelectTrigger>
+                <SelectContent>
+                  {banks.map((bank) => (
+                    <SelectItem key={bank} value={bank}>
+                      {bank}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Common Fields */}
           <div className="space-y-2">
             <Label htmlFor="title">Account Title *</Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Current Account"
               required
             />
           </div>
@@ -177,30 +180,31 @@ export function AddBankAccountModal({ open, onOpenChange, account, onClose }: Ad
               id="accountNo"
               value={formData.accountNo}
               onChange={(e) => setFormData(prev => ({ ...prev, accountNo: e.target.value }))}
-              placeholder="0123-4567"
               required
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="branch">Branch</Label>
-            <Input
-              id="branch"
-              value={formData.branch}
-              onChange={(e) => setFormData(prev => ({ ...prev, branch: e.target.value }))}
-              placeholder="Saddar, Lahore"
-            />
-          </div>
+          {formData.type === "bank" && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="branch">Branch</Label>
+                <Input
+                  id="branch"
+                  value={formData.branch}
+                  onChange={(e) => setFormData(prev => ({ ...prev, branch: e.target.value }))}
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="iban">IBAN</Label>
-            <Input
-              id="iban"
-              value={formData.iban}
-              onChange={(e) => setFormData(prev => ({ ...prev, iban: e.target.value }))}
-              placeholder="PK39MEZN00001234567"
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="iban">IBAN</Label>
+                <Input
+                  id="iban"
+                  value={formData.iban}
+                  onChange={(e) => setFormData(prev => ({ ...prev, iban: e.target.value }))}
+                />
+              </div>
+            </>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="openingBalance">Opening Balance *</Label>
@@ -209,7 +213,6 @@ export function AddBankAccountModal({ open, onOpenChange, account, onClose }: Ad
               type="number"
               value={formData.openingBalance}
               onChange={(e) => setFormData(prev => ({ ...prev, openingBalance: e.target.value }))}
-              placeholder="0"
               required
             />
           </div>
@@ -231,8 +234,8 @@ export function AddBankAccountModal({ open, onOpenChange, account, onClose }: Ad
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Additional notes..."
               rows={3}
+              placeholder="Any additional notes"
             />
           </div>
 

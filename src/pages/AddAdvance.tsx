@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState , useEffect  } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { RecordAdvance , GetAllFarmer } from "@/Api/Api";
 
 interface VendorPurchase {
   id: string;
@@ -59,12 +60,9 @@ export function AddAdvance() {
       invoice: null
     }
   ]);
+const [selectedFarmer, setSelectedFarmer] = useState<{ id: string; name: string; cnic: string } | null>(null);
+const [farmers, setFarmers] = useState<{ id: string; name: string; cnic: string }[]>([]);
 
-  const mockFarmers = [
-    { id: "1", name: "Akbar Ali", cnic: "35201-1234567-1" },
-    { id: "2", name: "Rafiq Ahmad", cnic: "35203-2345678-2" },
-    { id: "3", name: "Muhammad Hassan", cnic: "35205-3456789-3" }
-  ];
 
   const addVendorPurchase = () => {
     const newPurchase: VendorPurchase = {
@@ -94,51 +92,110 @@ export function AddAdvance() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.farmer || !formData.date) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
-    }
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (formData.advanceType === "cash" && !formData.cashAmount) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter cash amount.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const form = new FormData();
 
-    if (formData.advanceType === "inkind") {
-      const hasInvalidPurchase = vendorPurchases.some(p => 
-        !p.vendor || !p.category || !p.totalAmount || !p.invoice
-      );
-      
-      if (hasInvalidPurchase) {
-        toast({
-          title: "Validation Error",
-          description: "Please complete all vendor purchase details and upload invoices.",
-          variant: "destructive"
-        });
-        return;
+  form.append("farmer_id", formData.farmer);
+  form.append("date", formData.date);
+  form.append("received_by", formData.receivingType === "self" ? "" : formData.receiverName);
+  form.append("type", formData.advanceType);
+
+  if (formData.signedForm) form.append("signedForm", formData.signedForm);
+  if (formData.cashProof) form.append("cashProof", formData.cashProof);
+
+  if (formData.advanceType === "cash") {
+    form.append("amount", String(formData.cashAmount));
+    form.append("source_type", formData.cashFundingSource);
+    form.append("reference_no", formData.cashReference);
+    form.append("bank_account_id", ""); // Optional: if you use bank selection
+  }
+
+  if (formData.advanceType === "inkind") {
+    const purchases = vendorPurchases.map((p) => {
+      const {
+        vendor, category, description, totalAmount,
+        paymentMode, paidNow, fundingSource, referenceNo
+      } = p;
+
+      return {
+        vendor_id: vendor,
+        category,
+        description,
+        total_amount: totalAmount,
+        payment_mode: paymentMode,
+        paid_now: paidNow,
+        funding_source: fundingSource,
+        reference_no: referenceNo,
+        bank_account_id: "" // optional field
+      };
+    });
+
+    form.append("purchases", JSON.stringify(purchases));
+
+    vendorPurchases.forEach((p) => {
+      if (p.invoice) {
+        const fileKey = `invoice_${p.vendor}`;
+        form.append(fileKey, p.invoice);
       }
-    }
+    });
+  }
+
+  try {
+    await RecordAdvance(form); // No need to pass headers here; handled in API file
 
     toast({
-      title: "Advance Added",
-      description: "Advance has been successfully recorded.",
+      title: "Advance Recorded",
+      description: "Advance added successfully!",
     });
 
     navigate("/advances");
-  };
+  } catch (err) {
+    toast({
+      title: "Submission Error",
+      description: "Failed to submit advance. Try again.",
+      variant: "destructive"
+    });
+  }
+};
+useEffect(() => {
+  if (farmerId) {
+    GetAllFarmer(farmerId).then((farmer) => {
+      if (!farmer) {
+        toast({
+          title: "Farmer Not Found",
+          description: "Unable to retrieve farmer information.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-  const selectedFarmer = mockFarmers.find(f => f.id === formData.farmer);
+      setSelectedFarmer(farmer);
+      setFormData(prev => ({
+        ...prev,
+        farmer: farmer.id
+      }));
+    });
+  } else {
+    GetAllFarmer().then((data) => {
+      if (data && Array.isArray(data)) {
+        setFarmers(data);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load farmers.",
+          variant: "destructive",
+        });
+      }
+    });
+  }
+}, [farmerId]);
+
+
+const selectedFarmerName = farmers.find(f => f.id === formData.farmer);
+const displayFarmer = selectedFarmer || farmers.find(f => f.id === formData.farmer);
+
 
   return (
     <div className="p-6">
@@ -163,27 +220,41 @@ export function AddAdvance() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="farmer">Farmer *</Label>
-                  <Select 
-                    value={formData.farmer} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, farmer: value }))}
-                    disabled={!!farmerId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select farmer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockFarmers.map((farmer) => (
-                        <SelectItem key={farmer.id} value={farmer.id}>
-                          {farmer.name} ({farmer.cnic})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {farmerId && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Locked: {selectedFarmer?.name}
-                    </p>
-                  )}
+<Select 
+  value={formData.farmer} 
+  onValueChange={(value) => setFormData(prev => ({ ...prev, farmer: value }))}
+  disabled={!!farmerId}
+>
+<SelectTrigger>
+<SelectValue placeholder="Select farmer">
+  {displayFarmer
+    ? `${displayFarmer.name} (${displayFarmer.cnic})`
+    : "Select farmer"}
+</SelectValue>
+</SelectTrigger>
+
+  <SelectContent>
+    {farmerId && selectedFarmer ? (
+      <SelectItem key={selectedFarmer.id} value={selectedFarmer.id}>
+        {selectedFarmer.name} ({selectedFarmer.cnic})
+      </SelectItem>
+    ) : (
+      farmers.map((farmer) => (
+        <SelectItem key={farmer.id} value={farmer.id}>
+          {farmer.name} ({farmer.cnic})
+        </SelectItem>
+      ))
+    )}
+  </SelectContent>
+</Select>
+
+{farmerId && selectedFarmer && (
+  <p className="text-sm text-muted-foreground mt-1">
+    Locked: {selectedFarmer.name} ({selectedFarmer.cnic})
+  </p>
+)}
+
+
                 </div>
 
                 <div>

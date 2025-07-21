@@ -1,19 +1,28 @@
 const db = require("../config/db");
 
+
 const addBankAccount = (req, res) => {
   const {
+    type,
     bank,
     title,
-    accountNo,
+    account_number,
     branch,
     iban,
-    openingBalance,
-    openingDate,
-    notes,
+    opening_balance,
+    opening_date,
+    notes
   } = req.body;
 
-  // Input validation (basic)
-  if (!bank || !title || !accountNo || !openingBalance || !openingDate) {
+  // Validation
+  if (
+    !type ||
+    !title ||
+    !account_number ||
+    !opening_balance ||
+    !opening_date ||
+    (type === "bank" && !bank)
+  ) {
     return res.status(400).json({ message: "Required fields are missing." });
   }
 
@@ -30,27 +39,29 @@ const addBankAccount = (req, res) => {
   `;
 
   const values = [
-    "bank",
+    type,
     title,
-    accountNo,
-    branch,
-    iban,
-    parseFloat(openingBalance),
-    openingDate,
+    account_number,
+    branch || null,
+    iban || null,
+    parseFloat(opening_balance),
+    opening_date
   ];
 
   db.query(sql, values, (err, result) => {
     if (err) {
-      console.error("Error inserting bank account:", err);
+      console.error("Error inserting account:", err);
       return res.status(500).json({ message: "Database error", error: err });
     }
 
     return res.status(201).json({
-      message: "Bank account added successfully",
+      message: `${type === "bank" ? "Bank" : "Cashbox"} account added successfully`,
       accountId: result.insertId,
     });
   });
 };
+
+
 
 const createTransfer = (req, res) => {
   const { fromAccount, toAccount, amount, date, referenceNo, notes } = req.body;
@@ -155,11 +166,11 @@ const createTransfer = (req, res) => {
 };
 
 
-const getBankAccountsWithBalance = (req, res) => {
+const getAccountsWithBalance = (req, res) => {
   const query = `
     SELECT id, title, type, opening_balance AS balance 
     FROM accounts 
-    WHERE type = 'bank'
+    WHERE opening_balance > 0
   `;
 
   db.query(query, (err, results) => {
@@ -168,8 +179,7 @@ const getBankAccountsWithBalance = (req, res) => {
       return res.status(500).json({ message: "Database error" });
     }
 
-    const filtered = results.filter(acc => parseFloat(acc.balance) > 0);
-    res.status(200).json(filtered);
+    res.status(200).json(results); 
   });
 };
 
@@ -177,6 +187,6 @@ const getBankAccountsWithBalance = (req, res) => {
 module.exports = {
   addBankAccount,
   createTransfer,
-  getBankAccountsWithBalance,
+ getAccountsWithBalance
   
 }

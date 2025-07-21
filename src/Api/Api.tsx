@@ -1,7 +1,6 @@
 import { Base_Url } from "@/Globle/Base_URL";
 import axios from "axios";
 
-
 export const RegisterFarmer = async (data) => {
   try {
     const response = await axios.post(`${Base_Url}/api/farmer/register`, data);
@@ -12,16 +11,15 @@ export const RegisterFarmer = async (data) => {
   }
 };
 
-export const  RegisterVendor = async (data) => {
+export const RegisterVendor = async (data) => {
   try {
     const response = await axios.post(`${Base_Url}/api/vendor/register`, data);
     return response.data;
-  }catch (error){
+  } catch (error) {
     console.error("Register Vendor API error:", error);
     throw error;
   }
-}
-
+};
 
 export const RegisterBuyer = async (data) => {
   try {
@@ -33,31 +31,57 @@ export const RegisterBuyer = async (data) => {
   }
 };
 
-
-export const RecordAccount = async (data)=>{
+export const RecordAccount = async (data) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/accounts/create` , data );
+    const response = await axios.post(`${Base_Url}/api/accounts/create`, data);
     return response.data;
-  }catch(error){
+  } catch (error) {
     console.error("Record Account API error:", error);
   }
-}
+};
 
-
-export const CreateTransfer = async (data)=> {
+export const CreateTransfer = async (data) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/accounts/transfer` , data );
+    const response = await axios.post(
+      `${Base_Url}/api/accounts/transfer`,
+      data
+    );
     return response.data;
-  }catch(error){
+  } catch (error) {
     console.error("Record Tranfer API error:", error);
   }
-}
+};
 
-export const GetBankAccountsWithBalance = async()=>{
-  try{
-    const response = await axios.get(`${Base_Url}/api/accounts/banks-with-balance`);
+export const GetBankAccountsWithBalance = async () => {
+  try {
+    const response = await axios.get(
+      `${Base_Url}/api/accounts/banks-with-balance`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Get Bank Accounts API error");
+  }
+};
+
+export const RecordAdvance = async (formData: FormData) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/advance/create`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Record Advance API error", error);
+    throw error;
+  }
+};
+
+export const GetAllFarmer = async ()=>{
+  try  {
+    const response = await axios.get(`${Base_Url}/api/farmer/get`);
     return response.data;
   }catch(error){
-    console.error("Get Bank Accounts API error");
+    console.error("Get Farmer API error");
   }
 }

@@ -3,11 +3,11 @@ const router = express.Router();
 const {
   addBankAccount,
   createTransfer,
-  getBankAccountsWithBalance,
+  getAccountsWithBalance
 } = require("../Controller/Account_Controller");
 
 router.post("/create", addBankAccount);
 router.post("/transfer", createTransfer);
-router.get("/banks-with-balance", getBankAccountsWithBalance);
+router.get("/banks-with-balance",  getAccountsWithBalance);
 
 module.exports = router;

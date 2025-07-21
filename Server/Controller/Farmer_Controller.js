@@ -76,6 +76,21 @@ const RegisterFarmer = (req, res) => {
   );
 };
 
+
+const GetAllFarmers = (req, res) => {
+  const query = `SELECT * FROM farmers`;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).send({ message: "Error fetching farmers" });
+    }
+
+    return res.status(200).send(results);
+  });
+};
 module.exports = {
   RegisterFarmer,
+  GetAllFarmers 
+
 };
