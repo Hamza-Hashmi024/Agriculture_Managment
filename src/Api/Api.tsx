@@ -85,3 +85,13 @@ export const GetAllFarmer = async ()=>{
     console.error("Get Farmer API error");
   }
 }
+
+
+export const GetAllVendor = async ()=>{
+  try {
+    const response = await axios.get(`${Base_Url}/api/vendor/`);
+    return response.data;
+  }catch(error) {
+    console.error("Get Vendor API error");
+  }
+}

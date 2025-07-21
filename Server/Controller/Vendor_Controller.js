@@ -117,6 +117,20 @@ const RegisterVendor = (req, res) => {
   });
 };
 
+
+const getVendor = (req, res) => {
+  const sql = "SELECT * FROM vendors";
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Error fetching vendors:", err);
+      return res.status(500).json({ error: "Failed to fetch vendors" });
+    }
+
+    res.status(200).json(results); 
+  });
+};
 module.exports = {
   RegisterVendor,
+  getVendor
 };
