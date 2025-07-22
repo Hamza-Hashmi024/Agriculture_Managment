@@ -7,6 +7,7 @@ const VendorRoutes = require("./Routes/VendorRoutes");
 const BuyerRoute = require("./Routes/Buyer_Route");
 const AccountRoutes = require("./Routes/Account_Routes");
 const AdvanceRouter = require("./Routes/Advance_Routes");
+const SalesRoutes = require("./Routes/Sales_Routes");
 
 dotenv.config(); 
 
@@ -21,6 +22,7 @@ app.use("/api/vendor" ,  VendorRoutes);
 app.use("/api/buyer" , BuyerRoute);
 app.use("/api/accounts" , AccountRoutes);
 app.use("/api/advance" , AdvanceRouter);
+app.use("/api/sales" , SalesRoutes);
 
 
 app.get('/', (req, res) => {

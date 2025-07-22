@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { GetAllFarmer} from "@/Api/Api";
 
 interface Expense {
   id: string;
@@ -566,6 +567,22 @@ export function AddSaleLot() {
       </CardContent>
     </Card>
   );
+
+  // Fetch farmers from API
+  useEffect(() => {
+    const fetchFarmers = async () => {
+      try {
+        const farmers = await GetAllFarmer();
+        // Assuming farmers is an array of objects with a 'name' property
+        setFarmer(farmers.length > 0 ? farmers[0].name : "");
+      } catch (error) {
+        console.error("Error fetching farmers:", error);
+      }
+    };
+    fetchFarmers();
+  }, []);
+
+
 
   return (
     <div className="p-6">
