@@ -96,7 +96,19 @@ const GetAllBuyers = (req, res) => {
   });
 }
 
+const GetAllBuyerBankAccounts = (req, res) => {
+  const { buyerId } = req.params;
+
+  db.query("SELECT * FROM buyer_bank_accounts WHERE buyer_id = ?", [buyerId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to fetch bank accounts" });
+    }
+    res.status(200).json(results);
+  });
+}
+
 module.exports = {
   registerBuyer,
-  GetAllBuyers
+  GetAllBuyers,
+  GetAllBuyerBankAccounts
 };

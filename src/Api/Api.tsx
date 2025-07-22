@@ -118,3 +118,24 @@ export const GetAllBuyers = async () => {
     console.error("Get Buyers API error");
   }
 }
+
+
+export const AddSaleLots = async (payload) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/sales/addSaleLot`, payload);
+  
+    return response.data;
+  }
+  catch (error){
+    console.error("Add Sale Lot API error");
+  }
+}
+
+export const GetAllBuyersBanks = async () => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/buyer/banks`);
+    return response.data;
+  }catch (eror){
+    console.error("Get Buyers Banks API error");
+  }
+}

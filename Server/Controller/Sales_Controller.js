@@ -1,7 +1,5 @@
 const db = require("../config/db");
 
-
-
 const GetAllCrops = (req , res ) =>{
     db.query("SELECT * FROM crops" , (err , results) => {
         if (err){
@@ -15,6 +13,142 @@ const GetAllCrops = (req , res ) =>{
     })
 }
 
+
+
+const addSaleLot = (req, res) => {
+  const {
+    farmer_id,
+    buyer_id,
+    crop,
+    arrival_date,
+    weight,
+    rate,
+    commission_percent,
+    farmer_expenses = [],
+    buyer_expenses = [],
+    installments = []
+  } = req.body;
+
+  db.beginTransaction((err) => {
+    if (err) return res.status(500).json({ error: "Transaction start failed", details: err });
+
+    const saleQuery = `
+      INSERT INTO sales (farmer_id, buyer_id, crop, arrival_date, weight, rate, commission_percent)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    const saleData = [farmer_id, buyer_id, crop, arrival_date, weight, rate, commission_percent];
+
+    db.query(saleQuery, saleData, (err, saleResult) => {
+      if (err) {
+        return db.rollback(() => {
+          res.status(500).json({ error: "Sale insert failed", details: err });
+        });
+      }
+
+      const sale_id = saleResult.insertId;
+
+      // Prepare farmer expenses
+      const farmerExpenseQuery = `
+        INSERT INTO sale_farmer_expenses 
+        (sale_id, farmer_id, buyer_id, description, amount, source_type, bank_account_id, reference_no, commission_percent) 
+        VALUES ?
+      `;
+      const farmerExpenseValues = farmer_expenses.map((exp) => [
+        sale_id,
+        farmer_id,
+        buyer_id,
+        exp.description === 'other' ? exp.customDescription : exp.description,
+        exp.amount,
+        exp.source,
+        exp.source === 'bank' ? exp.bankAccount : null,
+        exp.refNo || null,
+        commission_percent
+      ]);
+
+      // Prepare buyer expenses
+      const buyerExpenseQuery = `
+        INSERT INTO sale_buyer_expenses 
+        (sale_id, description, amount, source_type, bank_account_id, reference_no) 
+        VALUES ?
+      `;
+      const buyerExpenseValues = buyer_expenses.map((exp) => [
+        sale_id,
+        exp.description === 'other' ? exp.customDescription : exp.description,
+        exp.amount,
+        exp.source,
+        exp.source === 'bank' ? exp.bankAccount : null,
+        exp.refNo || null
+      ]);
+
+      // Prepare buyer installments
+      const buyerInstallmentsQuery = `
+        INSERT INTO buyer_installments (sale_id, amount, due_date, status)
+        VALUES ?
+      `;
+      const buyerInstallmentsValues = installments.map(inst => [
+        sale_id,
+        inst.amount,
+        inst.dueDate || new Date(), // fallback to current date if empty
+        'pending'
+      ]);
+
+      // Insert helpers
+      const insertFarmerExpenses = (cb) => {
+        if (farmerExpenseValues.length === 0) return cb();
+        db.query(farmerExpenseQuery, [farmerExpenseValues], (err) => {
+          if (err) {
+            return db.rollback(() => {
+              res.status(500).json({ error: "Farmer expenses insert failed", details: err });
+            });
+          }
+          cb();
+        });
+      };
+
+      const insertBuyerExpenses = (cb) => {
+        if (buyerExpenseValues.length === 0) return cb();
+        db.query(buyerExpenseQuery, [buyerExpenseValues], (err) => {
+          if (err) {
+            return db.rollback(() => {
+              res.status(500).json({ error: "Buyer expenses insert failed", details: err });
+            });
+          }
+          cb();
+        });
+      };
+
+      const insertBuyerInstallments = (cb) => {
+        if (buyerInstallmentsValues.length === 0) return cb();
+        db.query(buyerInstallmentsQuery, [buyerInstallmentsValues], (err) => {
+          if (err) {
+            return db.rollback(() => {
+              res.status(500).json({ error: "Buyer installments insert failed", details: err });
+            });
+          }
+          cb();
+        });
+      };
+
+      // Run inserts in sequence
+      insertFarmerExpenses(() => {
+        insertBuyerExpenses(() => {
+          insertBuyerInstallments(() => {
+            db.commit((err) => {
+              if (err) {
+                return db.rollback(() => {
+                  res.status(500).json({ error: "Commit failed", details: err });
+                });
+              }
+              res.status(200).json({ message: "Sale lot recorded successfully", sale_id });
+            });
+          });
+        });
+      });
+    });
+  });
+};
+
 module.exports = {
-    GetAllCrops
+    GetAllCrops,
+    addSaleLot
 }

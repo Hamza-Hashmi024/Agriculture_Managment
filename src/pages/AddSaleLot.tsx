@@ -21,7 +21,14 @@ import {
 } from "@/components/ui/table";
 import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { GetAllFarmer, GetAllCrops , GetBankAccountsWithBalance ,GetAllBuyers } from "@/Api/Api";
+import {
+  GetAllFarmer,
+  GetAllCrops,
+  GetBankAccountsWithBalance,
+  GetAllBuyers,
+  AddSaleLots,
+  GetAllBuyersBanks
+} from "@/Api/Api";
 
 interface Expense {
   id: string;
@@ -45,10 +52,11 @@ export function AddSaleLot() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [bankAccounts, setBankAccounts] = useState([]);
+  const [selectedBankAccount, setSelectedBankAccount] = useState("");
   const [buyers, setBuyers] = useState([]);
 
   // Lot Details
-  const [farmer, setFarmer] = useState("");
+  
   const [farmersList, setFarmersList] = useState([]);
   const [cropsList, setCropsList] = useState([]);
   const [crop, setCrop] = useState("");
@@ -62,7 +70,9 @@ export function AddSaleLot() {
   const [buyerExpenses, setBuyerExpenses] = useState<Expense[]>([]);
 
   // Buyer Details
-  const [buyer, setBuyer] = useState("");
+  const [farmer, setFarmer] = useState<{ id: number; name: string } | null>(null);
+const [buyer, setBuyer] = useState<{ id: number; name: string } | null>(null);
+ 
   const [upfrontPayment, setUpfrontPayment] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
   const [installments, setInstallments] = useState<Installment[]>([]);
@@ -108,11 +118,30 @@ export function AddSaleLot() {
       }
     };
 
+   
 
     fetchFarmers();
     fetchCrops();
     fetchBankAccounts();
     fetchBuyers();
+  }, []);
+
+  const fetchBankAccounts = async () => {
+    try {
+      const accounts = await GetBankAccountsWithBalance();
+      setBankAccounts(accounts);
+
+      // Optional: auto-select first bank account
+      if (accounts.length > 0) {
+        setSelectedBankAccount(accounts[0].id.toString());
+      }
+    } catch (error) {
+      console.error("Error fetching bank accounts:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchBankAccounts();
   }, []);
 
   const calculateTotalBuyerPayable = () => {
@@ -224,14 +253,29 @@ export function AddSaleLot() {
     setInstallments(installments.filter((inst) => inst.id !== id));
   };
 
-  const handleSaveAndGenerate = () => {
-    if (!isPaymentBalanced()) {
-      alert(
-        "Error: The sum of upfront payment and installments must equal the total buyer payable amount."
-      );
-      return;
+  const handleSaveAndGenerate = async () => {
+ const payload = {
+  farmer_id: farmer?.id,
+  buyer_id: buyer?.id,
+  crop,
+  arrival_date: arrivalDate,
+  weight,
+  rate,
+  commission_percentage: commission,
+  upfront_payment: upfrontPayment,
+  payment_mode: paymentMode,
+  selected_bank_account: selectedBankAccount,
+  installments,
+  farmer_expenses: farmerExpenses,
+  buyer_expenses: buyerExpenses
+};
+
+    try {
+      const response = await AddSaleLots(payload);
+      console.log("Response from backend:", response.data); // Assuming Axios
+    } catch (error) {
+      console.error("Error sending data to backend:", error);
     }
-    navigate("/sales");
   };
 
   const renderStep1 = () => (
@@ -245,18 +289,22 @@ export function AddSaleLot() {
             <Label htmlFor="farmer" className="text-red-500">
               Farmer *
             </Label>
-            <Select value={farmer} onValueChange={setFarmer} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select farmer" />
-              </SelectTrigger>
-              <SelectContent>
-                {farmersList.map((f: any) => (
-                  <SelectItem key={f.id} value={f.name}>
-                    {f.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+           <Select
+  value={farmer ? JSON.stringify(farmer) : ""}
+  onValueChange={(val) => setFarmer(JSON.parse(val))}
+  required
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select farmer" />
+  </SelectTrigger>
+  <SelectContent>
+    {farmersList.map((f: any) => (
+      <SelectItem key={f.id} value={JSON.stringify(f)}>
+        {f.name}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
           </div>
           <div>
             <Label htmlFor="crop" className="text-red-500">
@@ -444,27 +492,27 @@ export function AddSaleLot() {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                 <TableCell>
-  {expense.source === "bank" && (
-    <Select
-      value={expense.bankAccount || ""}
-      onValueChange={(value) =>
-        updateExpense(expense.id, "bankAccount", value, type)
-      }
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Select bank" />
-      </SelectTrigger>
-      <SelectContent>
-        {bankAccounts.map((account: any) => (
-          <SelectItem key={account.id} value={account.id}>
-            {account.title} - Rs. {account.balance}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )}
-</TableCell>
+                  <TableCell>
+                    {expense.source === "bank" && (
+                      <Select
+                        value={expense.bankAccount || ""}
+                        onValueChange={(value) =>
+                          updateExpense(expense.id, "bankAccount", value, type)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select bank" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bankAccounts.map((account: any) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.title} - Rs. {account.balance}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </TableCell>
 
                   <TableCell>
                     <Input
@@ -510,13 +558,17 @@ export function AddSaleLot() {
       <CardContent className="space-y-6">
         <div>
           <Label htmlFor="buyer">Buyer</Label>
-         <Select value={buyer} onValueChange={setBuyer} required>
+         <Select
+  value={buyer ? JSON.stringify(buyer) : ""}
+  onValueChange={(val) => setBuyer(JSON.parse(val))}
+  required
+>
   <SelectTrigger>
     <SelectValue placeholder="Select buyer" />
   </SelectTrigger>
   <SelectContent>
     {buyers.map((buyerObj: any) => (
-      <SelectItem key={buyerObj.id} value={buyerObj.name}>
+      <SelectItem key={buyerObj.id} value={JSON.stringify(buyerObj)}>
         {buyerObj.name}
       </SelectItem>
     ))}
@@ -571,13 +623,25 @@ export function AddSaleLot() {
           {paymentMode === "bank" && (
             <div>
               <Label>Bank Account</Label>
-              <Select>
+              <Select
+                value={selectedBankAccount}
+                onValueChange={setSelectedBankAccount}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select bank" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="meezan-1234">Meezan - 1234</SelectItem>
-                  <SelectItem value="hbl-4432">HBL - 4432</SelectItem>
+                  {bankAccounts
+                    .filter((account) => account.type === "bank") // Only show bank accounts
+                    .map((account) => (
+                      <SelectItem
+                        key={account.id}
+                        value={account.id.toString()}
+                      >
+                        {account.title} - Rs.{" "}
+                        {Number(account.balance).toLocaleString()}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
