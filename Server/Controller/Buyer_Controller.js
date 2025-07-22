@@ -87,6 +87,16 @@ const registerBuyer = (req, res) => {
   });
 };
 
+const GetAllBuyers = (req, res) => {
+  db.query("SELECT * FROM buyers", (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to fetch buyers" });
+    }
+    res.status(200).json(results);
+  });
+}
+
 module.exports = {
   registerBuyer,
+  GetAllBuyers
 };
