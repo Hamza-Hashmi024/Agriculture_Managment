@@ -5,9 +5,11 @@ const saveFile = (file, folder = "uploads") => {
   const uploadPath = path.join(__dirname, `../public/${folder}`);
   if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
 
-  const filename = Date.now() + "_" + file.name;
+  const filename = Date.now() + "_" + file.originalname; 
   const filePath = path.join(uploadPath, filename);
-  file.mv(filePath);
+
+  fs.writeFileSync(filePath, file.buffer); 
+
   return `/public/${folder}/${filename}`;
 };
 

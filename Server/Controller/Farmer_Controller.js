@@ -89,6 +89,7 @@ const GetAllFarmers = (req, res) => {
     return res.status(200).send(results);
   });
 };
+
 module.exports = {
   RegisterFarmer,
   GetAllFarmers 

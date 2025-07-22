@@ -20,6 +20,7 @@ import {
   RecordAdvance,
   GetAllFarmer,
   GetBankAccountsWithBalance,
+   GetAllVendor
 } from "@/Api/Api";
 
 interface VendorPurchase {
@@ -55,6 +56,7 @@ export function AddAdvance() {
     signedForm: null as File | null,
   });
 
+  const [vendors, setVendors] = useState<{ id: number; name: string }[]>([]);
   const [fundingSources, setFundingSources] = useState<
     { id: number; title: string; type: string; balance: number }[]
   >([]);
@@ -137,7 +139,7 @@ export function AddAdvance() {
       form.append("bank_account_id", formData.cashFundingSource);
     }
 
-    if (formData.advanceType === "inkind") {
+    if (formData.advanceType === "in_kind") {
       const purchases = vendorPurchases.map((p) => {
         const {
           vendor,
@@ -227,7 +229,7 @@ export function AddAdvance() {
   useEffect(() => {
     if (
       !accountsFetched &&
-      (formData.advanceType === "cash" || formData.advanceType === "inkind")
+      (formData.advanceType === "cash" || formData.advanceType === "in_kind")
     ) {
       GetBankAccountsWithBalance().then((data) => {
         if (data && Array.isArray(data)) {
@@ -243,9 +245,33 @@ export function AddAdvance() {
       });
     }
   }, [formData.advanceType, accountsFetched]);
+
+
   const selectedFarmerName = farmers.find((f) => f.id === formData.farmer);
   const displayFarmer =
     selectedFarmer || farmers.find((f) => f.id === formData.farmer);
+
+useEffect(() => {
+  GetAllVendor().then((data) => {
+    if (data && Array.isArray(data)) {
+      setVendors(data); // Store in state
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to load vendors.",
+        variant: "destructive",
+      });
+    }
+  });
+}, []);
+
+
+
+
+
+
+
+
 
   return (
     <div className="p-6">
@@ -380,8 +406,8 @@ export function AddAdvance() {
                   <Label htmlFor="cash">Cash</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="inkind" id="inkind" />
-                  <Label htmlFor="inkind">In-Kind</Label>
+                  <RadioGroupItem value="in_kind" id="in_kind" />
+                  <Label htmlFor="in_kind">In-Kind</Label>
                 </div>
               </RadioGroup>
 
@@ -467,7 +493,7 @@ export function AddAdvance() {
                 </div>
               )}
 
-              {formData.advanceType === "inkind" && (
+              {formData.advanceType === "in_kind" && (
                 <div className="space-y-6">
                   {vendorPurchases.map((purchase, index) => (
                     <div key={purchase.id} className="p-4 border rounded-lg">
@@ -491,24 +517,24 @@ export function AddAdvance() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label>Vendor *</Label>
-                            <Select
-                              value={purchase.vendor}
-                              onValueChange={(value) =>
-                                updateVendorPurchase(
-                                  purchase.id,
-                                  "vendor",
-                                  value
-                                )
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select vendor" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="vendor1"> Hamza </SelectItem>
-                                
-                              </SelectContent>
-                            </Select>
+                                    <Select
+  value={purchase.vendor}
+  onValueChange={(value) =>
+    updateVendorPurchase(purchase.id, "vendor", value)
+  }
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select vendor" />
+  </SelectTrigger>
+  <SelectContent>
+    {vendors.map((vendor) => (
+      <SelectItem key={vendor.id} value={vendor.id.toString()}>
+        {vendor.name}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
+
                           </div>
 
                           <div>

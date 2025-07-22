@@ -46,7 +46,7 @@ const createAdvance = async (req, res) => {
 
     const advanceValues = [
       farmer_id,
-      type === "inkind" ? "in_kind" : type,
+      type === "in_kind",
       date,
       amount,
       source_type || null,
@@ -63,10 +63,11 @@ const createAdvance = async (req, res) => {
     });
 
     const advanceId = advanceResult.insertId;
-
-    // ✅ Handle in-kind purchases
-    if (type === "inkind" && Array.isArray(purchases)) {
-      for (const item of purchases) {
+    const parsedPurchases = typeof purchases === "string" ? JSON.parse(purchases) : purchases;
+    //  Handle in-kind purchases
+if (type === "in_kind" && Array.isArray(parsedPurchases))
+   {
+  for (const item of parsedPurchases){
         const {
           vendor_id,
           category,
