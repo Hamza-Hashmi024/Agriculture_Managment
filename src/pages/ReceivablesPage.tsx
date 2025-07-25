@@ -1,52 +1,34 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Plus, Download } from "lucide-react";
 import { AddPaymentModal } from "@/components/AddPaymentModal";
-
-// Mock data for receivables
-const mockReceivables = [
-  {
-    id: "1",
-    buyerName: "Pak Foods",
-    totalDue: 210000,
-    overdueDue: 140000,
-    dueSoonDue: 70000,
-    oldestDueDate: "14-Jul-2025",
-    nextDueDate: "20-Jul-2025"
-  },
-  {
-    id: "2", 
-    buyerName: "Noor Traders",
-    totalDue: 85000,
-    overdueDue: 0,
-    dueSoonDue: 85000,
-    oldestDueDate: null,
-    nextDueDate: "22-Jul-2025"
-  },
-  {
-    id: "3",
-    buyerName: "Safeer Bros.",
-    totalDue: 120000,
-    overdueDue: 120000,
-    dueSoonDue: 0,
-    oldestDueDate: "10-Jul-2025",
-    nextDueDate: null
-  }
-];
+import { GetAllBuyerReceivables } from "@/Api/Api";
 
 export function ReceivablesPage() {
   const navigate = useNavigate();
   const [selectedBuyer, setSelectedBuyer] = useState<string | null>(null);
   const [showAddPayment, setShowAddPayment] = useState(false);
+  const [receivables, setReceivables] = useState([]);
 
   const handleViewBuyer = (buyerId: string) => {
     navigate(`/receivables/buyer/${buyerId}`);
+  };
+
+  const parseAmount = (value) => {
+    const parsed = parseFloat(value?.toString().replace(/[^\d.]/g, ""));
+    return isNaN(parsed) ? 0 : parsed;
   };
 
   const handleAddPayment = (buyerId: string) => {
@@ -54,18 +36,33 @@ export function ReceivablesPage() {
     setShowAddPayment(true);
   };
 
-  const totalsData = mockReceivables.filter(r => r.totalDue > 0);
-  const overdueData = mockReceivables.filter(r => r.overdueDue > 0);
-  const dueSoonData = mockReceivables.filter(r => r.dueSoonDue > 0);
+  const totalsData = receivables.filter((r) => parseAmount(r.remainingDue) > 0);
+  const overdueData = receivables.filter((r) => parseAmount(r.overdueDue) > 0);
+  const dueSoonData = receivables.filter((r) => parseAmount(r.dueSoonDue) > 0);
+
+  useEffect(() => {
+    const fetchReceivables = async () => {
+      try {
+        const data = await GetAllBuyerReceivables();
+        setReceivables(data);
+      } catch (error) {
+        console.error("Error fetching receivables:", error);
+      }
+    };
+
+    fetchReceivables();
+  }, []);
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Receivables</h1>
-          <p className="text-muted-foreground">Manage buyer payments and installments</p>
+          <p className="text-muted-foreground">
+            Manage buyer payments and installments
+          </p>
         </div>
-        
+
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
           Export
@@ -95,15 +92,19 @@ export function ReceivablesPage() {
                 </TableHeader>
                 <TableBody>
                   {totalsData.map((buyer) => (
-                    <TableRow key={buyer.id}>
-                      <TableCell className="font-medium">{buyer.buyerName}</TableCell>
-                      <TableCell>PKR {buyer.totalDue.toLocaleString()}</TableCell>
+                    <TableRow key={buyer.buyerId}>
+                      <TableCell className="font-medium">
+                        {buyer.buyerName}
+                      </TableCell>
+                      <TableCell>
+                        PKR {parseAmount(buyer.remainingDue).toLocaleString()}
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleViewBuyer(buyer.id)}
+                            onClick={() => handleViewBuyer(buyer.buyerId)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View
@@ -111,7 +112,7 @@ export function ReceivablesPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleAddPayment(buyer.id)}
+                            onClick={() => handleAddPayment(buyer.buyerId)}
                           >
                             <Plus className="h-4 w-4 mr-1" />
                             Add Payment
@@ -136,20 +137,24 @@ export function ReceivablesPage() {
                 </TableHeader>
                 <TableBody>
                   {overdueData.map((buyer) => (
-                    <TableRow key={buyer.id}>
-                      <TableCell className="font-medium">{buyer.buyerName}</TableCell>
+                    <TableRow key={buyer.buyerId}>
+                      <TableCell className="font-medium">
+                        {buyer.buyerName}
+                      </TableCell>
                       <TableCell className="text-destructive">
                         PKR {buyer.overdueDue.toLocaleString()}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="destructive">{buyer.oldestDueDate}</Badge>
+                        <Badge variant="destructive">
+                          {buyer.oldestDueDate}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleViewBuyer(buyer.id)}
+                            onClick={() => handleViewBuyer(buyer.buyerId)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View
@@ -157,7 +162,7 @@ export function ReceivablesPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleAddPayment(buyer.id)}
+                            onClick={() => handleAddPayment(buyer.buyerId)}
                           >
                             <Plus className="h-4 w-4 mr-1" />
                             Add Payment
@@ -182,8 +187,10 @@ export function ReceivablesPage() {
                 </TableHeader>
                 <TableBody>
                   {dueSoonData.map((buyer) => (
-                    <TableRow key={buyer.id}>
-                      <TableCell className="font-medium">{buyer.buyerName}</TableCell>
+                    <TableRow key={buyer.buyerId}>
+                      <TableCell className="font-medium">
+                        {buyer.buyerName}
+                      </TableCell>
                       <TableCell className="text-orange-600">
                         PKR {buyer.dueSoonDue.toLocaleString()}
                       </TableCell>
@@ -195,7 +202,7 @@ export function ReceivablesPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleViewBuyer(buyer.id)}
+                            onClick={() => handleViewBuyer(buyer.buyerId)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View
@@ -203,7 +210,7 @@ export function ReceivablesPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleAddPayment(buyer.id)}
+                            onClick={() => handleAddPayment(buyer.buyerId)}
                           >
                             <Plus className="h-4 w-4 mr-1" />
                             Add Payment

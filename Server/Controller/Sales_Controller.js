@@ -1,19 +1,15 @@
 const db = require("../config/db");
 
-const GetAllCrops = (req , res ) =>{
-    db.query("SELECT * FROM crops" , (err , results) => {
-        if (err){
-            console.log(err);
-            res.status(500).json({ error: "Internal Server Error" });
-
-        }else{
-            res.status(200).json(results);
-        }
-
-    })
-}
-
-
+const GetAllCrops = (req, res) => {
+  db.query("SELECT * FROM crops", (err, results) => {
+    if (err) {
+      console.log(err);
+      res.status(500).json({ error: "Internal Server Error" });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+};
 
 const addSaleLot = (req, res) => {
   const {
@@ -26,17 +22,33 @@ const addSaleLot = (req, res) => {
     commission_percent,
     farmer_expenses = [],
     buyer_expenses = [],
-    installments = []
+    installments = [],
+    upfront_payment,
+    payment_mode,
+    selected_bank_account,
+     total_buyer_payable 
   } = req.body;
 
   db.beginTransaction((err) => {
-    if (err) return res.status(500).json({ error: "Transaction start failed", details: err });
+    if (err)
+      return res
+        .status(500)
+        .json({ error: "Transaction start failed", details: err });
 
     const saleQuery = `
-      INSERT INTO sales (farmer_id, buyer_id, crop, arrival_date, weight, rate, commission_percent)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO sales (farmer_id, buyer_id, crop, arrival_date, weight, rate, commission_percent ,  total_buyer_payable)
+      VALUES (?, ?, ?, ?, ?, ?, ?  , ?)
     `;
-    const saleData = [farmer_id, buyer_id, crop, arrival_date, weight, rate, commission_percent];
+    const saleData = [
+      farmer_id,
+      buyer_id,
+      crop,
+      arrival_date,
+      weight,
+      rate,
+      commission_percent,
+       total_buyer_payable
+    ];
 
     db.query(saleQuery, saleData, (err, saleResult) => {
       if (err) {
@@ -57,12 +69,12 @@ const addSaleLot = (req, res) => {
         sale_id,
         farmer_id,
         buyer_id,
-        exp.description === 'other' ? exp.customDescription : exp.description,
+        exp.description === "other" ? exp.customDescription : exp.description,
         exp.amount,
         exp.source,
-        exp.source === 'bank' ? exp.bankAccount : null,
+        exp.source === "bank" ? exp.bankAccount : null,
         exp.refNo || null,
-        commission_percent
+        commission_percent,
       ]);
 
       // Prepare buyer expenses
@@ -73,11 +85,11 @@ const addSaleLot = (req, res) => {
       `;
       const buyerExpenseValues = buyer_expenses.map((exp) => [
         sale_id,
-        exp.description === 'other' ? exp.customDescription : exp.description,
+        exp.description === "other" ? exp.customDescription : exp.description,
         exp.amount,
         exp.source,
-        exp.source === 'bank' ? exp.bankAccount : null,
-        exp.refNo || null
+        exp.source === "bank" ? exp.bankAccount : null,
+        exp.refNo || null,
       ]);
 
       // Prepare buyer installments
@@ -85,11 +97,11 @@ const addSaleLot = (req, res) => {
         INSERT INTO buyer_installments (sale_id, amount, due_date, status)
         VALUES ?
       `;
-      const buyerInstallmentsValues = installments.map(inst => [
+      const buyerInstallmentsValues = installments.map((inst) => [
         sale_id,
         inst.amount,
         inst.dueDate || new Date(), // fallback to current date if empty
-        'pending'
+        "pending",
       ]);
 
       // Insert helpers
@@ -98,7 +110,9 @@ const addSaleLot = (req, res) => {
         db.query(farmerExpenseQuery, [farmerExpenseValues], (err) => {
           if (err) {
             return db.rollback(() => {
-              res.status(500).json({ error: "Farmer expenses insert failed", details: err });
+              res
+                .status(500)
+                .json({ error: "Farmer expenses insert failed", details: err });
             });
           }
           cb();
@@ -110,7 +124,9 @@ const addSaleLot = (req, res) => {
         db.query(buyerExpenseQuery, [buyerExpenseValues], (err) => {
           if (err) {
             return db.rollback(() => {
-              res.status(500).json({ error: "Buyer expenses insert failed", details: err });
+              res
+                .status(500)
+                .json({ error: "Buyer expenses insert failed", details: err });
             });
           }
           cb();
@@ -122,7 +138,40 @@ const addSaleLot = (req, res) => {
         db.query(buyerInstallmentsQuery, [buyerInstallmentsValues], (err) => {
           if (err) {
             return db.rollback(() => {
-              res.status(500).json({ error: "Buyer installments insert failed", details: err });
+              res.status(500).json({
+                error: "Buyer installments insert failed",
+                details: err,
+              });
+            });
+          }
+          cb();
+        });
+      };
+
+      const insertUpfrontPayment = (cb) => {
+        if (!upfront_payment || upfront_payment <= 0) return cb();
+
+        const upfrontPaymentQuery = `
+    INSERT INTO buyer_payments (
+      buyer_id,
+      amount,
+      date,
+      payment_mode,
+      payment_type,
+      reference_no,
+      notes
+    ) VALUES (?, ?, CURDATE(), 'cash', 'upfront', NULL, 'Auto-recorded upfront payment')
+  `;
+
+        const upfrontValues = [buyer_id, upfront_payment];
+
+        db.query(upfrontPaymentQuery, upfrontValues, (err) => {
+          if (err) {
+            return db.rollback(() => {
+              res.status(500).json({
+                error: "Upfront payment insert failed",
+                details: err,
+              });
             });
           }
           cb();
@@ -133,13 +182,20 @@ const addSaleLot = (req, res) => {
       insertFarmerExpenses(() => {
         insertBuyerExpenses(() => {
           insertBuyerInstallments(() => {
-            db.commit((err) => {
-              if (err) {
-                return db.rollback(() => {
-                  res.status(500).json({ error: "Commit failed", details: err });
+            insertUpfrontPayment(() => {
+              db.commit((err) => {
+                if (err) {
+                  return db.rollback(() => {
+                    res
+                      .status(500)
+                      .json({ error: "Commit failed", details: err });
+                  });
+                }
+                res.status(200).json({
+                  message: "Sale lot recorded successfully",
+                  sale_id,
                 });
-              }
-              res.status(200).json({ message: "Sale lot recorded successfully", sale_id });
+              });
             });
           });
         });
@@ -149,6 +205,6 @@ const addSaleLot = (req, res) => {
 };
 
 module.exports = {
-    GetAllCrops,
-    addSaleLot
-}
+  GetAllCrops,
+  addSaleLot,
+};

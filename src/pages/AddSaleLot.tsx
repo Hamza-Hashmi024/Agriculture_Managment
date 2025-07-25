@@ -267,7 +267,8 @@ const [buyer, setBuyer] = useState<{ id: number; name: string } | null>(null);
   selected_bank_account: selectedBankAccount,
   installments,
   farmer_expenses: farmerExpenses,
-  buyer_expenses: buyerExpenses
+  buyer_expenses: buyerExpenses,
+  total_buyer_payable: calculateTotalBuyerPayable() 
 };
 
     try {

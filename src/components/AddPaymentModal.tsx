@@ -1,14 +1,30 @@
-
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  AddPayment,
+  GetBuyerInstallments,
+  GetBankAccountsWithBalance,
+  GetBuyerById,
+} from "@/Api/Api";
 
 interface AddPaymentModalProps {
   buyerId: string;
@@ -17,89 +33,102 @@ interface AddPaymentModalProps {
   onClose: () => void;
 }
 
-const mockBuyerNames: Record<string, string> = {
-  "1": "Pak Foods",
-  "2": "Noor Traders", 
-  "3": "Safeer Bros."
-};
-
-const mockInstallments = [
-  {
-    id: "1",
-    invoiceNo: "#INV123",
-    crop: "Wheat",
-    amount: 40000,
-    dueDate: "14-Jul-2025",
-    status: "Overdue"
-  },
-  {
-    id: "2", 
-    invoiceNo: "#INV120",
-    crop: "Maize",
-    amount: 60000,
-    dueDate: "20-Jul-2025",
-    status: "Due Soon"
-  },
-  {
-    id: "3",
-    invoiceNo: "#INV124",
-    crop: "Rice",
-    amount: 70000,
-    dueDate: "25-Jul-2025",
-    status: "Pending"
-  }
-];
-
-const bankAccounts = [
-  "HBL - Main Account",
-  "UBL - Business Account",
-  "MCB - Current Account"
-];
-
-export function AddPaymentModal({ buyerId, installmentId, isOpen, onClose }: AddPaymentModalProps) {
+export function AddPaymentModal({
+  buyerId,
+  installmentId,
+  isOpen,
+  onClose,
+}: AddPaymentModalProps) {
   const [amount, setAmount] = useState("");
   const [selectedInstallments, setSelectedInstallments] = useState<string[]>(
     installmentId ? [installmentId] : []
   );
   const [paymentMode, setPaymentMode] = useState("cash");
-  const [bankAccount, setBankAccount] = useState("");
+  const [bankAccountId, setBankAccountId] = useState<string>("");
   const [refNo, setRefNo] = useState("");
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentDate, setPaymentDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [notes, setNotes] = useState("");
+  const [buyerName, setBuyerName] = useState("Loading...");
+  const [installments, setInstallments] = useState<any[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
 
-  const buyerName = mockBuyerNames[buyerId] || "Unknown Buyer";
+  const handleInstallmentChange = (id: string, checked: boolean) => {
+    setSelectedInstallments(
+      checked
+        ? [...selectedInstallments, id]
+        : selectedInstallments.filter((i) => i !== id)
+    );
+  };
 
-  const handleInstallmentChange = (installmentId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedInstallments([...selectedInstallments, installmentId]);
-    } else {
-      setSelectedInstallments(selectedInstallments.filter(id => id !== installmentId));
+  const handleSavePayment = async () => {
+    try {
+  const payload = {
+  buyerId: parseInt(buyerId),
+  amount: parseFloat(amount),
+  paymentDate,
+  paymentMode,
+  bankAccountId: paymentMode === "bank" ? parseInt(bankAccountId) : null,
+  referenceNo: refNo || null,
+  proofFileUrl: null, 
+  notes: notes || null,
+  installments: selectedInstallments.map((id) => parseInt(id)),
+};
+      const response = await AddPayment(payload);
+      if (response.success) {
+        alert("Payment saved successfully!");
+        onClose();
+      } else {
+        alert("Failed to save payment.");
+      }
+    } catch (err) {
+      console.error("Payment error:", err);
+      alert("An error occurred while saving the payment.");
     }
   };
 
-  const handleSavePayment = () => {
-    // Here you would typically save the payment to your backend
-    console.log("Saving payment:", {
-      buyerId,
-      amount,
-      selectedInstallments,
-      paymentMode,
-      bankAccount,
-      refNo,
-      paymentDate,
-      notes
-    });
-    onClose();
-  };
+  const getStatusBadgeColor = (status: string) => {
+  const normalized = status.toLowerCase();
+  return (
+    {
+      overdue: "text-red-600",
+      "due soon": "text-orange-600",
+      pending: "text-gray-600",
+      partial: "text-yellow-600",
+      paid: "text-green-600",
+    }[normalized] || "text-gray-600"
+  );
+};
 
-  const getStatusBadge = (status: string) => {
-    const statusColors = {
-      "Overdue": "text-red-600",
-      "Due Soon": "text-orange-600", 
-      "Pending": "text-gray-600"
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const buyer = await GetBuyerById(buyerId);
+        setBuyerName(buyer.name || "Unknown Buyer");
+      } catch (err) {
+        console.error("Error fetching buyer:", err);
+        setBuyerName("Unknown Buyer");
+      }
+
+      try {
+        const data = await GetBuyerInstallments(buyerId);
+        setInstallments(data);
+      } catch (err) {
+        console.error("Error fetching installments:", err);
+      }
+
+      try {
+        const banks = await GetBankAccountsWithBalance();
+        console.log("Fetched bank accounts:", banks);
+        setBankAccounts(banks);
+      } catch (err) {
+        console.error("Error fetching bank accounts:", err);
+      }
     };
-    return statusColors[status as keyof typeof statusColors] || "text-gray-600";
-  };
+
+    if (isOpen) fetchData();
+  }, [buyerId, isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -109,6 +138,7 @@ export function AddPaymentModal({ buyerId, installmentId, isOpen, onClose }: Add
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Buyer & Amount */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Buyer</Label>
@@ -126,38 +156,68 @@ export function AddPaymentModal({ buyerId, installmentId, isOpen, onClose }: Add
             </div>
           </div>
 
+          {/* Installments */}
           <div>
             <Label className="text-base font-medium">Installment(s)</Label>
             <Card className="mt-2">
               <CardContent className="p-4">
                 <div className="space-y-3">
-                  {mockInstallments.map((installment) => (
-                    <div key={installment.id} className="flex items-center space-x-3">
-                      <Checkbox
-                        id={installment.id}
-                        checked={selectedInstallments.includes(installment.id)}
-                        onCheckedChange={(checked) => 
-                          handleInstallmentChange(installment.id, checked as boolean)
-                        }
-                      />
-                      <div className="flex-1 grid grid-cols-4 gap-4 text-sm">
-                        <span className="font-medium">{installment.invoiceNo}</span>
-                        <span>{installment.crop}</span>
-                        <span>PKR {installment.amount.toLocaleString()}</span>
-                        <span className={getStatusBadge(installment.status)}>
-                          {installment.dueDate} | {installment.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                  {installments.map((installment) => (
+  <div
+    key={installment.id}
+    className="flex items-start space-x-3 border-b pb-3"
+  >
+    <Checkbox
+      id={String(installment.id)}
+      checked={selectedInstallments.includes(String(installment.id))}
+      onCheckedChange={(checked) =>
+        handleInstallmentChange(String(installment.id), checked as boolean)
+      }
+      className="mt-1"
+    />
+    <div className="flex-1 text-sm space-y-1">
+      <div className="grid grid-cols-2 gap-2">
+        <span className="font-medium">
+          Installment: PKR{" "}
+          {Number(installment.installment_amount).toLocaleString()}
+        </span>
+        <span>
+          Date:{" "}
+          {new Date(installment.installment_date).toLocaleDateString()}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <span>
+          Paid: PKR{" "}
+          {Number(installment.paid_amount || 0).toLocaleString()}
+        </span>
+        <span>
+          Remaining: PKR{" "}
+          {Number(installment.remaining_amount || 0).toLocaleString()}
+        </span>
+      </div>
+
+      <span className={`${getStatusBadgeColor(installment.status)} font-semibold capitalize`}>
+        Status: {installment.status}
+      </span>
+    </div>
+  </div>
+))}
+
                 </div>
               </CardContent>
             </Card>
           </div>
 
+          {/* Payment Mode */}
           <div>
             <Label className="text-base font-medium">Payment Mode</Label>
-            <RadioGroup value={paymentMode} onValueChange={setPaymentMode} className="mt-2">
+            <RadioGroup
+              value={paymentMode}
+              onValueChange={setPaymentMode}
+              className="mt-2"
+            >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="cash" id="cash" />
                 <Label htmlFor="cash">Cash</Label>
@@ -171,22 +231,31 @@ export function AddPaymentModal({ buyerId, installmentId, isOpen, onClose }: Add
 
           {paymentMode === "bank" && (
             <div>
-              <Label htmlFor="bank-account">Select Bank Account</Label>
-              <Select value={bankAccount} onValueChange={setBankAccount}>
+              <Label>Select Bank Account</Label>
+              <Select value={bankAccountId} onValueChange={setBankAccountId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select bank account" />
                 </SelectTrigger>
                 <SelectContent>
-                  {bankAccounts.map((account) => (
-                    <SelectItem key={account} value={account}>
-                      {account}
-                    </SelectItem>
-                  ))}
+                  {bankAccounts.filter((a) => a.type === "bank").length ===
+                  0 ? (
+                    <SelectItem disabled>No bank accounts found</SelectItem>
+                  ) : (
+                    bankAccounts
+                      .filter((account) => account.type === "bank")
+                      .map((account) => (
+                        <SelectItem key={account.id} value={String(account.id)}>
+                          {account.title} - PKR{" "}
+                          {parseFloat(account.balance).toLocaleString()}
+                        </SelectItem>
+                      ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
           )}
 
+          {/* Reference No. & Date */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="ref-no">Ref No. (Optional)</Label>
@@ -208,16 +277,7 @@ export function AddPaymentModal({ buyerId, installmentId, isOpen, onClose }: Add
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="upload-proof">Upload Proof (Optional)</Label>
-            <Input
-              id="upload-proof"
-              type="file"
-              accept="image/*,application/pdf"
-              className="mt-1"
-            />
-          </div>
-
+          {/* Notes */}
           <div>
             <Label htmlFor="notes">Notes (Optional)</Label>
             <Textarea
@@ -225,17 +285,15 @@ export function AddPaymentModal({ buyerId, installmentId, isOpen, onClose }: Add
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any notes"
-              className="mt-1"
             />
           </div>
 
+          {/* Actions */}
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSavePayment}>
-              Save Payment
-            </Button>
+            <Button onClick={handleSavePayment}>Save Payment</Button>
           </div>
         </div>
       </DialogContent>

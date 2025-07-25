@@ -109,33 +109,77 @@ export const GetAllCrops = async () => {
   }
 };
 
-
 export const GetAllBuyers = async () => {
   try {
     const response = await axios.get(`${Base_Url}/api/buyer/get`);
     return response.data;
-  }catch(error) {
+  } catch (error) {
     console.error("Get Buyers API error");
   }
-}
-
+};
 
 export const AddSaleLots = async (payload) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/sales/addSaleLot`, payload);
-  
+    const response = await axios.post(
+      `${Base_Url}/api/sales/addSaleLot`,
+      payload
+    );
+
     return response.data;
-  }
-  catch (error){
+  } catch (error) {
     console.error("Add Sale Lot API error");
   }
-}
+};
 
 export const GetAllBuyersBanks = async () => {
   try {
     const response = await axios.get(`${Base_Url}/api/buyer/banks`);
     return response.data;
-  }catch (eror){
+  } catch (eror) {
     console.error("Get Buyers Banks API error");
   }
-}
+};
+
+export const GetAllBuyerReceivables = async () => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/receivables/get`);
+    return response.data;
+  } catch (error) {
+    console.error("Get Buyer Receivables API error");
+  }
+};
+
+export const AddPayment = async (data) => {
+  try {
+    const response = await axios.post(
+      `${Base_Url}/api/receivables/addPayment`,
+      data
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Add Payment API error", error);
+    throw error;
+  }
+};
+
+export const GetBuyerById = async (buyerId) => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/buyer/${buyerId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get Buyer By ID API error", error);
+    throw error;
+  }
+};
+
+export const GetBuyerInstallments = async (buyerId) => {
+  try {
+    const response = await axios.get(
+      `${Base_Url}/api/buyer/installments/${buyerId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Get Buyer Installments API error", error);
+    throw error;
+  }
+};
