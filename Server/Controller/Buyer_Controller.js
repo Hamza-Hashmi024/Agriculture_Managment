@@ -146,37 +146,6 @@ const GetBuyerById = (req, res) => {
   });
 };
 
-// const GetBuyerInstallments = (req, res) => {
-//   const { buyerId } = req.params;
-
-//   const query = `
-//     SELECT  
-//       i.id,
-//       i.amount AS installment_amount,
-//       i.due_date AS installment_date,
-//       i.status,
-//       b.name AS buyer_name
-//     FROM buyer_installments i
-//     JOIN sales s ON i.sale_id = s.id
-//     JOIN buyers b ON s.buyer_id = b.id
-//     WHERE s.buyer_id = ?
-//   `;
-
-//   db.query(query, [buyerId], (err, results) => {
-//     if (err) {
-//       console.error("SQL Error:", err);
-//       return res.status(500).json({ error: "Failed to fetch installments" });
-//     }
-
-//     if (results.length === 0) {
-//       return res.status(404).json({ error: "Installments not found" });
-//     }
-
-//     res.status(200).json(results);
-//   });
-// };
-
-
 const GetBuyerInstallments = (req, res) => {
   const { buyerId } = req.params;
 
@@ -218,11 +187,10 @@ GROUP BY i.id;
   });
 };
 
-
 module.exports = {
   registerBuyer,
   GetAllBuyers,
   GetAllBuyerBankAccounts,
   GetBuyerById,
-  GetBuyerInstallments
+  GetBuyerInstallments,
 };
