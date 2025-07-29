@@ -206,6 +206,9 @@ const AddPayment = (req, res) => {
   });
 };
 
+
+
+
 module.exports = {
   getBuyerReceivables,
   AddPayment,

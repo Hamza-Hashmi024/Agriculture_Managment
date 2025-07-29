@@ -97,12 +97,12 @@ const addSaleLot = (req, res) => {
         INSERT INTO buyer_installments (sale_id, amount, due_date, status)
         VALUES ?
       `;
-      const buyerInstallmentsValues = installments.map((inst) => [
-        sale_id,
-        inst.amount,
-        inst.dueDate || new Date(), // fallback to current date if empty
-        "pending",
-      ]);
+    const buyerInstallmentsValues = installments.map((inst) => [
+  sale_id,
+  inst.amount,
+  inst.dueDate, 
+  "pending",
+]);
 
       // Insert helpers
       const insertFarmerExpenses = (cb) => {

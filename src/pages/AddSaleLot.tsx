@@ -27,7 +27,7 @@ import {
   GetBankAccountsWithBalance,
   GetAllBuyers,
   AddSaleLots,
-  GetAllBuyersBanks
+  GetAllBuyersBanks,
 } from "@/Api/Api";
 
 interface Expense {
@@ -56,7 +56,7 @@ export function AddSaleLot() {
   const [buyers, setBuyers] = useState([]);
 
   // Lot Details
-  
+
   const [farmersList, setFarmersList] = useState([]);
   const [cropsList, setCropsList] = useState([]);
   const [crop, setCrop] = useState("");
@@ -70,9 +70,11 @@ export function AddSaleLot() {
   const [buyerExpenses, setBuyerExpenses] = useState<Expense[]>([]);
 
   // Buyer Details
-  const [farmer, setFarmer] = useState<{ id: number; name: string } | null>(null);
-const [buyer, setBuyer] = useState<{ id: number; name: string } | null>(null);
- 
+  const [farmer, setFarmer] = useState<{ id: number; name: string } | null>(
+    null
+  );
+  const [buyer, setBuyer] = useState<{ id: number; name: string } | null>(null);
+
   const [upfrontPayment, setUpfrontPayment] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
   const [installments, setInstallments] = useState<Installment[]>([]);
@@ -117,8 +119,6 @@ const [buyer, setBuyer] = useState<{ id: number; name: string } | null>(null);
         console.error("Error fetching buyers:", error);
       }
     };
-
-   
 
     fetchFarmers();
     fetchCrops();
@@ -253,27 +253,70 @@ const [buyer, setBuyer] = useState<{ id: number; name: string } | null>(null);
     setInstallments(installments.filter((inst) => inst.id !== id));
   };
 
+  //   const handleSaveAndGenerate = async () => {
+  //  const payload = {
+  //   farmer_id: farmer?.id,
+  //   buyer_id: buyer?.id,
+  //   crop,
+  //   arrival_date: arrivalDate,
+  //   weight,
+  //   rate,
+  //   commission_percentage: commission,
+  //   upfront_payment: upfrontPayment,
+  //   payment_mode: paymentMode,
+  //   selected_bank_account: selectedBankAccount,
+  //   installments,
+  //   farmer_expenses: farmerExpenses,
+  //   buyer_expenses: buyerExpenses,
+  //   total_buyer_payable: calculateTotalBuyerPayable()
+  // };
+
+  //     try {
+  //       const response = await AddSaleLots(payload);
+  //       console.log("Response from backend:", response.data); // Assuming Axios
+  //     } catch (error) {
+  //       console.error("Error sending data to backend:", error);
+  //     }
+  //   };
+
   const handleSaveAndGenerate = async () => {
- const payload = {
-  farmer_id: farmer?.id,
-  buyer_id: buyer?.id,
-  crop,
-  arrival_date: arrivalDate,
-  weight,
-  rate,
-  commission_percentage: commission,
-  upfront_payment: upfrontPayment,
-  payment_mode: paymentMode,
-  selected_bank_account: selectedBankAccount,
-  installments,
-  farmer_expenses: farmerExpenses,
-  buyer_expenses: buyerExpenses,
-  total_buyer_payable: calculateTotalBuyerPayable() 
-};
+    const enrichedInstallments = installments.map((inst) => {
+      const dueDate =
+        inst.dueWithinDays && inst.dueWithinDays > 0
+          ? new Date(
+              new Date(arrivalDate).getTime() +
+                inst.dueWithinDays * 24 * 60 * 60 * 1000
+            )
+              .toISOString()
+              .split("T")[0] // Format: YYYY-MM-DD
+          : "";
+
+      return {
+        ...inst,
+        dueDate,
+      };
+    });
+
+    const payload = {
+      farmer_id: farmer?.id,
+      buyer_id: buyer?.id,
+      crop,
+      arrival_date: arrivalDate,
+      weight,
+      rate,
+      commission_percentage: commission,
+      upfront_payment: upfrontPayment,
+      payment_mode: paymentMode,
+      selected_bank_account: selectedBankAccount,
+      installments: enrichedInstallments,
+      farmer_expenses: farmerExpenses,
+      buyer_expenses: buyerExpenses,
+      total_buyer_payable: calculateTotalBuyerPayable(),
+    };
 
     try {
       const response = await AddSaleLots(payload);
-      console.log("Response from backend:", response.data); // Assuming Axios
+      console.log("Response from backend:", response.data);
     } catch (error) {
       console.error("Error sending data to backend:", error);
     }
@@ -290,22 +333,22 @@ const [buyer, setBuyer] = useState<{ id: number; name: string } | null>(null);
             <Label htmlFor="farmer" className="text-red-500">
               Farmer *
             </Label>
-           <Select
-  value={farmer ? JSON.stringify(farmer) : ""}
-  onValueChange={(val) => setFarmer(JSON.parse(val))}
-  required
->
-  <SelectTrigger>
-    <SelectValue placeholder="Select farmer" />
-  </SelectTrigger>
-  <SelectContent>
-    {farmersList.map((f: any) => (
-      <SelectItem key={f.id} value={JSON.stringify(f)}>
-        {f.name}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
+            <Select
+              value={farmer ? JSON.stringify(farmer) : ""}
+              onValueChange={(val) => setFarmer(JSON.parse(val))}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select farmer" />
+              </SelectTrigger>
+              <SelectContent>
+                {farmersList.map((f: any) => (
+                  <SelectItem key={f.id} value={JSON.stringify(f)}>
+                    {f.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label htmlFor="crop" className="text-red-500">
@@ -559,22 +602,22 @@ const [buyer, setBuyer] = useState<{ id: number; name: string } | null>(null);
       <CardContent className="space-y-6">
         <div>
           <Label htmlFor="buyer">Buyer</Label>
-         <Select
-  value={buyer ? JSON.stringify(buyer) : ""}
-  onValueChange={(val) => setBuyer(JSON.parse(val))}
-  required
->
-  <SelectTrigger>
-    <SelectValue placeholder="Select buyer" />
-  </SelectTrigger>
-  <SelectContent>
-    {buyers.map((buyerObj: any) => (
-      <SelectItem key={buyerObj.id} value={JSON.stringify(buyerObj)}>
-        {buyerObj.name}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
+          <Select
+            value={buyer ? JSON.stringify(buyer) : ""}
+            onValueChange={(val) => setBuyer(JSON.parse(val))}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select buyer" />
+            </SelectTrigger>
+            <SelectContent>
+              {buyers.map((buyerObj: any) => (
+                <SelectItem key={buyerObj.id} value={JSON.stringify(buyerObj)}>
+                  {buyerObj.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {renderExpenseTable(buyerExpenses, "buyer")}
