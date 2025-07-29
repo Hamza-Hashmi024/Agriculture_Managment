@@ -146,22 +146,51 @@ const GetBuyerById = (req, res) => {
   });
 };
 
+// const GetBuyerInstallments = (req, res) => {
+//   const { buyerId } = req.params;
+
+//   const query = `SELECT
+//   bi.id AS id,
+//   bi.amount AS installment_amount,
+//   bi.due_date AS installment_date,
+//   bi.status AS status,
+//   COALESCE(SUM(bpi.amount), 0) AS paid_amount,
+//   (bi.amount - COALESCE(SUM(bpi.amount), 0)) AS remaining_amount
+// FROM buyer_installments bi
+// JOIN sales s ON bi.sale_id = s.id
+// LEFT JOIN buyer_payment_installments bpi ON bpi.buyer_installment_id = bi.id
+// WHERE s.buyer_id = ?
+// GROUP BY bi.id
+// ORDER BY bi.due_date ASC;`;
+//   db.query(query, [buyerId], (err, results) => {
+//     if (err) {
+//       console.error("SQL Error:", err);
+//       return res.status(500).json({ error: "Failed to fetch installments" });
+//     }
+
+//     return res.status(200).json(results);
+//   });
+// };
+
 const GetBuyerInstallments = (req, res) => {
   const { buyerId } = req.params;
 
-  const query = `SELECT
-  bi.id AS id,
-  bi.amount AS installment_amount,
-  bi.due_date AS installment_date,
-  bi.status AS status,
-  COALESCE(SUM(bpi.amount), 0) AS paid_amount,
-  (bi.amount - COALESCE(SUM(bpi.amount), 0)) AS remaining_amount
-FROM buyer_installments bi
-JOIN sales s ON bi.sale_id = s.id
-LEFT JOIN buyer_payment_installments bpi ON bpi.buyer_installment_id = bi.id
-WHERE s.buyer_id = ?
-GROUP BY bi.id
-ORDER BY bi.due_date ASC;`;
+  const query = `
+    SELECT
+      bi.id AS id,
+      bi.amount AS installment_amount,
+      bi.due_date AS installment_date,
+      bi.status AS status,
+      LEAST(COALESCE(SUM(bpi.amount), 0), bi.amount) AS paid_amount,
+      GREATEST(bi.amount - COALESCE(SUM(bpi.amount), 0), 0) AS remaining_amount
+    FROM buyer_installments bi
+    JOIN sales s ON bi.sale_id = s.id
+    LEFT JOIN buyer_payment_installments bpi ON bpi.buyer_installment_id = bi.id
+    WHERE s.buyer_id = ?
+    GROUP BY bi.id
+    ORDER BY bi.due_date ASC;
+  `;
+
   db.query(query, [buyerId], (err, results) => {
     if (err) {
       console.error("SQL Error:", err);
@@ -171,6 +200,12 @@ ORDER BY bi.due_date ASC;`;
     return res.status(200).json(results);
   });
 };
+
+
+
+
+
+
 
 const getBuyersWithReceivables = (req, res) => {
   const query = `
