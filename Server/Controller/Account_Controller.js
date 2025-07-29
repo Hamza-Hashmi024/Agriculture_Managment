@@ -1,6 +1,5 @@
 const db = require("../config/db");
 
-
 const addBankAccount = (req, res) => {
   const {
     type,
@@ -11,7 +10,7 @@ const addBankAccount = (req, res) => {
     iban,
     opening_balance,
     opening_date,
-    notes
+    notes,
   } = req.body;
 
   // Validation
@@ -45,7 +44,7 @@ const addBankAccount = (req, res) => {
     branch || null,
     iban || null,
     parseFloat(opening_balance),
-    opening_date
+    opening_date,
   ];
 
   db.query(sql, values, (err, result) => {
@@ -55,13 +54,13 @@ const addBankAccount = (req, res) => {
     }
 
     return res.status(201).json({
-      message: `${type === "bank" ? "Bank" : "Cashbox"} account added successfully`,
+      message: `${
+        type === "bank" ? "Bank" : "Cashbox"
+      } account added successfully`,
       accountId: result.insertId,
     });
   });
 };
-
-
 
 const createTransfer = (req, res) => {
   const { fromAccount, toAccount, amount, date, referenceNo, notes } = req.body;
@@ -147,11 +146,9 @@ const createTransfer = (req, res) => {
           db.query(updateTo, [parsedAmount, toAccount], (err2) => {
             if (err2) {
               console.error("Error updating to account:", err2);
-              return res
-                .status(500)
-                .json({
-                  message: "Failed to update destination account balance.",
-                });
+              return res.status(500).json({
+                message: "Failed to update destination account balance.",
+              });
             }
 
             return res.status(201).json({
@@ -164,7 +161,6 @@ const createTransfer = (req, res) => {
     );
   });
 };
-
 
 const getAccountsWithBalance = (req, res) => {
   const query = `
@@ -179,14 +175,12 @@ const getAccountsWithBalance = (req, res) => {
       return res.status(500).json({ message: "Database error" });
     }
 
-    res.status(200).json(results); 
+    res.status(200).json(results);
   });
 };
-
 
 module.exports = {
   addBankAccount,
   createTransfer,
- getAccountsWithBalance
-  
-}
+  getAccountsWithBalance,
+};

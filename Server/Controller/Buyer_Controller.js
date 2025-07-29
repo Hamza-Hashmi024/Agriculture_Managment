@@ -149,41 +149,96 @@ const GetBuyerById = (req, res) => {
 const GetBuyerInstallments = (req, res) => {
   const { buyerId } = req.params;
 
-  const query = `
-  SELECT  
-  i.id,
-  i.amount AS installment_amount,
-  i.due_date AS installment_date,
-  i.status,
-  b.name AS buyer_name,
-  (
-    SELECT IFNULL(SUM(p.amount), 0)
-    FROM buyer_payment_installments p
-    WHERE p.buyer_installment_id = i.id
-  ) AS paid_amount,
-  (i.amount - (
-    SELECT IFNULL(SUM(p.amount), 0)
-    FROM buyer_payment_installments p
-    WHERE p.buyer_installment_id = i.id
-  )) AS remaining_amount
-FROM buyer_installments i
-JOIN sales s ON i.sale_id = s.id
-JOIN buyers b ON s.buyer_id = b.id
+  const query = `SELECT
+  bi.id AS id,
+  bi.amount AS installment_amount,
+  bi.due_date AS installment_date,
+  bi.status AS status,
+  COALESCE(SUM(bpi.amount), 0) AS paid_amount,
+  (bi.amount - COALESCE(SUM(bpi.amount), 0)) AS remaining_amount
+FROM buyer_installments bi
+JOIN sales s ON bi.sale_id = s.id
+LEFT JOIN buyer_payment_installments bpi ON bpi.buyer_installment_id = bi.id
 WHERE s.buyer_id = ?
-GROUP BY i.id;
-  `;
-
+GROUP BY bi.id
+ORDER BY bi.due_date ASC;`;
   db.query(query, [buyerId], (err, results) => {
     if (err) {
       console.error("SQL Error:", err);
       return res.status(500).json({ error: "Failed to fetch installments" });
     }
 
-    if (results.length === 0) {
-      return res.status(404).json({ error: "Installments not found" });
+    return res.status(200).json(results);
+  });
+};
+
+const getBuyersWithReceivables = (req, res) => {
+  const query = `
+    SELECT 
+      b.id AS buyerId,
+      b.name AS buyerName,
+      IFNULL(SUM(bi.amount), 0) AS totalBuyerPayable,
+      IFNULL((
+        SELECT SUM(bpi.amount)
+        FROM buyer_installments bi2
+        JOIN buyer_payment_installments bpi ON bpi.buyer_installment_id = bi2.id
+        JOIN sales s2 ON bi2.sale_id = s2.id
+        WHERE s2.buyer_id = b.id
+      ), 0) AS totalPayments,
+      MAX(s.arrival_date) AS lastSale,
+      (
+        SELECT MAX(bp.date)
+        FROM buyer_installments bi3
+        JOIN buyer_payment_installments bpi2 ON bpi2.buyer_installment_id = bi3.id
+        JOIN buyer_payments bp ON bp.id = bpi2.buyer_payment_id
+        JOIN sales s3 ON bi3.sale_id = s3.id
+        WHERE s3.buyer_id = b.id
+      ) AS lastPayment
+    FROM buyers b
+    LEFT JOIN sales s ON s.buyer_id = b.id
+    LEFT JOIN buyer_installments bi ON bi.sale_id = s.id
+    GROUP BY b.id;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("❌ Error fetching buyers with receivables:", err);
+      return res.status(500).json({ message: "Internal Server Error" });
     }
 
-    res.status(200).json(results);
+    const buyers = results
+      .map((row) => {
+        const totalBuyerPayable = parseFloat(row.totalBuyerPayable || 0);
+        const totalPayments = parseFloat(row.totalPayments || 0);
+        const remainingDue = Math.max(totalBuyerPayable - totalPayments, 0);
+
+        return {
+          buyerId: row.buyerId,
+          buyerName: row.buyerName,
+          totalBuyerPayable,
+          totalPayments,
+          remainingDue,
+          lastSale: row.lastSale
+            ? new Date(row.lastSale).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : null,
+          lastPayment: row.lastPayment
+            ? new Date(row.lastPayment).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : null,
+        };
+      })
+      .filter(
+        (buyer) => buyer.totalBuyerPayable > 0 || buyer.totalPayments > 0
+      );
+
+    return res.status(200).json(buyers);
   });
 };
 
@@ -193,4 +248,5 @@ module.exports = {
   GetAllBuyerBankAccounts,
   GetBuyerById,
   GetBuyerInstallments,
+  getBuyersWithReceivables,
 };

@@ -117,7 +117,6 @@ const RegisterVendor = (req, res) => {
   });
 };
 
-
 const getVendor = (req, res) => {
   const sql = "SELECT * FROM vendors";
 
@@ -127,10 +126,10 @@ const getVendor = (req, res) => {
       return res.status(500).json({ error: "Failed to fetch vendors" });
     }
 
-    res.status(200).json(results); 
+    res.status(200).json(results);
   });
 };
 module.exports = {
   RegisterVendor,
-  getVendor
+  getVendor,
 };

@@ -26,7 +26,7 @@ const addSaleLot = (req, res) => {
     upfront_payment,
     payment_mode,
     selected_bank_account,
-     total_buyer_payable 
+    total_buyer_payable,
   } = req.body;
 
   db.beginTransaction((err) => {
@@ -47,7 +47,7 @@ const addSaleLot = (req, res) => {
       weight,
       rate,
       commission_percent,
-       total_buyer_payable
+      total_buyer_payable,
     ];
 
     db.query(saleQuery, saleData, (err, saleResult) => {

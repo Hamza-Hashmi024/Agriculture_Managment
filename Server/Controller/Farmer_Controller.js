@@ -76,7 +76,6 @@ const RegisterFarmer = (req, res) => {
   );
 };
 
-
 const GetAllFarmers = (req, res) => {
   const query = `SELECT * FROM farmers`;
 
@@ -92,6 +91,5 @@ const GetAllFarmers = (req, res) => {
 
 module.exports = {
   RegisterFarmer,
-  GetAllFarmers 
-
+  GetAllFarmers,
 };

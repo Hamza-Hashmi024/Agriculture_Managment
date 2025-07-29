@@ -64,17 +64,17 @@ export function AddPaymentModal({
 
   const handleSavePayment = async () => {
     try {
-  const payload = {
-  buyerId: parseInt(buyerId),
-  amount: parseFloat(amount),
-  paymentDate,
-  paymentMode,
-  bankAccountId: paymentMode === "bank" ? parseInt(bankAccountId) : null,
-  referenceNo: refNo || null,
-  proofFileUrl: null, 
-  notes: notes || null,
-  installments: selectedInstallments.map((id) => parseInt(id)),
-};
+      const payload = {
+        buyerId: parseInt(buyerId),
+        amount: parseFloat(amount),
+        paymentDate,
+        paymentMode,
+        bankAccountId: paymentMode === "bank" ? parseInt(bankAccountId) : null,
+        referenceNo: refNo || null,
+        proofFileUrl: null,
+        notes: notes || null,
+        installments: selectedInstallments.map((id) => parseInt(id)),
+      };
       const response = await AddPayment(payload);
       if (response.success) {
         alert("Payment saved successfully!");
@@ -89,17 +89,17 @@ export function AddPaymentModal({
   };
 
   const getStatusBadgeColor = (status: string) => {
-  const normalized = status.toLowerCase();
-  return (
-    {
-      overdue: "text-red-600",
-      "due soon": "text-orange-600",
-      pending: "text-gray-600",
-      partial: "text-yellow-600",
-      paid: "text-green-600",
-    }[normalized] || "text-gray-600"
-  );
-};
+    const normalized = status.toLowerCase();
+    return (
+      {
+        overdue: "text-red-600",
+        "due soon": "text-orange-600",
+        pending: "text-gray-600",
+        partial: "text-yellow-600",
+        paid: "text-green-600",
+      }[normalized] || "text-gray-600"
+    );
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -163,48 +163,66 @@ export function AddPaymentModal({
               <CardContent className="p-4">
                 <div className="space-y-3">
                   {installments.map((installment) => (
-  <div
-    key={installment.id}
-    className="flex items-start space-x-3 border-b pb-3"
-  >
-    <Checkbox
-      id={String(installment.id)}
-      checked={selectedInstallments.includes(String(installment.id))}
-      onCheckedChange={(checked) =>
-        handleInstallmentChange(String(installment.id), checked as boolean)
-      }
-      className="mt-1"
-    />
-    <div className="flex-1 text-sm space-y-1">
-      <div className="grid grid-cols-2 gap-2">
-        <span className="font-medium">
-          Installment: PKR{" "}
-          {Number(installment.installment_amount).toLocaleString()}
-        </span>
-        <span>
-          Date:{" "}
-          {new Date(installment.installment_date).toLocaleDateString()}
-        </span>
-      </div>
+                    <div
+                      key={installment.id}
+                      className="flex items-start space-x-3 border-b pb-3"
+                    >
+                      <Checkbox
+                        id={String(installment.id)}
+                        checked={selectedInstallments.includes(
+                          String(installment.id)
+                        )}
+                        onCheckedChange={(checked) =>
+                          handleInstallmentChange(
+                            String(installment.id),
+                            checked as boolean
+                          )
+                        }
+                        className="mt-1"
+                      />
 
-      <div className="grid grid-cols-2 gap-2">
-        <span>
-          Paid: PKR{" "}
-          {Number(installment.paid_amount || 0).toLocaleString()}
-        </span>
-        <span>
-          Remaining: PKR{" "}
-          {Number(installment.remaining_amount || 0).toLocaleString()}
-        </span>
-      </div>
+                      <div className="flex-1 text-sm space-y-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <span className="font-medium">
+                            Installment: PKR{" "}
+                            {Number(
+                              installment.installment_amount
+                            ).toLocaleString()}
+                          </span>
+                          <span>
+                            Date:{" "}
+                            {new Date(
+                              installment.installment_date
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
 
-      <span className={`${getStatusBadgeColor(installment.status)} font-semibold capitalize`}>
-        Status: {installment.status}
-      </span>
-    </div>
-  </div>
-))}
+                        {(installment.status === "partial" ||
+                          Number(installment.paid_amount) > 0) && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <span>
+                              Paid: PKR{" "}
+                              {Number(installment.paid_amount).toLocaleString()}
+                            </span>
+                            <span>
+                              Remaining: PKR{" "}
+                              {Number(
+                                installment.remaining_amount
+                              ).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
 
+                        <span
+                          className={`${getStatusBadgeColor(
+                            installment.status
+                          )} font-semibold capitalize`}
+                        >
+                          Status: {installment.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
