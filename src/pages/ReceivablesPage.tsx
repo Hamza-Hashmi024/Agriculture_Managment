@@ -44,6 +44,7 @@ export function ReceivablesPage() {
     const fetchReceivables = async () => {
       try {
         const data = await GetAllBuyerReceivables();
+        console.log(" API Response:", data); 
         setReceivables(data);
       } catch (error) {
         console.error("Error fetching receivables:", error);
@@ -52,6 +53,12 @@ export function ReceivablesPage() {
 
     fetchReceivables();
   }, []);
+
+
+  useEffect(() => {
+  console.log("Overdue Buyers:", overdueData);
+  console.log("Due Soon Buyers:", dueSoonData);
+}, [receivables]);
 
   return (
     <div className="p-6">

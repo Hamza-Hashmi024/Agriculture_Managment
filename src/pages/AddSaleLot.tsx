@@ -770,9 +770,9 @@ export function AddSaleLot() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {installment.dueWithinDays
+                          {installment.dueWithinDays && arrivalDate
                             ? new Date(
-                                Date.now() +
+                                new Date(arrivalDate).getTime() +
                                   installment.dueWithinDays *
                                     24 *
                                     60 *
