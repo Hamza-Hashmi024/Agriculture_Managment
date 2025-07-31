@@ -183,3 +183,21 @@ export const GetBuyerInstallments = async (buyerId) => {
     throw error;
   }
 };
+
+
+export const GetBuyerReceivableCard = async (
+  buyerId: string
+): Promise<Buyer> => {
+  try {
+    const response = await axios.get(
+      `${Base_Url}/api/receivables/getCard/${buyerId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Get Buyer Receivable Card API error", error);
+    throw error;
+  }
+};
+
+
+

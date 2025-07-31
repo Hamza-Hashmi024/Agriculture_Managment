@@ -1,51 +1,6 @@
 const db = require("../config/db");
 const moment = require("moment");
 
-// const getBuyerReceivables = (req, res) => {
-//   const query = `
-// SELECT 
-//     b.id AS buyerId,
-//     b.name AS buyerName,
-//     COALESCE(s.total_payable, 0) AS totalBuyerPayable,
-//     COALESCE(p.total_paid, 0) AS totalPayments,
-//     COALESCE(s.total_payable, 0) - COALESCE(p.total_paid, 0) AS balance
-// FROM buyers b
-// LEFT JOIN (
-//     SELECT buyer_id, SUM(total_buyer_payable) AS total_payable
-//     FROM sales
-//     GROUP BY buyer_id
-// ) s ON s.buyer_id = b.id
-// LEFT JOIN (
-//     SELECT buyer_id, SUM(amount) AS total_paid
-//     FROM buyer_payments
-//     GROUP BY buyer_id
-// ) p ON p.buyer_id = b.id
-// ORDER BY b.id; 
-//   `;
-
-//   db.query(query, (err, results) => {
-//     if (err) {
-//       console.error("Error fetching buyer receivables:", err);
-//       return res.status(500).json({ message: "Internal server error" });
-//     }
-
-//     const receivables = results.map((row) => {
-//       const totalBuyerPayable = parseFloat(row.totalBuyerPayable);
-//       const totalPayments = parseFloat(row.totalPayments);
-//       const remainingDue = Math.max(totalBuyerPayable - totalPayments, 0);
-
-//       return {
-//         buyerId: row.buyerId,
-//         buyerName: row.buyerName,
-//         totalBuyerPayable,
-//         totalPayments,
-//         remainingDue,
-//       };
-//     });
-
-//     res.status(200).json(receivables);
-//   });
-// };
 
 const getBuyerReceivables = (req, res) => {
   const query = `
@@ -114,7 +69,6 @@ const getBuyerReceivables = (req, res) => {
     res.status(200).json(receivables);
   });
 };
-
 
 const AddPayment = (req, res) => {
   const {
@@ -293,8 +247,116 @@ const AddPayment = (req, res) => {
 };
 
 
+const getBuyerReceivableCard = (req, res) => {
+    console.log("FULL REQUEST PARAMS:", req.params); 
+  const buyerId = req.params.buyerId;
+  
+  console.log("Fetching card for buyerId:", buyerId);
+
+  if (!buyerId) {
+    return res.status(400).json({ error: "Buyer ID is required" });
+  }
+
+  // 1. Get buyer info
+  const buyerInfoQuery = `
+    SELECT 
+      b.id,
+      b.name,
+      b.notes,
+      IFNULL(bc.phone_number, '') AS phone,
+      '' AS mobile,
+      '' AS address
+    FROM buyers b
+    LEFT JOIN buyer_contacts bc ON bc.buyer_id = b.id
+    WHERE b.id = ?
+  `;
+
+  db.query(buyerInfoQuery, [buyerId], (err, buyerRows) => {
+    if (err) {
+      console.error("Error fetching buyer info:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+
+    if (buyerRows.length === 0) {
+      return res.status(404).json({ error: "Buyer not found" });
+    }
+
+    const buyer = buyerRows[0];
+
+    // 2. Get unpaid installments
+    const installmentsQuery = `
+SELECT 
+  bi.id,
+  s.id AS invoice_no,  -- treating sale ID as invoice number
+  s.crop,
+  bi.amount,
+  DATE_FORMAT(bi.due_date, '%d-%b-%Y') AS dueDate,
+  CASE 
+    WHEN bi.due_date < CURDATE() THEN 'Overdue'
+    WHEN bi.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 'Due Soon'
+    ELSE 'Pending'
+  END AS status
+FROM buyer_installments bi
+INNER JOIN sales s ON bi.sale_id = s.id
+WHERE s.buyer_id = ? AND bi.status != 'paid'
+
+
+    `;
+
+    db.query(installmentsQuery, [buyerId], (err, installmentRows) => {
+      if (err) {
+        console.error("Error fetching installments:", err);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+
+      // 3. Get payment history
+      const paymentsQuery = `
+ SELECT 
+  bp.id,
+  DATE_FORMAT(MAX(bp.date), '%d-%b-%Y') AS date,
+  MAX(bp.amount) AS amount,
+  MAX(bp.payment_mode) AS mode,
+  MAX(a.bank) AS bank,
+  MAX(bp.reference_no) AS refNo,
+  MAX(s.id) AS invoice_no,
+  MAX(bp.notes) AS notes
+FROM buyer_payments bp
+LEFT JOIN accounts a ON bp.bank_account_id = a.id
+LEFT JOIN buyer_payment_installments bpi ON bpi.buyer_payment_id = bp.id
+LEFT JOIN buyer_installments bi ON bpi.buyer_installment_id = bi.id
+LEFT JOIN sales s ON bi.sale_id = s.id
+WHERE bp.buyer_id = ?
+GROUP BY bp.id
+ORDER BY bp.date DESC;
+      `;
+
+      db.query(paymentsQuery, [buyerId], (err, paymentRows) => {
+        if (err) {
+          console.error("Error fetching payments:", err);
+          return res.status(500).json({ error: "Internal server error" });
+        }
+
+        const totalUnpaid = installmentRows.reduce(
+          (sum, row) => sum + parseFloat(row.amount || 0),
+          0
+        );
+
+        return res.json({
+          name: buyer.name,
+          address: buyer.address || "N/A",
+          phone: buyer.phone,
+          mobile: buyer.mobile || "N/A",
+          totalUnpaid,
+          unpaidInstallments: installmentRows,
+          payments: paymentRows
+        });
+      });
+    });
+  });
+};
 
 module.exports = {
   getBuyerReceivables,
   AddPayment,
+ getBuyerReceivableCard
 };
