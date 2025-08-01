@@ -23,6 +23,7 @@ import { ExpensesPage } from "@/pages/ExpensesPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { CashBankPage } from "@/pages/CashBankPage";
 import { ReportsPage } from "@/pages/ReportsPage";
+import { AddBuyerForm } from "@/pages/AddBuyerForm";
 
 export function MainContent() {
   return (
@@ -42,6 +43,7 @@ export function MainContent() {
         <Route path="/sales/statement/:id" element={<FarmerStatement />} />
         <Route path="/buyers" element={<BuyersPage />} />
         <Route path="/buyers/:id" element={<BuyerProfile />} />
+        <Route path="/buyers/add" element={<AddBuyerForm />} />
         <Route path="/receivables" element={<ReceivablesPage />} />
         <Route path="/receivables/buyer/:id" element={<BuyerReceivableCard />} />
         <Route path="/vendors" element={<VendorsPage />} />

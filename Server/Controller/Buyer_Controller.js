@@ -1,7 +1,7 @@
 const db = require("../config/db");
 
 const registerBuyer = (req, res) => {
-  const { tenantId, name, notes, contacts, wallets, bankAccounts } = req.body;
+ const { tenantId, name, notes, address, contacts, wallets, bankAccounts } = req.body;
 
   db.beginTransaction((err) => {
     if (err) {
@@ -9,8 +9,8 @@ const registerBuyer = (req, res) => {
     }
 
     // 1. Insert buyer
-    const buyerQuery = `INSERT INTO buyers (tenant_id, name, notes) VALUES (?, ?, ?)`;
-    db.query(buyerQuery, [tenantId, name, notes], (err, buyerResult) => {
+    const buyerQuery = `INSERT INTO buyers (tenant_id, name, notes, address) VALUES (?, ?, ?, ?)`;
+    db.query(buyerQuery, [tenantId, name , notes , address], (err, buyerResult) => {
       if (err) {
         return db.rollback(() => {
           res.status(500).json({ error: "Failed to insert buyer" });

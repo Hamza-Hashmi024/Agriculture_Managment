@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Plus, Download, Eye, CreditCard } from "lucide-react";
 import { AddPaymentModal } from "@/components/AddPaymentModal";
-import { RegisterBuyer } from "@/Api/Api";
+
+import { useNavigate } from "react-router-dom";
 
 // Mock data for buyers
 const mockBuyers = [
@@ -48,7 +49,7 @@ const mockBuyers = [
 export function BuyersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [outstandingOnly, setOutstandingOnly] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  // const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedBuyerId, setSelectedBuyerId] = useState<string>("");
   const [newBuyer, setNewBuyer] = useState({
@@ -68,6 +69,10 @@ export function BuyersPage() {
     return matchesSearch && matchesFilter;
   });
 
+
+  const navigate = useNavigate();
+
+
   // const handleAddBuyer = () => {
   //   console.log("Adding buyer:", newBuyer);
   //   setIsAddModalOpen(false);
@@ -85,50 +90,50 @@ export function BuyersPage() {
 
 
   
-const handleAddBuyer = async () => {
-  const buyerData = {
-    tenantId: 1, // or fetch dynamically
-    name: newBuyer.name,
-    notes: newBuyer.notes,
-    contacts: [
-      { phoneNumber: newBuyer.contacts }
-    ],
-    bankAccounts: [
-      {
-        bankName: newBuyer.bankName,
-        accountNumber: newBuyer.accountNo,
-        iban: newBuyer.iban
-      }
-    ],
-    wallets: [
-      {
-        walletNumber: newBuyer.walletNumber,
-        provider: newBuyer.walletType
-      }
-    ]
-  };
+// const handleAddBuyer = async () => {
+//   const buyerData = {
+//     tenantId: 1, // or fetch dynamically
+//     name: newBuyer.name,
+//     notes: newBuyer.notes,
+//     contacts: [
+//       { phoneNumber: newBuyer.contacts }
+//     ],
+//     bankAccounts: [
+//       {
+//         bankName: newBuyer.bankName,
+//         accountNumber: newBuyer.accountNo,
+//         iban: newBuyer.iban
+//       }
+//     ],
+//     wallets: [
+//       {
+//         walletNumber: newBuyer.walletNumber,
+//         provider: newBuyer.walletType
+//       }
+//     ]
+//   };
 
-  try {
-    const response = await RegisterBuyer(buyerData);
-    console.log("Buyer registered successfully:", response);
+//   try {
+//     const response = await RegisterBuyer(buyerData);
+//     console.log("Buyer registered successfully:", response);
     
 
-    setIsAddModalOpen(false);
-    setNewBuyer({
-      name: "",
-      contacts: "",
-      bankName: "",
-      accountNo: "",
-      iban: "",
-      walletNumber: "",
-      walletType: "",
-      notes: ""
-    });
-  } catch (error) {
-    console.error("Error registering buyer:", error);
+//     setIsAddModalOpen(false);
+//     setNewBuyer({
+//       name: "",
+//       contacts: "",
+//       bankName: "",
+//       accountNo: "",
+//       iban: "",
+//       walletNumber: "",
+//       walletType: "",
+//       notes: ""
+//     });
+//   } catch (error) {
+//     console.error("Error registering buyer:", error);
    
-  }
-};
+//   }
+// };
 
 
   const handleAddPayment = (buyerId: string) => {
@@ -163,105 +168,12 @@ const handleAddBuyer = async () => {
               <Label htmlFor="outstanding-only">Outstanding Only</Label>
             </div>
 
-            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-              <DialogTrigger asChild>
-                <Button>
+          
+                <Button onClick={() => navigate("/buyers/add")} >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Buyer
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Add Buyer</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={newBuyer.name}
-                      onChange={(e) => setNewBuyer({...newBuyer, name: e.target.value})}
-                      placeholder="Buyer name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="contacts">Contacts</Label>
-                    <Input
-                      id="contacts"
-                      value={newBuyer.contacts}
-                      onChange={(e) => setNewBuyer({...newBuyer, contacts: e.target.value})}
-                      placeholder="0321..., 0345..."
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label htmlFor="bank-name">Bank Name</Label>
-                      <Input
-                        id="bank-name"
-                        value={newBuyer.bankName}
-                        onChange={(e) => setNewBuyer({...newBuyer, bankName: e.target.value})}
-                        placeholder="Bank name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="account-no">A/C No</Label>
-                      <Input
-                        id="account-no"
-                        value={newBuyer.accountNo}
-                        onChange={(e) => setNewBuyer({...newBuyer, accountNo: e.target.value})}
-                        placeholder="Account number"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="iban">IBAN</Label>
-                    <Input
-                      id="iban"
-                      value={newBuyer.iban}
-                      onChange={(e) => setNewBuyer({...newBuyer, iban: e.target.value})}
-                      placeholder="IBAN"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label htmlFor="wallet-number">Wallet Number</Label>
-                      <Input
-                        id="wallet-number"
-                        value={newBuyer.walletNumber}
-                        onChange={(e) => setNewBuyer({...newBuyer, walletNumber: e.target.value})}
-                        placeholder="0315..."
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="wallet-type">Wallet Type</Label>
-                      <Input
-                        id="wallet-type"
-                        value={newBuyer.walletType}
-                        onChange={(e) => setNewBuyer({...newBuyer, walletType: e.target.value})}
-                        placeholder="JazzCash, Easypaisa"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="notes">Notes</Label>
-                    <Textarea
-                      id="notes"
-                      value={newBuyer.notes}
-                      onChange={(e) => setNewBuyer({...newBuyer, notes: e.target.value})}
-                      placeholder="Additional notes"
-                    />
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleAddBuyer}>
-                      Save
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            
 
             <Button variant="outline">
               <Download className="h-4 w-4 mr-2" />

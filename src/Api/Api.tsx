@@ -199,5 +199,3 @@ export const GetBuyerReceivableCard = async (
   }
 };
 
-
-
