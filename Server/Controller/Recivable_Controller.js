@@ -1,77 +1,88 @@
 const db = require("../config/db");
 const moment = require("moment");
 
-
 const getBuyerReceivables = (req, res) => {
   const query = `
     SELECT 
         b.id AS buyerId,
         b.name AS buyerName,
-        COALESCE(s.total_payable, 0) AS totalBuyerPayable,
-        COALESCE(p.total_paid, 0) AS totalPayments,
-        COALESCE(s.total_payable, 0) - COALESCE(p.total_paid, 0) AS balance,
+        COALESCE(SUM(bi.amount), 0) AS totalBuyerPayable,
+        COALESCE(SUM(paidSub.paidAmount), 0) AS totalPayments,
+        COALESCE(SUM(bi.amount) - SUM(paidSub.paidAmount), 0) AS remainingDue,
         COALESCE(od.overdue_due, 0) AS overdueDue,
         COALESCE(od.oldest_due_date, NULL) AS oldestDueDate,
         COALESCE(ds.due_soon_due, 0) AS dueSoonDue,
         COALESCE(ds.next_due_date, NULL) AS nextDueDate
     FROM buyers b
+    LEFT JOIN sales s ON s.buyer_id = b.id
+    LEFT JOIN buyer_installments bi ON bi.sale_id = s.id
     LEFT JOIN (
-        SELECT buyer_id, SUM(total_buyer_payable) AS total_payable
-        FROM sales
-        GROUP BY buyer_id
-    ) s ON s.buyer_id = b.id
-    LEFT JOIN (
-        SELECT buyer_id, SUM(amount) AS total_paid
-        FROM buyer_payments
-        GROUP BY buyer_id
-    ) p ON p.buyer_id = b.id
+      SELECT buyer_installment_id, SUM(amount) AS paidAmount
+      FROM buyer_payment_installments
+      GROUP BY buyer_installment_id
+    ) paidSub ON paidSub.buyer_installment_id = bi.id
+
     LEFT JOIN (
         SELECT s.buyer_id,
                SUM(i.amount) AS overdue_due,
                MIN(i.due_date) AS oldest_due_date
         FROM buyer_installments i
         JOIN sales s ON s.id = i.sale_id
-        WHERE i.status = 'pending' AND i.due_date < CURDATE()
+        LEFT JOIN (
+          SELECT buyer_installment_id, SUM(amount) AS paid
+          FROM buyer_payment_installments
+          GROUP BY buyer_installment_id
+        ) paid ON paid.buyer_installment_id = i.id
+        WHERE i.due_date < CURDATE() AND COALESCE(paid.paid, 0) < i.amount
         GROUP BY s.buyer_id
     ) od ON od.buyer_id = b.id
+
     LEFT JOIN (
         SELECT s.buyer_id,
                SUM(i.amount) AS due_soon_due,
                MIN(i.due_date) AS next_due_date
         FROM buyer_installments i
         JOIN sales s ON s.id = i.sale_id
-        WHERE i.status = 'pending' AND i.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+        LEFT JOIN (
+          SELECT buyer_installment_id, SUM(amount) AS paid
+          FROM buyer_payment_installments
+          GROUP BY buyer_installment_id
+        ) paid ON paid.buyer_installment_id = i.id
+        WHERE i.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+          AND COALESCE(paid.paid, 0) < i.amount
         GROUP BY s.buyer_id
     ) ds ON ds.buyer_id = b.id
+
+    GROUP BY b.id
+    HAVING remainingDue > 0
     ORDER BY b.id;
   `;
 
   db.query(query, (err, results) => {
     if (err) {
-      console.error("Error fetching buyer receivables:", err);
+      console.error("Error fetching accurate buyer receivables:", err);
       return res.status(500).json({ message: "Internal server error" });
     }
 
-    const receivables = results.map((row) => {
-      return {
-        buyerId: row.buyerId,
-        buyerName: row.buyerName,
-        totalBuyerPayable: parseFloat(row.totalBuyerPayable),
-        totalPayments: parseFloat(row.totalPayments),
-        remainingDue: parseFloat(row.balance),
-        overdueDue: parseFloat(row.overdueDue),
-        dueSoonDue: parseFloat(row.dueSoonDue),
-        oldestDueDate: row.oldestDueDate, // e.g. 2025-07-15
-        nextDueDate: row.nextDueDate      // e.g. 2025-08-02
-      };
-    });
+    const receivables = results.map((row) => ({
+      buyerId: row.buyerId,
+      buyerName: row.buyerName,
+      totalBuyerPayable: parseFloat(row.totalBuyerPayable),
+      totalPayments: parseFloat(row.totalPayments),
+      remainingDue: parseFloat(row.remainingDue),
+      overdueDue: parseFloat(row.overdueDue),
+      dueSoonDue: parseFloat(row.dueSoonDue),
+      oldestDueDate: row.oldestDueDate,
+      nextDueDate: row.nextDueDate
+    }));
 
     res.status(200).json(receivables);
   });
 };
 
+
 const AddPayment = (req, res) => {
-  const {
+  let {
     buyerId,
     amount,
     paymentDate,
@@ -90,6 +101,23 @@ const AddPayment = (req, res) => {
     });
   }
 
+  installments = installments.map((i) => {
+    if (typeof i === "number") {
+      return { id: i, amount: null };
+    } else if (typeof i === "object" && i !== null && i.id !== undefined) {
+      return {
+        id: parseInt(i.id),
+        amount: i.amount ?? null,
+      };
+    } else {
+      return null;
+    }
+  }).filter(Boolean);
+
+  const sanitize = (values) => {
+    return values.map(v => v === undefined ? null : v);
+  };
+
   const insertPaymentSql = `
     INSERT INTO buyer_payments (
       buyer_id, amount, date, payment_mode,
@@ -97,20 +125,19 @@ const AddPayment = (req, res) => {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  const insertValues = [
+  const insertValues = sanitize([
     buyerId,
     amount,
     paymentDate,
     paymentMode,
-    bankAccountId || null,
-    referenceNo || null,
-    proofFileUrl || null,
-    notes || null,
-  ];
+    bankAccountId,
+    referenceNo,
+    proofFileUrl,
+    notes,
+  ]);
 
   db.execute(insertPaymentSql, insertValues, (err, result) => {
     if (err) {
-      console.error("Error inserting payment:", err);
       return res.status(500).json({ success: false, message: "Failed to add payment" });
     }
 
@@ -132,7 +159,6 @@ const AddPayment = (req, res) => {
 
       db.execute(fetchPendingSql, [buyerId], (fetchErr, rows) => {
         if (fetchErr) {
-          console.error("Error fetching pending installments:", fetchErr);
           return res.status(500).json({
             success: false,
             message: "Failed to fetch installments for auto-distribution",
@@ -148,11 +174,7 @@ const AddPayment = (req, res) => {
       });
     };
 
-    fetchInstallmentsIfNeeded((installmentList) => {
-      const list = Array.isArray(installmentList[0])
-        ? installmentList.map((id) => ({ id, amount: null }))
-        : installmentList;
-
+    fetchInstallmentsIfNeeded((list) => {
       const processInstallments = (index) => {
         if (index >= list.length || remainingAmount <= 0) {
           return res.status(201).json({
@@ -171,10 +193,7 @@ const AddPayment = (req, res) => {
             "SELECT amount FROM buyer_installments WHERE id = ?",
             [installmentId],
             (err, [row]) => {
-              if (err || !row) {
-                console.error("Error fetching installment:", err);
-                return callback(null);
-              }
+              if (err || !row) return callback(null);
               callback(parseFloat(row.amount));
             }
           );
@@ -185,13 +204,11 @@ const AddPayment = (req, res) => {
             return processInstallments(index + 1);
           }
 
-          // Fetch total already paid on this installment
           db.execute(
             "SELECT SUM(amount) AS totalPaid FROM buyer_payment_installments WHERE buyer_installment_id = ?",
             [installmentId],
             (sumErr, [sumRow]) => {
               if (sumErr) {
-                console.error("Error fetching total paid:", sumErr);
                 return processInstallments(index + 1);
               }
 
@@ -199,7 +216,6 @@ const AddPayment = (req, res) => {
               const remainingInstallmentAmount = installmentAmount - totalPaid;
 
               if (remainingInstallmentAmount <= 0) {
-                // Already fully paid, skip
                 return processInstallments(index + 1);
               }
 
@@ -210,26 +226,18 @@ const AddPayment = (req, res) => {
                 [paymentId, installmentId, appliedAmount],
                 (linkErr) => {
                   if (linkErr) {
-                    console.error("Error linking payment to installment:", linkErr);
                     return processInstallments(index + 1);
                   }
 
                   const newTotalPaid = totalPaid + appliedAmount;
                   let newStatus = "pending";
-                  if (newTotalPaid >= installmentAmount) {
-                    newStatus = "paid";
-                  } else if (newTotalPaid > 0) {
-                    newStatus = "partial";
-                  }
+                  if (newTotalPaid >= installmentAmount) newStatus = "paid";
+                  else if (newTotalPaid > 0) newStatus = "partial";
 
                   db.execute(
                     `UPDATE buyer_installments SET status = ? WHERE id = ?`,
                     [newStatus, installmentId],
                     (updateErr) => {
-                      if (updateErr) {
-                        console.error("Error updating installment status:", updateErr);
-                      }
-
                       remainingAmount -= appliedAmount;
                       processInstallments(index + 1);
                     }
@@ -247,11 +255,10 @@ const AddPayment = (req, res) => {
 };
 
 
+
 const getBuyerReceivableCard = (req, res) => {
-    console.log("FULL REQUEST PARAMS:", req.params); 
+  console.log("FULL REQUEST PARAMS:", req.params);
   const buyerId = req.params.buyerId;
-  
-  console.log("Fetching card for buyerId:", buyerId);
 
   if (!buyerId) {
     return res.status(400).json({ error: "Buyer ID is required" });
@@ -262,12 +269,9 @@ const getBuyerReceivableCard = (req, res) => {
     SELECT 
       b.id,
       b.name,
-      b.notes,
-      IFNULL(bc.phone_number, '') AS phone,
-      '' AS mobile,
-      '' AS address
+      IFNULL(b.address, 'N/A') AS address,
+      b.notes
     FROM buyers b
-    LEFT JOIN buyer_contacts bc ON bc.buyer_id = b.id
     WHERE b.id = ?
   `;
 
@@ -283,77 +287,222 @@ const getBuyerReceivableCard = (req, res) => {
 
     const buyer = buyerRows[0];
 
-    // 2. Get unpaid installments
-    const installmentsQuery = `
-SELECT 
-  bi.id,
-  s.id AS invoice_no,  -- treating sale ID as invoice number
-  s.crop,
-  bi.amount,
-  DATE_FORMAT(bi.due_date, '%d-%b-%Y') AS dueDate,
-  CASE 
-    WHEN bi.due_date < CURDATE() THEN 'Overdue'
-    WHEN bi.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 'Due Soon'
-    ELSE 'Pending'
-  END AS status
-FROM buyer_installments bi
-INNER JOIN sales s ON bi.sale_id = s.id
-WHERE s.buyer_id = ? AND bi.status != 'paid'
-
-
+    // 2. Fetch all phone numbers for buyer
+    const phoneQuery = `
+      SELECT phone_number 
+      FROM buyer_contacts 
+      WHERE buyer_id = ?
     `;
 
-    db.query(installmentsQuery, [buyerId], (err, installmentRows) => {
+    db.query(phoneQuery, [buyerId], (err, phoneRows) => {
       if (err) {
-        console.error("Error fetching installments:", err);
+        console.error("Error fetching phone numbers:", err);
         return res.status(500).json({ error: "Internal server error" });
       }
 
-      // 3. Get payment history
-      const paymentsQuery = `
- SELECT 
-  bp.id,
-  DATE_FORMAT(MAX(bp.date), '%d-%b-%Y') AS date,
-  MAX(bp.amount) AS amount,
-  MAX(bp.payment_mode) AS mode,
-  MAX(a.bank) AS bank,
-  MAX(bp.reference_no) AS refNo,
-  MAX(s.id) AS invoice_no,
-  MAX(bp.notes) AS notes
-FROM buyer_payments bp
-LEFT JOIN accounts a ON bp.bank_account_id = a.id
-LEFT JOIN buyer_payment_installments bpi ON bpi.buyer_payment_id = bp.id
-LEFT JOIN buyer_installments bi ON bpi.buyer_installment_id = bi.id
-LEFT JOIN sales s ON bi.sale_id = s.id
-WHERE bp.buyer_id = ?
-GROUP BY bp.id
-ORDER BY bp.date DESC;
+      const phoneNumbers = phoneRows.map(row => row.phone_number);
+      const phone = phoneNumbers.join(', ') || "N/A";
+
+      // 3. Get unpaid installments (with accurate paidAmount using subquery)
+      const installmentsQuery = `
+        SELECT 
+          bi.id,
+          s.id AS invoice_no,
+          s.crop,
+          bi.amount,
+          COALESCE(paidSub.paidAmount, 0) AS paidAmount,
+          DATE_FORMAT(bi.due_date, '%d-%b-%Y') AS dueDate,
+          CASE 
+            WHEN COALESCE(paidSub.paidAmount, 0) = 0 THEN 'Pending'
+            WHEN COALESCE(paidSub.paidAmount, 0) >= bi.amount THEN 'Paid'
+            ELSE 'Partial'
+          END AS status
+        FROM buyer_installments bi
+        INNER JOIN sales s ON s.id = bi.sale_id
+        LEFT JOIN (
+          SELECT buyer_installment_id, SUM(amount) AS paidAmount
+          FROM buyer_payment_installments
+          GROUP BY buyer_installment_id
+        ) paidSub ON paidSub.buyer_installment_id = bi.id
+        WHERE s.buyer_id = ?
       `;
 
-      db.query(paymentsQuery, [buyerId], (err, paymentRows) => {
+      db.query(installmentsQuery, [buyerId], (err, installmentRows) => {
         if (err) {
-          console.error("Error fetching payments:", err);
+          console.error("Error fetching installments:", err);
           return res.status(500).json({ error: "Internal server error" });
         }
 
-        const totalUnpaid = installmentRows.reduce(
-          (sum, row) => sum + parseFloat(row.amount || 0),
-          0
-        );
+        // 4. Get payment history
+        const paymentsQuery = `
+          SELECT 
+            bp.id,
+            DATE_FORMAT(MAX(bp.date), '%d-%b-%Y') AS date,
+            MAX(bp.amount) AS amount,
+            MAX(bp.payment_mode) AS mode,
+            MAX(a.bank) AS bank,
+            MAX(bp.reference_no) AS refNo,
+            MAX(s.id) AS invoice_no,
+            MAX(bp.notes) AS notes
+          FROM buyer_payments bp
+          LEFT JOIN accounts a ON bp.bank_account_id = a.id
+          LEFT JOIN buyer_payment_installments bpi ON bpi.buyer_payment_id = bp.id
+          LEFT JOIN buyer_installments bi ON bpi.buyer_installment_id = bi.id
+          LEFT JOIN sales s ON bi.sale_id = s.id
+          WHERE bp.buyer_id = ?
+          GROUP BY bp.id
+          ORDER BY bp.date DESC
+        `;
 
-        return res.json({
-          name: buyer.name,
-          address: buyer.address || "N/A",
-          phone: buyer.phone,
-          mobile: buyer.mobile || "N/A",
-          totalUnpaid,
-          unpaidInstallments: installmentRows,
-          payments: paymentRows
+        db.query(paymentsQuery, [buyerId], (err, paymentRows) => {
+          if (err) {
+            console.error("Error fetching payments:", err);
+            return res.status(500).json({ error: "Internal server error" });
+          }
+
+          // ✅ Accurate unpaid calculation
+          const totalUnpaid = installmentRows.reduce((sum, row) => {
+            const unpaid = parseFloat(row.amount) - parseFloat(row.paidAmount || 0);
+            return sum + (unpaid > 0 ? unpaid : 0);
+          }, 0);
+
+          return res.json({
+            name: buyer.name,
+            address: buyer.address,
+            phone,
+            mobile: "N/A", 
+            totalUnpaid,
+            unpaidInstallments: installmentRows,
+            payments: paymentRows
+          });
         });
       });
     });
   });
 };
+
+
+// const getBuyerReceivableCard = (req, res) => {
+//   console.log("FULL REQUEST PARAMS:", req.params);
+//   const buyerId = req.params.buyerId;
+
+//   if (!buyerId) {
+//     return res.status(400).json({ error: "Buyer ID is required" });
+//   }
+
+//   // 1. Get buyer info (without joining buyer_contacts)
+//   const buyerInfoQuery = `
+//     SELECT 
+//       b.id,
+//       b.name,
+//       IFNULL(b.address, 'N/A') AS address,
+//       b.notes
+//     FROM buyers b
+//     WHERE b.id = ?
+//   `;
+
+//   db.query(buyerInfoQuery, [buyerId], (err, buyerRows) => {
+//     if (err) {
+//       console.error("Error fetching buyer info:", err);
+//       return res.status(500).json({ error: "Internal server error" });
+//     }
+
+//     if (buyerRows.length === 0) {
+//       return res.status(404).json({ error: "Buyer not found" });
+//     }
+
+//     const buyer = buyerRows[0];
+
+//     // 2. Fetch all phone numbers for buyer
+//     const phoneQuery = `
+//       SELECT phone_number 
+//       FROM buyer_contacts 
+//       WHERE buyer_id = ?
+//     `;
+
+//     db.query(phoneQuery, [buyerId], (err, phoneRows) => {
+//       if (err) {
+//         console.error("Error fetching phone numbers:", err);
+//         return res.status(500).json({ error: "Internal server error" });
+//       }
+
+//       const phoneNumbers = phoneRows.map(row => row.phone_number);
+//       const phone = phoneNumbers.join(', ') || "N/A";
+
+//       // 3. Get unpaid installments
+//       const installmentsQuery = `
+// SELECT 
+//   bi.id,
+//   s.id AS invoice_no,
+//   s.crop,
+//   bi.amount,
+//   COALESCE(SUM(bpi.amount), 0) AS paidAmount,
+//   DATE_FORMAT(bi.due_date, '%d-%b-%Y') AS dueDate,
+//   CASE 
+//     WHEN COALESCE(SUM(bpi.amount), 0) = 0 THEN 'Pending'
+//     WHEN COALESCE(SUM(bpi.amount), 0) >= bi.amount THEN 'Paid'
+//     ELSE 'Partial'
+//   END AS status
+// FROM buyer_installments bi
+// INNER JOIN sales s ON s.id = bi.sale_id
+// LEFT JOIN buyer_payment_installments bpi ON bpi.buyer_installment_id = bi.id
+// WHERE s.buyer_id = ?
+// GROUP BY bi.id
+
+//       `;
+
+//       db.query(installmentsQuery, [buyerId], (err, installmentRows) => {
+//         if (err) {
+//           console.error("Error fetching installments:", err);
+//           return res.status(500).json({ error: "Internal server error" });
+//         }
+
+//         // 4. Get payment history
+//         const paymentsQuery = `
+//           SELECT 
+//             bp.id,
+//             DATE_FORMAT(MAX(bp.date), '%d-%b-%Y') AS date,
+//             MAX(bp.amount) AS amount,
+//             MAX(bp.payment_mode) AS mode,
+//             MAX(a.bank) AS bank,
+//             MAX(bp.reference_no) AS refNo,
+//             MAX(s.id) AS invoice_no,
+//             MAX(bp.notes) AS notes
+//           FROM buyer_payments bp
+//           LEFT JOIN accounts a ON bp.bank_account_id = a.id
+//           LEFT JOIN buyer_payment_installments bpi ON bpi.buyer_payment_id = bp.id
+//           LEFT JOIN buyer_installments bi ON bpi.buyer_installment_id = bi.id
+//           LEFT JOIN sales s ON bi.sale_id = s.id
+//           WHERE bp.buyer_id = ?
+//           GROUP BY bp.id
+//           ORDER BY bp.date DESC
+//         `;
+
+//         db.query(paymentsQuery, [buyerId], (err, paymentRows) => {
+//           if (err) {
+//             console.error("Error fetching payments:", err);
+//             return res.status(500).json({ error: "Internal server error" });
+//           }
+
+//           const totalUnpaid = installmentRows.reduce((sum, row) => {
+//   const unpaid = parseFloat(row.amount) - parseFloat(row.paidAmount || 0);
+//   return sum + (unpaid > 0 ? unpaid : 0);
+// }, 0);
+
+//           return res.json({
+//             name: buyer.name,
+//             address: buyer.address,
+//             phone,
+//             mobile: "N/A", // If you store mobiles separately, add query here
+//             totalUnpaid,
+//             unpaidInstallments: installmentRows,
+//             payments: paymentRows
+//           });
+//         });
+//       });
+//     });
+//   });
+// };
 
 module.exports = {
   getBuyerReceivables,

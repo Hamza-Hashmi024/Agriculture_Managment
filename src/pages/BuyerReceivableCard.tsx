@@ -10,121 +10,6 @@ import { ArrowLeft, Plus, Printer, Download, User, MapPin, Phone } from "lucide-
 import { AddPaymentModal } from "@/components/AddPaymentModal";
 import { GetBuyerReceivableCard } from "@/Api/Api";
 
-// const mockBuyerData: Record<string, {
-//   name: string;
-//   address: string;
-//   phone: string;
-//   mobile: string;
-//   totalUnpaid: number;
-//   unpaidInstallments: Array<{
-//     id: string;
-//     invoiceNo: string;
-//     crop: string;
-//     amount: number;
-//     dueDate: string;
-//     status: string;
-//   }>;
-//   payments: Array<{
-//     id: string;
-//     date: string;
-//     amount: number;
-//     mode: string;
-//     bank?: string;
-//     refNo?: string;
-//     invoiceNo: string;
-//     notes?: string;
-//   }>;
-// }> = {
-//   "1": {
-//     name: "Pak Foods",
-//     address: "123 Industrial Area, Lahore, Pakistan",
-//     phone: "042-111-2222",
-//     mobile: "0300-1234567",
-//     totalUnpaid: 210000,
-//     unpaidInstallments: [
-//       {
-//         id: "1",
-//         invoiceNo: "#INV123",
-//         crop: "Wheat",
-//         amount: 40000,
-//         dueDate: "14-Jul-2025",
-//         status: "Overdue"
-//       },
-//       {
-//         id: "2",
-//         invoiceNo: "#INV120",
-//         crop: "Maize",
-//         amount: 60000,
-//         dueDate: "20-Jul-2025",
-//         status: "Due Soon"
-//       },
-//       {
-//         id: "3",
-//         invoiceNo: "#INV124",
-//         crop: "Rice",
-//         amount: 70000,
-//         dueDate: "25-Jul-2025",
-//         status: "Pending"
-//       }
-//     ],
-//     payments: [
-//       {
-//         id: "1",
-//         date: "14-Jul-2025",
-//         amount: 40000,
-//         mode: "Bank",
-//         bank: "HBL",
-//         refNo: "12345",
-//         invoiceNo: "#INV123",
-//         notes: "Full pay"
-//       },
-//       {
-//         id: "2",
-//         date: "10-Jul-2025",
-//         amount: 70000,
-//         mode: "Cash",
-//         invoiceNo: "#INV122",
-//         notes: "Full pay"
-//       }
-//     ]
-//   },
-//   "2": {
-//     name: "Noor Traders",
-//     address: "456 Main Street, Karachi, Pakistan",
-//     phone: "021-333-4444",
-//     mobile: "0321-9876543",
-//     totalUnpaid: 85000,
-//     unpaidInstallments: [
-//       {
-//         id: "1",
-//         invoiceNo: "#INV125",
-//         crop: "Cotton",
-//         amount: 85000,
-//         dueDate: "22-Jul-2025",
-//         status: "Due Soon"
-//       }
-//     ],
-//     payments: []
-//   },
-//   "3": {
-//     name: "Safeer Bros.",
-//     address: "789 Market Road, Faisalabad, Pakistan",
-//     phone: "041-555-6666",
-//     mobile: "0345-1122334",
-//     totalUnpaid: 120000,
-//     unpaidInstallments: [
-//       {
-//         id: "1",
-//         invoiceNo: "#INV126",
-//         crop: "Rice",
-//         amount: 120000,
-//         dueDate: "10-Jul-2025",
-//         status: "Overdue"
-//       }
-//     ],
-//     payments: []
-//   }
-// };
 
 
 type Installment = {
@@ -167,7 +52,7 @@ export function BuyerReceivableCard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ useEffect MUST be here — before any returns
+  
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
@@ -184,7 +69,7 @@ export function BuyerReceivableCard() {
     fetchData();
   }, [id]);
 
-  // ✅ All returns must come AFTER useEffect
+
   if (loading) return <div className="p-6">Loading buyer data...</div>;
   if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (!buyer) return <div className="p-6">Buyer not found</div>;
@@ -272,7 +157,7 @@ export function BuyerReceivableCard() {
                   Contact Numbers
                 </h4>
                 <p className="text-base">Phone: {buyer.phone}</p>
-                <p className="text-base">Mobile: {buyer.mobile}</p>
+                
               </div>
             </div>
           </CardContent>
