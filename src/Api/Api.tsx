@@ -199,3 +199,14 @@ export const GetBuyerReceivableCard = async (
   }
 };
 
+export const GetAllBuyersWithReceivables = async () => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/buyer/getBuyers/recivable`);
+    return response.data;
+  }catch (error){
+    console.error("Get All Buyers With Receivables API error", error);
+    throw error;
+  }
+}
+
+

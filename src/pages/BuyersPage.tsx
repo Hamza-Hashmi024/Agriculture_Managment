@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,40 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Plus, Download, Eye, CreditCard } from "lucide-react";
 import { AddPaymentModal } from "@/components/AddPaymentModal";
+import { GetAllBuyersWithReceivables } from "@/Api/Api";
 
 import { useNavigate } from "react-router-dom";
 
-// Mock data for buyers
-const mockBuyers = [
-  {
-    id: "1",
-    name: "Pak Foods",
-    netReceivable: 210000,
-    lastSale: "12-Jul-2025",
-    lastPayment: "14-Jul-2025"
-  },
-  {
-    id: "2", 
-    name: "Noor Traders",
-    netReceivable: 85000,
-    lastSale: "10-Jul-2025",
-    lastPayment: "10-Jul-2025"
-  },
-  {
-    id: "3",
-    name: "Safeer Bros",
-    netReceivable: 120000,
-    lastSale: "09-Jul-2025",
-    lastPayment: null
-  },
-  {
-    id: "4",
-    name: "Fresh Market",
-    netReceivable: 0,
-    lastSale: "08-Jul-2025", 
-    lastPayment: "08-Jul-2025"
-  }
-];
+
 
 export function BuyersPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,6 +23,8 @@ export function BuyersPage() {
   // const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedBuyerId, setSelectedBuyerId] = useState<string>("");
+  
+  const [buyers, setBuyers] = useState<any[]>([]);
   const [newBuyer, setNewBuyer] = useState({
     name: "",
     contacts: "",
@@ -63,83 +36,46 @@ export function BuyersPage() {
     notes: ""
   });
 
-  const filteredBuyers = mockBuyers.filter(buyer => {
-    const matchesSearch = buyer.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = outstandingOnly ? buyer.netReceivable > 0 : true;
-    return matchesSearch && matchesFilter;
-  });
-
+const filteredBuyers = buyers.filter(buyer => {
+  const matchesSearch = buyer.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const matchesFilter = outstandingOnly ? buyer.netReceivable > 0 : true;
+  return matchesSearch && matchesFilter;
+});
 
   const navigate = useNavigate();
-
-
-  // const handleAddBuyer = () => {
-  //   console.log("Adding buyer:", newBuyer);
-  //   setIsAddModalOpen(false);
-  //   setNewBuyer({
-  //     name: "",
-  //     contacts: "",
-  //     bankName: "",
-  //     accountNo: "",
-  //     iban: "",
-  //     walletNumber: "",
-  //     walletType: "",
-  //     notes: ""
-  //   });
-  // };
-
-
-  
-// const handleAddBuyer = async () => {
-//   const buyerData = {
-//     tenantId: 1, // or fetch dynamically
-//     name: newBuyer.name,
-//     notes: newBuyer.notes,
-//     contacts: [
-//       { phoneNumber: newBuyer.contacts }
-//     ],
-//     bankAccounts: [
-//       {
-//         bankName: newBuyer.bankName,
-//         accountNumber: newBuyer.accountNo,
-//         iban: newBuyer.iban
-//       }
-//     ],
-//     wallets: [
-//       {
-//         walletNumber: newBuyer.walletNumber,
-//         provider: newBuyer.walletType
-//       }
-//     ]
-//   };
-
-//   try {
-//     const response = await RegisterBuyer(buyerData);
-//     console.log("Buyer registered successfully:", response);
-    
-
-//     setIsAddModalOpen(false);
-//     setNewBuyer({
-//       name: "",
-//       contacts: "",
-//       bankName: "",
-//       accountNo: "",
-//       iban: "",
-//       walletNumber: "",
-//       walletType: "",
-//       notes: ""
-//     });
-//   } catch (error) {
-//     console.error("Error registering buyer:", error);
-   
-//   }
-// };
 
 
   const handleAddPayment = (buyerId: string) => {
     setSelectedBuyerId(buyerId);
     setIsPaymentModalOpen(true);
   };
+
+useEffect(() => {
+  const fetchBuyers = async () => {
+    try {
+      const response = await GetAllBuyersWithReceivables();
+
+      if (Array.isArray(response)) {
+        const mapped = response.map((buyer: any, index: number) => ({
+          id: (index + 1).toString(),
+          name: buyer.buyerName,
+          netReceivable: buyer.netReceivable,
+          lastSale: buyer.lastSaleDate,
+          lastPayment: buyer.lastPaymentDate,
+        }));
+
+        setBuyers(mapped);
+      } else {
+        console.error("Unexpected response format", response);
+      }
+    } catch (error) {
+      console.error("Error fetching buyers:", error);
+    }
+  };
+
+  fetchBuyers();
+}, []);
+
 
   return (
     <div className="p-6 space-y-6">

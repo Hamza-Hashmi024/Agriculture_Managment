@@ -1,7 +1,8 @@
 const db = require("../config/db");
 
 const registerBuyer = (req, res) => {
- const { tenantId, name, notes, address, contacts, wallets, bankAccounts } = req.body;
+  const { tenantId, name, notes, address, contacts, wallets, bankAccounts } =
+    req.body;
 
   db.beginTransaction((err) => {
     if (err) {
@@ -10,102 +11,107 @@ const registerBuyer = (req, res) => {
 
     // 1. Insert buyer
     const buyerQuery = `INSERT INTO buyers (tenant_id, name, notes, address) VALUES (?, ?, ?, ?)`;
-    db.query(buyerQuery, [tenantId, name , notes , address], (err, buyerResult) => {
-      if (err) {
-        return db.rollback(() => {
-          res.status(500).json({ error: "Failed to insert buyer" });
-        });
-      }
-
-      const buyerId = buyerResult.insertId;
-
-      // 2. Insert contacts
-      const insertContacts = (callback) => {
-        if (!Array.isArray(contacts) || contacts.length === 0)
-          return callback();
-
-        let completed = 0;
-        contacts.forEach((contact) => {
-          const query = `INSERT INTO buyer_contacts (buyer_id, phone_number) VALUES (?, ?)`;
-          db.query(query, [buyerId, contact.phoneNumber], (err) => {
-            if (err) return callback(err);
-            if (++completed === contacts.length) callback();
+    db.query(
+      buyerQuery,
+      [tenantId, name, notes, address],
+      (err, buyerResult) => {
+        if (err) {
+          return db.rollback(() => {
+            res.status(500).json({ error: "Failed to insert buyer" });
           });
-        });
-      };
+        }
 
-      // 3. Insert wallets
-      const insertWallets = (callback) => {
-        if (!Array.isArray(wallets) || wallets.length === 0) return callback();
+        const buyerId = buyerResult.insertId;
 
-        let completed = 0;
-        wallets.forEach((wallet) => {
-          const query = `INSERT INTO buyer_wallets (buyer_id, provider, wallet_number) VALUES (?, ?, ?)`;
-          db.query(
-            query,
-            [buyerId, wallet.provider, wallet.walletNumber],
-            (err) => {
+        // 2. Insert contacts
+        const insertContacts = (callback) => {
+          if (!Array.isArray(contacts) || contacts.length === 0)
+            return callback();
+
+          let completed = 0;
+          contacts.forEach((contact) => {
+            const query = `INSERT INTO buyer_contacts (buyer_id, phone_number) VALUES (?, ?)`;
+            db.query(query, [buyerId, contact.phoneNumber], (err) => {
               if (err) return callback(err);
-              if (++completed === wallets.length) callback();
-            }
-          );
-        });
-      };
+              if (++completed === contacts.length) callback();
+            });
+          });
+        };
 
-      // 4. Insert bank accounts
-      const insertBankAccounts = (callback) => {
-        if (!Array.isArray(bankAccounts) || bankAccounts.length === 0)
-          return callback();
+        // 3. Insert wallets
+        const insertWallets = (callback) => {
+          if (!Array.isArray(wallets) || wallets.length === 0)
+            return callback();
 
-        let completed = 0;
-        bankAccounts.forEach((account) => {
-          const query = `INSERT INTO buyer_bank_accounts (buyer_id, bank_name, account_number, iban) VALUES (?, ?, ?, ?)`;
-          db.query(
-            query,
-            [buyerId, account.bankName, account.accountNumber, account.iban],
-            (err) => {
-              if (err) return callback(err);
-              if (++completed === bankAccounts.length) callback();
-            }
-          );
-        });
-      };
+          let completed = 0;
+          wallets.forEach((wallet) => {
+            const query = `INSERT INTO buyer_wallets (buyer_id, provider, wallet_number) VALUES (?, ?, ?)`;
+            db.query(
+              query,
+              [buyerId, wallet.provider, wallet.walletNumber],
+              (err) => {
+                if (err) return callback(err);
+                if (++completed === wallets.length) callback();
+              }
+            );
+          });
+        };
 
-      // Run all inserts in series
-      insertContacts((err) => {
-        if (err)
-          return db.rollback(() =>
-            res.status(500).json({ error: "Failed to insert contacts" })
-          );
+        // 4. Insert bank accounts
+        const insertBankAccounts = (callback) => {
+          if (!Array.isArray(bankAccounts) || bankAccounts.length === 0)
+            return callback();
 
-        insertWallets((err) => {
+          let completed = 0;
+          bankAccounts.forEach((account) => {
+            const query = `INSERT INTO buyer_bank_accounts (buyer_id, bank_name, account_number, iban) VALUES (?, ?, ?, ?)`;
+            db.query(
+              query,
+              [buyerId, account.bankName, account.accountNumber, account.iban],
+              (err) => {
+                if (err) return callback(err);
+                if (++completed === bankAccounts.length) callback();
+              }
+            );
+          });
+        };
+
+        // Run all inserts in series
+        insertContacts((err) => {
           if (err)
             return db.rollback(() =>
-              res.status(500).json({ error: "Failed to insert wallets" })
+              res.status(500).json({ error: "Failed to insert contacts" })
             );
 
-          insertBankAccounts((err) => {
+          insertWallets((err) => {
             if (err)
               return db.rollback(() =>
-                res
-                  .status(500)
-                  .json({ error: "Failed to insert bank accounts" })
+                res.status(500).json({ error: "Failed to insert wallets" })
               );
 
-            db.commit((err) => {
+            insertBankAccounts((err) => {
               if (err)
                 return db.rollback(() =>
-                  res.status(500).json({ error: "Commit failed" })
+                  res
+                    .status(500)
+                    .json({ error: "Failed to insert bank accounts" })
                 );
 
-              res
-                .status(201)
-                .json({ message: "Buyer registered successfully", buyerId });
+              db.commit((err) => {
+                if (err)
+                  return db.rollback(() =>
+                    res.status(500).json({ error: "Commit failed" })
+                  );
+
+                res
+                  .status(201)
+                  .json({ message: "Buyer registered successfully", buyerId });
+              });
             });
           });
         });
-      });
-    });
+      }
+    );
   });
 };
 
@@ -146,36 +152,6 @@ const GetBuyerById = (req, res) => {
   });
 };
 
-
-// const GetBuyerInstallments = (req, res) => {
-//   const { buyerId } = req.params;
-
-//   const query = `
-//     SELECT
-//       bi.id AS id,
-//       bi.amount AS installment_amount,
-//       bi.due_date AS installment_date,
-//       bi.status AS status,
-//       LEAST(COALESCE(SUM(bpi.amount), 0), bi.amount) AS paid_amount,
-//       GREATEST(bi.amount - COALESCE(SUM(bpi.amount), 0), 0) AS remaining_amount
-//     FROM buyer_installments bi
-//     JOIN sales s ON bi.sale_id = s.id
-//     LEFT JOIN buyer_payment_installments bpi ON bpi.buyer_installment_id = bi.id
-//     WHERE s.buyer_id = ?
-//     GROUP BY bi.id
-//     ORDER BY bi.due_date ASC;
-//   `;
-
-//   db.query(query, [buyerId], (err, results) => {
-//     if (err) {
-//       console.error("SQL Error:", err);
-//       return res.status(500).json({ error: "Failed to fetch installments" });
-//     }
-
-//     return res.status(200).json(results);
-//   });
-// };
-
 const GetBuyerInstallments = (req, res) => {
   const { buyerId } = req.params;
 
@@ -204,11 +180,6 @@ const GetBuyerInstallments = (req, res) => {
     return res.status(200).json(results);
   });
 };
-
-
-
-
-
 
 const getBuyersWithReceivables = (req, res) => {
   const query = `
@@ -280,6 +251,54 @@ const getBuyersWithReceivables = (req, res) => {
   });
 };
 
+const GetAllBuyersWithRecivables = (req, res) => {
+  const query = `SELECT 
+    b.name AS buyer_name,
+    IFNULL(SUM(s.total_buyer_payable), 0) - IFNULL(SUM(p.amount), 0) AS net_receivable,
+    MAX(s.arrival_date) AS last_sale_date,
+    MAX(p.date) AS last_payment_date
+  FROM buyers b
+  LEFT JOIN sales s ON b.id = s.buyer_id
+  LEFT JOIN buyer_payments p ON b.id = p.buyer_id
+  GROUP BY b.id, b.name;`;
+
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error("Error fetching buyers with receivables:", err);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+
+    const buyers = result
+      .map((row) => ({
+        buyerName: row.buyer_name,
+        netReceivable: parseFloat(row.net_receivable || 0),
+        lastSaleDate: row.last_sale_date
+          ? new Date(row.last_sale_date).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
+          : null,
+        lastPaymentDate: row.last_payment_date
+          ? new Date(row.last_payment_date).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
+          : null,
+      }))
+      .filter(
+        (buyer) =>
+          buyer.netReceivable > 0 ||
+          buyer.lastSaleDate ||
+          buyer.lastPaymentDate
+      )
+      .sort((a, b) => b.netReceivable - a.netReceivable); 
+
+    res.status(200).json(buyers);
+  });
+};
+
 module.exports = {
   registerBuyer,
   GetAllBuyers,
@@ -287,4 +306,5 @@ module.exports = {
   GetBuyerById,
   GetBuyerInstallments,
   getBuyersWithReceivables,
+  GetAllBuyersWithRecivables 
 };
