@@ -176,7 +176,7 @@ export function AddAdvance() {
     }
 
     try {
-      await RecordAdvance(form); // No need to pass headers here; handled in API file
+      await RecordAdvance(form); 
 
       toast({
         title: "Advance Recorded",

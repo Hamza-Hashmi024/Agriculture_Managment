@@ -19,7 +19,7 @@ const addSaleLot = (req, res) => {
     arrival_date,
     weight,
     rate,
-    commission_percent,
+      commission_percentage, 
     farmer_expenses = [],
     buyer_expenses = [],
     installments = [],
@@ -28,6 +28,8 @@ const addSaleLot = (req, res) => {
     selected_bank_account,
     total_buyer_payable,
   } = req.body;
+
+const normalizedCommission = parseFloat(commission_percentage || 0);
 
   db.beginTransaction((err) => {
     if (err)
@@ -46,7 +48,7 @@ const addSaleLot = (req, res) => {
       arrival_date,
       weight,
       rate,
-      commission_percent,
+     normalizedCommission,
       total_buyer_payable,
     ];
 
@@ -65,6 +67,7 @@ const addSaleLot = (req, res) => {
         (sale_id, farmer_id, buyer_id, description, amount, source_type, bank_account_id, reference_no, commission_percent) 
         VALUES ?
       `;
+
       const farmerExpenseValues = farmer_expenses.map((exp) => [
         sale_id,
         farmer_id,
@@ -74,8 +77,9 @@ const addSaleLot = (req, res) => {
         exp.source,
         exp.source === "bank" ? exp.bankAccount : null,
         exp.refNo || null,
-        commission_percent,
+        normalizedCommission
       ]);
+
 
       // Prepare buyer expenses
       const buyerExpenseQuery = `

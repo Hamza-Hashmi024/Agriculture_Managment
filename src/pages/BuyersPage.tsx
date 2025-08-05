@@ -20,7 +20,6 @@ import { useNavigate } from "react-router-dom";
 export function BuyersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [outstandingOnly, setOutstandingOnly] = useState(false);
-  // const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedBuyerId, setSelectedBuyerId] = useState<string>("");
   

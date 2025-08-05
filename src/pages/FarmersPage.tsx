@@ -1,54 +1,58 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Plus, Search, Download, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-const mockFarmers = [
-  {
-    id: 1,
-    name: "Akbar Ali",
-    cnic: "35201-1234567-1",
-    village: "Chak 12",
-    contacts: ["0300-1234567", "0345-1234567"],
-    status: "Active",
-    totalAdvances: "PKR 150,000"
-  },
-  {
-    id: 2,
-    name: "Rafiq Ahmad",
-    cnic: "35203-2345678-2",
-    village: "Kot Addu",
-    contacts: ["0321-2345678"],
-    status: "Active",
-    totalAdvances: "PKR 85,000"
-  },
-  {
-    id: 3,
-    name: "Muhammad Hassan",
-    cnic: "35205-3456789-3",
-    village: "Chak 15",
-    contacts: ["0333-3456789", "0301-3456789"],
-    status: "Inactive",
-    totalAdvances: "PKR 0"
-  }
-];
+import { GetAllFarmer } from "@/Api/Api";
 
 export function FarmersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBy, setFilterBy] = useState("all");
+  const [farmers, setFarmers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFarmers = async () => {
+      try {
+        const response = await GetAllFarmer();
+        const data = response;
+        setFarmers(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Error fetching farmers:", err);
+        setFarmers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFarmers();
+  }, []);
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Farmers</h1>
-          <p className="text-muted-foreground">Manage farmer profiles and information</p>
+          <p className="text-muted-foreground">
+            Manage farmer profiles and information
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
@@ -94,7 +98,9 @@ export function FarmersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Farmers List ({mockFarmers.length})</CardTitle>
+          <CardTitle>
+            Farmers List ({Array.isArray(farmers) ? farmers.length : 0})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -110,40 +116,64 @@ export function FarmersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockFarmers.map((farmer) => (
-                <TableRow key={farmer.id}>
-                  <TableCell>
-                    <Link
-                      to={`/farmers/${farmer.id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {farmer.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{farmer.cnic}</TableCell>
-                  <TableCell>{farmer.village}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      {farmer.contacts.map((contact, index) => (
-                        <span key={index} className="text-sm">{contact}</span>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={farmer.status === "Active" ? "default" : "secondary"}>
-                      {farmer.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">{farmer.totalAdvances}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to={`/farmers/${farmer.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center">
+                    Loading farmers...
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : farmers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center">
+                    No farmers found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                farmers.map((farmer) => (
+                  <TableRow key={farmer.id}>
+                    <TableCell>
+                      <Link
+                        to={`/farmers/${farmer.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {farmer.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {farmer.cnic}
+                    </TableCell>
+                    <TableCell>{farmer.village}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        {(farmer.contacts || []).map((contact, index) => (
+                          <span key={index} className="text-sm">
+                            {contact}
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          farmer.status === "Active" ? "default" : "secondary"
+                        }
+                      >
+                        {farmer.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {farmer.totalAdvances}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/farmers/${farmer.id}`}>
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

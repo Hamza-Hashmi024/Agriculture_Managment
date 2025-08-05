@@ -207,6 +207,25 @@ export const GetAllBuyersWithReceivables = async () => {
     console.error("Get All Buyers With Receivables API error", error);
     throw error;
   }
-}
+};
 
+export const GetBuyerDeatilById = async (id) =>{
+  try {
+    const response = await axios.get(`${Base_Url}/api/buyer/${id}/details`);
+    return response.data;
+  }catch (error ){
+    console.error("Get Buyer Detail By ID API error", error);
+  }
+
+};
+
+export const GetAllFarmersFull = async (id) => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/farmer/full/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get All Farmers API error", error);
+    throw error;
+  }
+};
 

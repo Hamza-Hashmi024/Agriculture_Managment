@@ -80,7 +80,6 @@ const getBuyerReceivables = (req, res) => {
   });
 };
 
-
 const AddPayment = (req, res) => {
   let {
     buyerId,
@@ -253,8 +252,6 @@ const AddPayment = (req, res) => {
     });
   });
 };
-
-
 
 const getBuyerReceivableCard = (req, res) => {
   console.log("FULL REQUEST PARAMS:", req.params);

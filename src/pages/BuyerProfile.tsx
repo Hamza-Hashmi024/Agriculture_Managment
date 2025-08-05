@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,77 +10,58 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CreditCard, Edit, Download, Eye } from "lucide-react";
 import { AddPaymentModal } from "@/components/AddPaymentModal";
+import {GetBuyerDeatilById} from "@/Api/Api"
 
-// Mock data for buyer details
-const mockBuyerDetails = {
-  "1": {
-    id: "1",
-    name: "Pak Foods",
-    contacts: ["0333-1234567", "0321-7654321"],
-    bankName: "Meezan Bank",
-    accountNo: "0123456789",
-    iban: "PK36MEZN0000000123456789",
-    walletNumber: "0315-1234567",
-    walletType: "Easypaisa",
-    netReceivable: 210000,
-    invoices: [
-      { id: "1", date: "12-Jul-2025", crop: "Wheat", invoiceNo: "#INV123", amount: 100000 },
-      { id: "2", date: "10-Jul-2025", crop: "Rice", invoiceNo: "#INV122", amount: 70000 },
-      { id: "3", date: "09-Jul-2025", crop: "Maize", invoiceNo: "#INV120", amount: 70000 }
-    ],
-    installments: [
-      { id: "1", invoiceNo: "#INV123", amount: 40000, dueDate: "14-Jul-2025", status: "Overdue" },
-      { id: "2", invoiceNo: "#INV120", amount: 60000, dueDate: "20-Jul-2025", status: "Due Soon" },
-      { id: "3", invoiceNo: "#INV124", amount: 70000, dueDate: "25-Jul-2025", status: "Pending" }
-    ],
-    payments: [
-      { id: "1", date: "14-Jul-2025", amount: 60000, mode: "Bank", bank: "HBL", refNo: "12345", notes: "Partial pay" },
-      { id: "2", date: "10-Jul-2025", amount: 70000, mode: "Cash", bank: "—", refNo: "", notes: "Full pay" }
-    ]
-  },
-  "2": {
-    id: "2",
-    name: "Noor Traders",
-    contacts: ["0300-9876543"],
-    bankName: "UBL",
-    accountNo: "9876543210",
-    iban: "PK24UBL0000009876543210",
-    walletNumber: "0345-9876543",
-    walletType: "JazzCash",
-    netReceivable: 85000,
-    invoices: [
-      { id: "1", date: "10-Jul-2025", crop: "Cotton", invoiceNo: "#INV125", amount: 85000 }
-    ],
-    installments: [
-      { id: "1", invoiceNo: "#INV125", amount: 85000, dueDate: "22-Jul-2025", status: "Due Soon" }
-    ],
-    payments: []
-  },
-  "3": {
-    id: "3",
-    name: "Safeer Bros",
-    contacts: ["0333-5555555", "0321-4444444"],
-    bankName: "ABL",
-    accountNo: "5555444433",
-    iban: "PK12ABL0000005555444433",
-    walletNumber: "0310-5555555",
-    walletType: "Easypaisa",
-    netReceivable: 120000,
-    invoices: [
-      { id: "1", date: "09-Jul-2025", crop: "Sugarcane", invoiceNo: "#INV126", amount: 120000 }
-    ],
-    installments: [
-      { id: "1", invoiceNo: "#INV126", amount: 120000, dueDate: "30-Jul-2025", status: "Pending" }
-    ],
-    payments: []
-  }
-};
+
+interface Buyer {
+  id: string;
+  name: string;
+  contacts: string[];
+  bankName: string;
+  accountNo: string;
+  iban: string;
+  walletNumber: string;
+  walletType: string;
+  netReceivable: number;
+  invoices: Invoice[];
+  installments: Installment[];
+  payments: Payment[];
+}
+
+interface Invoice {
+  id: string;
+  date: string;
+  crop: string;
+  invoiceNo: string;
+  amount: number;
+}
+
+interface Installment {
+  id: string;
+  invoiceNo: string;
+  amount: number;
+  dueDate: string;
+  status: string;
+}
+
+interface Payment {
+  id: string;
+  date: string;
+  amount: number;
+  mode: string;
+  bank: string;
+  refNo: string;
+  notes: string;
+}
+
 
 export function BuyerProfile() {
   const { id } = useParams<{ id: string }>();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedInstallmentId, setSelectedInstallmentId] = useState<string | null>(null);
+ const [buyer, setBuyer] = useState<any>(null)
+const [loading, setLoading] = useState(true);
   const [editBuyer, setEditBuyer] = useState({
     name: "",
     contacts: "",
@@ -93,24 +73,46 @@ export function BuyerProfile() {
     notes: ""
   });
 
-  const buyer = id ? mockBuyerDetails[id as keyof typeof mockBuyerDetails] : null;
+   useEffect(() => {
+  const fetchBuyer = async () => {
+    setLoading(true);
+    try {
+      const data = await GetBuyerDeatilById(id);
+      setBuyer(data);
+    } catch (error) {
+      console.error("Failed to fetch buyer:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (!buyer) {
-    return (
-      <div className="p-6">
-        <div className="text-center py-8">
-          <h2 className="text-2xl font-bold mb-2">Buyer Not Found</h2>
-          <p className="text-muted-foreground mb-4">The buyer you're looking for doesn't exist.</p>
-          <Button asChild>
-            <Link to="/buyers">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Buyers
-            </Link>
-          </Button>
-        </div>
+  if (id) fetchBuyer();
+}, [id]);
+
+if (loading) {
+  return (
+    <div className="p-6 text-center">
+      <p className="text-muted-foreground text-2xl">Loading buyer details...</p>
+    </div>
+  );
+}
+
+if (!buyer) {
+  return (
+    <div className="p-6">
+      <div className="text-center py-8">
+        <h2 className="text-2xl font-bold mb-2">Buyer Not Found</h2>
+        <p className="text-muted-foreground mb-4">The buyer you're looking for doesn't exist.</p>
+        <Button asChild>
+          <Link to="/buyers">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Buyers
+          </Link>
+        </Button>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   const handleEdit = () => {
     setEditBuyer({
@@ -145,6 +147,8 @@ export function BuyerProfile() {
     const colorClass = statusColors[status as keyof typeof statusColors] || "text-gray-600 bg-gray-50";
     return `px-2 py-1 rounded-full text-xs font-medium ${colorClass}`;
   };
+
+
 
   return (
     <div className="p-6 space-y-6">

@@ -77,19 +77,204 @@ const RegisterFarmer = (req, res) => {
 };
 
 const GetAllFarmers = (req, res) => {
-  const query = `SELECT * FROM farmers`;
+  const query = `
+    SELECT 
+      f.id, 
+      f.name, 
+      f.cnic, 
+      f.village,
+      f.profile_photo_url,
+      COALESCE(SUM(a.amount), 0) AS totalAdvances
+    FROM farmers f
+    LEFT JOIN advances a ON f.id = a.farmer_id
+    GROUP BY f.id
+  `;
 
-  db.query(query, (err, results) => {
+  db.query(query, (err, farmers) => {
     if (err) {
-      console.error("Database error:", err);
+      console.error("Error fetching farmers:", err);
       return res.status(500).send({ message: "Error fetching farmers" });
     }
 
-    return res.status(200).send(results);
+    const contactQuery = `
+      SELECT farmer_id, phone_number FROM farmer_contacts
+    `;
+
+    db.query(contactQuery, (err, contacts) => {
+      if (err) {
+        console.error("Error fetching contacts:", err);
+        return res.status(500).send({ message: "Error fetching contacts" });
+      }
+
+      const response = farmers.map((farmer) => {
+        const farmerContacts = contacts
+          .filter((c) => c.farmer_id === farmer.id)
+          .map((c) => c.phone_number);
+
+        return {
+          ...farmer,
+          contacts: farmerContacts,
+          totalAdvances: `PKR ${Number(farmer.totalAdvances).toLocaleString()}`,
+          status: Number(farmer.totalAdvances) > 0 ? "Active" : "Inactive",
+        };
+      });
+
+      res.status(200).send(response);
+    });
+  });
+};
+
+
+const getFarmerByIdFull = (req, res) => {
+  const { id } = req.params;
+
+  const getFarmerData = (farmer) => {
+    return new Promise((resolve, reject) => {
+      const farmerId = farmer.id;
+
+      const data = {
+        id: farmer.id,
+        name: farmer.name,
+        cnic: farmer.cnic,
+        village: farmer.village,
+        profilePhoto: farmer.profile_photo_url,
+        contacts: [],
+        bankAccounts: [],
+        wallets: [],
+        advances: [],
+        settlements: [],
+        cropSales: [] 
+      };
+
+      db.query("SELECT phone_number FROM farmer_contacts WHERE farmer_id = ?", [farmerId], (err, contacts) => {
+        if (err) return reject(err);
+        data.contacts = contacts.map((c) => c.phone_number);
+
+        db.query("SELECT bank_name AS bank, account_number AS account, iban FROM farmer_bank_accounts WHERE farmer_id = ?", [farmerId], (err, banks) => {
+          if (err) return reject(err);
+          data.bankAccounts = banks;
+
+          db.query("SELECT provider, wallet_number AS number FROM farmer_wallets WHERE farmer_id = ?", [farmerId], (err, wallets) => {
+            if (err) return reject(err);
+            data.wallets = wallets;
+
+            db.query(`
+              SELECT 
+                a.id,
+                a.date,
+                IF(a.type = 'cash', 'Cash', 'In-Kind') AS type,
+                a.amount,
+                0 AS balance,
+                a.source_type AS source,
+                a.reference_no AS reference,
+                (
+                  SELECT GROUP_CONCAT(v.name SEPARATOR ', ')
+                  FROM in_kind_purchases ikp
+                  JOIN vendors v ON ikp.vendor_id = v.id
+                  WHERE ikp.advance_id = a.id
+                ) AS vendor
+              FROM advances a
+              WHERE a.farmer_id = ?
+              ORDER BY a.date ASC
+            `, [farmerId], (err, advances) => {
+              if (err) return reject(err);
+              data.advances = advances;
+
+              db.query(`
+                SELECT 
+                  fs.id, 
+                  s.arrival_date AS date,
+                  CONCAT(c.name, ' Sale') AS description,
+                  fs.total_gross AS debit,
+                  0 AS credit,
+                  fs.net_payable AS balance
+                FROM farmer_settlements fs
+                JOIN sales s ON fs.sale_id = s.id
+                JOIN crops c ON s.crop = c.id
+                WHERE s.farmer_id = ?
+              `, [farmerId], (err, settlements) => {
+                if (err) return reject(err);
+
+                db.query(`
+                  SELECT 
+                    id, date, amount, payment_mode,
+                    reference_no AS reference,
+                    amount AS credit,
+                    0 AS debit,
+                    NULL AS balance,
+                    'Payment to Farmer' AS description
+                  FROM farmer_payments
+                  WHERE farmer_id = ?
+                `, [farmerId], (err, payments) => {
+                  if (err) return reject(err);
+
+                  // Combine transaction history
+                  const history = [...settlements, ...payments, ...advances];
+                  history.sort((a, b) => new Date(a.date) - new Date(b.date));
+                  data.settlements = history;
+
+                  // Now fetch Crop Sales (the part that was missing)
+                  db.query(`SELECT 
+  s.id,
+  s.arrival_date,
+  s.crop,
+  b.name AS buyer,
+  s.commission_percent,
+  s.status,
+
+  -- Final payable = total_buyer_payable - commission - expenses
+  (
+    s.total_buyer_payable 
+    - (s.total_buyer_payable * s.commission_percent / 100) 
+    - IFNULL(SUM(e.amount), 0)
+  ) AS total_farmer_payable
+
+FROM sales s
+LEFT JOIN buyers b ON s.buyer_id = b.id
+LEFT JOIN sale_farmer_expenses e ON s.id = e.sale_id
+
+WHERE s.farmer_id = ?
+
+GROUP BY 
+  s.id, s.arrival_date, s.crop, b.name, 
+  s.commission_percent, s.status, s.total_buyer_payable;
+    
+   `, [farmerId], (err, cropSales) => {
+                    if (err) return reject(err);
+                    data.cropSales = cropSales; 
+                    resolve(data); 
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  };
+
+  db.query("SELECT * FROM farmers WHERE id = ?", [id], async (err, results) => {
+    if (err) {
+      console.error("Error fetching farmer:", err);
+      return res.status(500).json({ message: "Error fetching farmer." });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Farmer not found." });
+    }
+
+    try {
+      const fullFarmerData = await getFarmerData(results[0]);
+      res.json(fullFarmerData);
+    } catch (error) {
+      console.error("Error processing farmer data:", error);
+      res.status(500).json({ message: "Failed to process farmer data." });
+    }
   });
 };
 
 module.exports = {
   RegisterFarmer,
   GetAllFarmers,
+  getFarmerByIdFull,
 };

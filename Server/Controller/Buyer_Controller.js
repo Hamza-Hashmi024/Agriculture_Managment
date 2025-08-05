@@ -289,13 +289,104 @@ const GetAllBuyersWithRecivables = (req, res) => {
       }))
       .filter(
         (buyer) =>
-          buyer.netReceivable > 0 ||
-          buyer.lastSaleDate ||
-          buyer.lastPaymentDate
+          buyer.netReceivable > 0 || buyer.lastSaleDate || buyer.lastPaymentDate
       )
-      .sort((a, b) => b.netReceivable - a.netReceivable); 
+      .sort((a, b) => b.netReceivable - a.netReceivable);
 
     res.status(200).json(buyers);
+  });
+};
+
+const getBuyerDetails = (req, res) => {
+  const buyerId = req.params.id;
+
+  // Step 1: Get buyer basic info
+  const buyerQuery = `SELECT * FROM buyers WHERE id = ?`;
+  db.query(buyerQuery, [buyerId], (err, buyerResult) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (buyerResult.length === 0)
+      return res.status(404).json({ error: "Buyer not found" });
+
+    const buyer = buyerResult[0];
+
+    // Step 2: Get contacts
+    const contactsQuery = `SELECT phone_number FROM buyer_contacts WHERE buyer_id = ?`;
+    db.query(contactsQuery, [buyerId], (err, contactsResult) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      // Step 3: Get bank accounts
+      const bankQuery = `SELECT bank_name, account_number, iban FROM buyer_bank_accounts WHERE buyer_id = ?`;
+      db.query(bankQuery, [buyerId], (err, bankResult) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // Step 4: Get wallet info
+        const walletQuery = `SELECT provider AS walletType, wallet_number FROM buyer_wallets WHERE buyer_id = ?`;
+        db.query(walletQuery, [buyerId], (err, walletResult) => {
+          if (err) return res.status(500).json({ error: err.message });
+
+          // Step 5: Get invoices
+          const invoiceQuery = `
+            SELECT s.id, s.arrival_date AS date, s.crop, CONCAT('#INV', s.id) AS invoiceNo, s.total_buyer_payable AS amount
+            FROM sales s
+            WHERE s.buyer_id = ?
+          `;
+          db.query(invoiceQuery, [buyerId], (err, invoiceResult) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            // Step 6: Get installments
+            const installmentQuery = `
+              SELECT bi.id, CONCAT('#INV', bi.sale_id) AS invoiceNo, bi.amount, bi.due_date, bi.status
+              FROM buyer_installments bi
+              JOIN sales s ON s.id = bi.sale_id
+              WHERE s.buyer_id = ?
+            `;
+            db.query(installmentQuery, [buyerId], (err, installmentResult) => {
+              if (err) return res.status(500).json({ error: err.message });
+
+              // Step 7: Get payments
+              const paymentQuery = `
+  SELECT bp.id, bp.date, bp.amount, bp.payment_mode AS mode, 
+         IFNULL(a.bank, '—') AS bank, bp.reference_no AS refNo, bp.notes
+  FROM buyer_payments bp
+  LEFT JOIN accounts a ON a.id = bp.bank_account_id
+  WHERE bp.buyer_id = ?
+`;
+              db.query(paymentQuery, [buyerId], (err, paymentResult) => {
+                if (err) return res.status(500).json({ error: err.message });
+
+                // Step 8: Calculate net receivable
+                const totalInvoice = invoiceResult.reduce(
+                  (sum, inv) => sum + parseFloat(inv.amount),
+                  0
+                );
+                const totalPayments = paymentResult.reduce(
+                  (sum, pay) => sum + parseFloat(pay.amount),
+                  0
+                );
+                const netReceivable = totalInvoice - totalPayments;
+
+                const response = {
+                  id: buyer.id.toString(),
+                  name: buyer.name,
+                  contacts: contactsResult.map((c) => c.phone_number),
+                  bankName: bankResult[0]?.bank_name || "",
+                  accountNo: bankResult[0]?.account_number || "",
+                  iban: bankResult[0]?.iban || "",
+                  walletNumber: walletResult[0]?.wallet_number || "",
+                  walletType: walletResult[0]?.walletType || "",
+                  netReceivable,
+                  invoices: invoiceResult,
+                  installments: installmentResult,
+                  payments: paymentResult,
+                };
+
+                return res.json(response);
+              });
+            });
+          });
+        });
+      });
+    });
   });
 };
 
@@ -306,5 +397,6 @@ module.exports = {
   GetBuyerById,
   GetBuyerInstallments,
   getBuyersWithReceivables,
-  GetAllBuyersWithRecivables 
+  GetAllBuyersWithRecivables,
+  getBuyerDetails,
 };

@@ -1,6 +1,7 @@
 const db = require("../config/db");
 const { saveFile } = require("../Utility/FileUploder");
 
+
 const createAdvance = async (req, res) => {
   try {
     const {
@@ -16,7 +17,7 @@ const createAdvance = async (req, res) => {
 
     const numericAccountId = bank_account_id ? Number(bank_account_id) : null;
 
-    // ✅ Get source_type from accounts
+    // Get source_type from accounts
     let source_type = null;
 
     if (numericAccountId) {
@@ -35,10 +36,21 @@ const createAdvance = async (req, res) => {
           .json({ message: "Invalid bank_account_id or account not found" });
       }
 
-      source_type = accountResults[0].type; // 'bank' or 'cashbox'
+      source_type = accountResults[0].type;
     }
 
-    // ✅ Insert into advances
+    // 🧮 Calculate totalInKindAmount BEFORE using it in advance insert
+    let totalInKindAmount = amount;
+    const parsedPurchases =
+      typeof purchases === "string" ? JSON.parse(purchases) : purchases;
+
+    if (type === "in_kind" && Array.isArray(parsedPurchases)) {
+      totalInKindAmount = parsedPurchases.reduce((sum, item) => {
+        return sum + Number(item.total_amount || 0);
+      }, 0);
+    }
+
+    // Insert into advances
     const advanceSql = `
       INSERT INTO advances 
       (farmer_id, type, date, amount, source_type, bank_account_id, reference_no, received_by)
@@ -47,9 +59,9 @@ const createAdvance = async (req, res) => {
 
     const advanceValues = [
       farmer_id,
-      type === "in_kind",
+      type,
       date,
-      amount,
+      totalInKindAmount, 
       source_type || null,
       numericAccountId,
       reference_no || null,
@@ -64,9 +76,8 @@ const createAdvance = async (req, res) => {
     });
 
     const advanceId = advanceResult.insertId;
-    const parsedPurchases =
-      typeof purchases === "string" ? JSON.parse(purchases) : purchases;
-    //  Handle in-kind purchases
+
+    // Handle in-kind purchases
     if (type === "in_kind" && Array.isArray(parsedPurchases)) {
       for (const item of parsedPurchases) {
         const {
@@ -81,38 +92,37 @@ const createAdvance = async (req, res) => {
           reference_no,
         } = item;
 
-        const accountId = Number(purchase_account_id || funding_source);
-        if (!accountId) {
-          return res
-            .status(400)
-            .json({
-              message:
-                "Missing bank_account_id or funding_source in purchase item",
-            });
+        const accountId = Number(purchase_account_id);
+        const sourceType = funding_source;
+
+        if (!accountId || !sourceType) {
+          return res.status(400).json({
+            message: "Missing bank_account_id or funding_source in purchase item",
+            item,
+          });
         }
 
-        // 🔍 Fetch account type for each purchase
-        const [purchaseAccountResults] = await new Promise(
-          (resolve, reject) => {
-            db.query(
-              `SELECT type FROM accounts WHERE id = ? LIMIT 1`,
-              [accountId],
-              (err, results) => {
-                if (err) return reject(err);
-                resolve([results]);
-              }
-            );
-          }
-        );
+        // Fetch account type for each purchase
+        const [purchaseAccountResults] = await new Promise((resolve, reject) => {
+          db.query(
+            `SELECT type FROM accounts WHERE id = ? LIMIT 1`,
+            [accountId],
+            (err, results) => {
+              if (err) return reject(err);
+              resolve([results]);
+            }
+          );
+        });
 
         if (!purchaseAccountResults || purchaseAccountResults.length === 0) {
-          return res
-            .status(400)
-            .json({ message: "Invalid account ID in purchase item" });
+          return res.status(400).json({
+            message: "Invalid account ID in purchase item",
+          });
         }
 
         const purchase_source_type = purchaseAccountResults[0].type;
 
+        // Handle invoice upload
         let invoice_url = null;
         const fileKey = `invoice_${vendor_id}`;
         const invoiceFile = req.files?.find((f) => f.fieldname === fileKey);
@@ -135,10 +145,10 @@ const createAdvance = async (req, res) => {
           total_amount,
           payment_mode,
           paid_now,
-          purchase_source_type,
+          sourceType,
           accountId,
           reference_no || null,
-          invoice_url,
+          invoice_url || null,
         ];
 
         await new Promise((resolve, reject) => {
@@ -160,6 +170,7 @@ const createAdvance = async (req, res) => {
       .json({ message: "Failed to create advance", error: err.message });
   }
 };
+
 
 module.exports = {
   createAdvance,
