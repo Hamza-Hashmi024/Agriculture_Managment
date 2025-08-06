@@ -30,7 +30,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Eye, Plus, Download } from "lucide-react";
-import { GetAllNetFarmerPayable } from "@/Api/Api";
+import { GetAllNetFarmerPayable, GetBankAccountsWithBalance , AddPaymentFarmer } from "@/Api/Api";
 
 const mockVendorsPayables = [
   {
@@ -61,6 +61,7 @@ export function PayablesPage() {
   const [paymentDialog, setPaymentDialog] = useState(false);
   const [selectedPayable, setSelectedPayable] = useState<any>(null);
   const [NetFarmer, SetNetFarmer] = useState<any[]>([]);
+  const [Bank, SetBank] = useState<any[]>([]);
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
     paymentMode: "cash",
@@ -71,11 +72,29 @@ export function PayablesPage() {
     notes: "",
   });
 
-  const handlePaymentSubmit = () => {
-    console.log("Payment submitted:", paymentForm);
+  
+const handlePaymentSubmit = async () => {
+  try {
+    const payload = {
+      farmer_id: selectedPayable?.id,
+      sale_id: null,
+      amount: paymentForm.amount,
+      payment_mode: paymentForm.paymentMode,
+      bank_account_id: paymentForm.paymentMode === "bank" ? paymentForm.bankAccount : null,
+      reference_no: paymentForm.refNo,
+      date: paymentForm.date,
+      proof_file_url: paymentForm.uploadProof,
+      notes: paymentForm.notes,
+    };
+
+    const response = await AddPaymentFarmer(payload);
+
+    console.log("Payment Response:", response);
+    alert("Payment submitted successfully");
+
+    // Reset state
     setPaymentDialog(false);
     setSelectedPayable(null);
-    // Reset form
     setPaymentForm({
       amount: "",
       paymentMode: "cash",
@@ -85,7 +104,12 @@ export function PayablesPage() {
       uploadProof: "",
       notes: "",
     });
-  };
+  } catch (error) {
+    alert("Failed to submit payment.");
+    console.error(error);
+  }
+};
+
 
   useEffect(() => {
     const fetchFarmer = async () => {
@@ -96,14 +120,25 @@ export function PayablesPage() {
         console.error(error);
       }
     };
+
+    const GetBanks = async () => {
+      try {
+        const response = await GetBankAccountsWithBalance();
+        SetBank(response);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
     fetchFarmer();
+    GetBanks();
   }, []);
 
   const openPaymentModal = (payable: any, type: string) => {
     setSelectedPayable({ ...payable, type });
     setPaymentForm({
       ...paymentForm,
-      amount: payable.netPayable.toString(),
+      amount: payable.net_payable?.toString() || "0",
     });
     setPaymentDialog(true);
   };
@@ -171,7 +206,7 @@ export function PayablesPage() {
                           <Button
                             size="sm"
                             onClick={() => openPaymentModal(farmer, "farmer")}
-                            disabled={farmer.netPayable <= 0}
+                            disabled={farmer.net_payable <= 0}
                           >
                             <Plus className="h-4 w-4 mr-1" />
                             Add Payment
@@ -250,7 +285,9 @@ export function PayablesPage() {
             <div>
               <Label>Name</Label>
               <Input
-                value={selectedPayable?.name || ""}
+                value={
+                  selectedPayable?.name || selectedPayable?.farmer_name || ""
+                }
                 disabled
                 className="bg-muted"
               />
@@ -305,12 +342,14 @@ export function PayablesPage() {
                     <SelectValue placeholder="Select bank account" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="account1">
-                      Main Business Account - ***4567
-                    </SelectItem>
-                    <SelectItem value="account2">
-                      Secondary Account - ***8901
-                    </SelectItem>
+                    {Bank.filter((acc) => acc.type === "bank").map(
+                      (account) => (
+                        <SelectItem key={account.id} value={String(account.id)}>
+                          {account.title} - Balance:{" "}
+                          {Number(account.balance).toLocaleString()}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
               </div>

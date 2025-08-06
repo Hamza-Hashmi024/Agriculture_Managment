@@ -129,6 +129,20 @@ const getVendor = (req, res) => {
     res.status(200).json(results);
   });
 };
+
+
+
+const GetAllVendorPayables = (req , res ) =>{
+
+  const query =`
+
+  `
+}
+
+
+
+
+
 module.exports = {
   RegisterVendor,
   getVendor,

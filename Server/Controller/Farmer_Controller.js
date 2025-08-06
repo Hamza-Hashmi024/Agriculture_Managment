@@ -338,9 +338,54 @@ ORDER BY net_payable DESC;
   });
 };
 
+const AddFarmerPayments = (req, res) => {
+  const query = `INSERT INTO farmer_payments 
+    (farmer_id, sale_id, amount, payment_mode, bank_account_id, reference_no, date, proof_file_url, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  const {
+    farmer_id,
+    sale_id = null,
+    amount,
+    payment_mode,
+    bank_account_id = null,
+    reference_no,
+    date,
+    proof_file_url,
+    notes,
+  } = req.body;
+
+  const values = [
+    farmer_id,
+    sale_id,
+    amount,
+    payment_mode,
+    bank_account_id,
+    reference_no,
+    date,
+    proof_file_url,
+    notes,
+  ];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error("DB Insert Error:", err);
+      return res.status(400).json({ message: "Error while adding farmer payment" });
+    }
+
+    return res.status(201).json({
+      message: "Farmer payment added successfully",
+      insertId: result.insertId,
+    });
+  });
+};
+
+
+
 module.exports = {
   RegisterFarmer,
   GetAllFarmers,
   getFarmerByIdFull,
-  GetAllFarmerPayable
+  GetAllFarmerPayable,
+  AddFarmerPayments
 };

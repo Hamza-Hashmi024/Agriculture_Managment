@@ -241,3 +241,12 @@ export const GetAllNetFarmerPayable = async ()=>{
   }
 }
 
+export const AddPaymentFarmer = async (data) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/farmer/addpayment`, data);
+    return response.data;
+  } catch (error) {
+    console.error("Add Payment Farmer API error", error);
+    throw error;
+  }
+};
