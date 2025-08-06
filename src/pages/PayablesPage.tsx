@@ -1,41 +1,36 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Eye, Plus, Download } from "lucide-react";
-
-const mockFarmersPayables = [
-  {
-    id: 1,
-    name: "Akbar Ali",
-    netPayable: 261500,
-    lastSale: "2024-07-12",
-    lastPayment: "2024-07-14"
-  },
-  {
-    id: 2,
-    name: "Rafiq Ahmad",
-    netPayable: 420000,
-    lastSale: "2024-07-13",
-    lastPayment: null
-  },
-  {
-    id: 3,
-    name: "Muhammad Hassan",
-    netPayable: 323000,
-    lastSale: "2024-07-18",
-    lastPayment: "2024-07-20"
-  }
-];
+import { GetAllNetFarmerPayable } from "@/Api/Api";
 
 const mockVendorsPayables = [
   {
@@ -43,36 +38,37 @@ const mockVendorsPayables = [
     name: "AgriMart",
     netPayable: 112000,
     lastPurchase: "2024-07-10",
-    lastPayment: "2024-07-11"
+    lastPayment: "2024-07-11",
   },
   {
     id: 2,
     name: "Kissan Agri",
     netPayable: 47500,
     lastPurchase: "2024-07-09",
-    lastPayment: null
+    lastPayment: null,
   },
   {
     id: 3,
     name: "Expense",
     netPayable: 28000,
     lastPurchase: "2024-07-01",
-    lastPayment: null
-  }
+    lastPayment: null,
+  },
 ];
 
 export function PayablesPage() {
   const [activeTab, setActiveTab] = useState("farmers");
   const [paymentDialog, setPaymentDialog] = useState(false);
   const [selectedPayable, setSelectedPayable] = useState<any>(null);
+  const [NetFarmer, SetNetFarmer] = useState<any[]>([]);
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
     paymentMode: "cash",
     bankAccount: "",
     refNo: "",
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split("T")[0],
     uploadProof: "",
-    notes: ""
+    notes: "",
   });
 
   const handlePaymentSubmit = () => {
@@ -85,17 +81,29 @@ export function PayablesPage() {
       paymentMode: "cash",
       bankAccount: "",
       refNo: "",
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
       uploadProof: "",
-      notes: ""
+      notes: "",
     });
   };
+
+  useEffect(() => {
+    const fetchFarmer = async () => {
+      try {
+        const response = await GetAllNetFarmerPayable();
+        SetNetFarmer(response);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchFarmer();
+  }, []);
 
   const openPaymentModal = (payable: any, type: string) => {
     setSelectedPayable({ ...payable, type });
     setPaymentForm({
       ...paymentForm,
-      amount: payable.netPayable.toString()
+      amount: payable.netPayable.toString(),
     });
     setPaymentDialog(true);
   };
@@ -105,7 +113,9 @@ export function PayablesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Payables</h1>
-          <p className="text-muted-foreground">Manage payments to farmers and vendors</p>
+          <p className="text-muted-foreground">
+            Manage payments to farmers and vendors
+          </p>
         </div>
         <Button variant="outline">
           <Download className="h-4 w-4 mr-2" />
@@ -136,12 +146,20 @@ export function PayablesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockFarmersPayables.map((farmer) => (
+                  {NetFarmer.map((farmer) => (
                     <TableRow key={farmer.id}>
-                      <TableCell className="font-medium">{farmer.name}</TableCell>
-                      <TableCell>PKR {farmer.netPayable.toLocaleString()}</TableCell>
-                      <TableCell>{farmer.lastSale}</TableCell>
-                      <TableCell>{farmer.lastPayment || "—"}</TableCell>
+                      <TableCell className="font-medium">
+                        {farmer.farmer_name}
+                      </TableCell>
+                      <TableCell>
+                        PKR {Number(farmer.net_payable).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        {farmer.last_sale_date?.split("T")[0] || "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        {farmer.last_payment_date?.split("T")[0] || "N/A"}
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button asChild variant="outline" size="sm">
@@ -150,9 +168,9 @@ export function PayablesPage() {
                               View
                             </Link>
                           </Button>
-                          <Button 
-                            size="sm" 
-                            onClick={() => openPaymentModal(farmer, 'farmer')}
+                          <Button
+                            size="sm"
+                            onClick={() => openPaymentModal(farmer, "farmer")}
                             disabled={farmer.netPayable <= 0}
                           >
                             <Plus className="h-4 w-4 mr-1" />
@@ -187,8 +205,12 @@ export function PayablesPage() {
                 <TableBody>
                   {mockVendorsPayables.map((vendor) => (
                     <TableRow key={vendor.id}>
-                      <TableCell className="font-medium">{vendor.name}</TableCell>
-                      <TableCell>PKR {vendor.netPayable.toLocaleString()}</TableCell>
+                      <TableCell className="font-medium">
+                        {vendor.name}
+                      </TableCell>
+                      <TableCell>
+                        PKR {vendor.netPayable.toLocaleString()}
+                      </TableCell>
                       <TableCell>{vendor.lastPurchase}</TableCell>
                       <TableCell>{vendor.lastPayment || "—"}</TableCell>
                       <TableCell>
@@ -199,9 +221,9 @@ export function PayablesPage() {
                               View
                             </Link>
                           </Button>
-                          <Button 
-                            size="sm" 
-                            onClick={() => openPaymentModal(vendor, 'vendor')}
+                          <Button
+                            size="sm"
+                            onClick={() => openPaymentModal(vendor, "vendor")}
                             disabled={vendor.netPayable <= 0}
                           >
                             <Plus className="h-4 w-4 mr-1" />
@@ -227,29 +249,36 @@ export function PayablesPage() {
           <div className="space-y-4">
             <div>
               <Label>Name</Label>
-              <Input 
-                value={selectedPayable?.name || ""} 
-                disabled 
-                className="bg-muted" 
+              <Input
+                value={selectedPayable?.name || ""}
+                disabled
+                className="bg-muted"
               />
             </div>
-            
+
             <div>
-              <Label>Amount to pay (max: {selectedPayable?.netPayable?.toLocaleString() || 0})</Label>
-              <Input 
-                type="number" 
+              <Label>
+                Amount to pay (max:{" "}
+                {selectedPayable?.netPayable?.toLocaleString() || 0})
+              </Label>
+              <Input
+                type="number"
                 max={selectedPayable?.netPayable || 0}
                 value={paymentForm.amount}
-                onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
+                onChange={(e) =>
+                  setPaymentForm({ ...paymentForm, amount: e.target.value })
+                }
                 placeholder="Enter amount"
               />
             </div>
 
             <div>
               <Label>Payment Mode</Label>
-              <RadioGroup 
-                value={paymentForm.paymentMode} 
-                onValueChange={(value) => setPaymentForm({...paymentForm, paymentMode: value})}
+              <RadioGroup
+                value={paymentForm.paymentMode}
+                onValueChange={(value) =>
+                  setPaymentForm({ ...paymentForm, paymentMode: value })
+                }
                 className="flex gap-4 mt-2"
               >
                 <div className="flex items-center space-x-2">
@@ -266,13 +295,22 @@ export function PayablesPage() {
             {paymentForm.paymentMode === "bank" && (
               <div>
                 <Label>Select Bank Account</Label>
-                <Select value={paymentForm.bankAccount} onValueChange={(value) => setPaymentForm({...paymentForm, bankAccount: value})}>
+                <Select
+                  value={paymentForm.bankAccount}
+                  onValueChange={(value) =>
+                    setPaymentForm({ ...paymentForm, bankAccount: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select bank account" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="account1">Main Business Account - ***4567</SelectItem>
-                    <SelectItem value="account2">Secondary Account - ***8901</SelectItem>
+                    <SelectItem value="account1">
+                      Main Business Account - ***4567
+                    </SelectItem>
+                    <SelectItem value="account2">
+                      Secondary Account - ***8901
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -280,35 +318,46 @@ export function PayablesPage() {
 
             <div>
               <Label>Reference No. (optional)</Label>
-              <Input 
+              <Input
                 value={paymentForm.refNo}
-                onChange={(e) => setPaymentForm({...paymentForm, refNo: e.target.value})}
+                onChange={(e) =>
+                  setPaymentForm({ ...paymentForm, refNo: e.target.value })
+                }
                 placeholder="Enter reference number"
               />
             </div>
 
             <div>
               <Label>Date</Label>
-              <Input 
+              <Input
                 type="date"
                 value={paymentForm.date}
-                onChange={(e) => setPaymentForm({...paymentForm, date: e.target.value})}
+                onChange={(e) =>
+                  setPaymentForm({ ...paymentForm, date: e.target.value })
+                }
               />
             </div>
 
             <div>
               <Label>Upload Proof (optional)</Label>
-              <Input 
+              <Input
                 type="file"
-                onChange={(e) => setPaymentForm({...paymentForm, uploadProof: e.target.value})}
+                onChange={(e) =>
+                  setPaymentForm({
+                    ...paymentForm,
+                    uploadProof: e.target.value,
+                  })
+                }
               />
             </div>
 
             <div>
               <Label>Notes (optional)</Label>
-              <Textarea 
+              <Textarea
                 value={paymentForm.notes}
-                onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
+                onChange={(e) =>
+                  setPaymentForm({ ...paymentForm, notes: e.target.value })
+                }
                 placeholder="Enter any notes"
                 rows={3}
               />
@@ -318,7 +367,11 @@ export function PayablesPage() {
               <Button onClick={handlePaymentSubmit} className="flex-1">
                 Save Payment
               </Button>
-              <Button variant="outline" onClick={() => setPaymentDialog(false)} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => setPaymentDialog(false)}
+                className="flex-1"
+              >
                 Cancel
               </Button>
             </div>

@@ -229,3 +229,15 @@ export const GetAllFarmersFull = async (id) => {
   }
 };
 
+export const GetAllNetFarmerPayable = async ()=>{
+  try {
+    const response = await axios.get(`${Base_Url}/api/farmer/netpayable`)
+    return response.data;
+  }
+  catch(error) {
+    console.error("Get All Net Farmer Payable API error");
+    throw error;
+
+  }
+}
+

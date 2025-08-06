@@ -273,8 +273,74 @@ GROUP BY
   });
 };
 
+
+const GetAllFarmerPayable = (req, res) => {
+  const query = `
+ SELECT 
+  f.id,
+  f.name AS farmer_name,
+
+  -- 🟢 Net Payable Calculation
+  COALESCE(SUM(s.total_buyer_payable), 0)
+  - COALESCE(SUM(s.total_buyer_payable * s.commission_percent / 100), 0)
+  - COALESCE(SUM(exp.total_expense), 0)
+  - COALESCE(adv.total_advance, 0)
+  - COALESCE(pay.total_payment, 0)
+  AS net_payable,
+
+  -- Last Sale Date
+  MAX(s.arrival_date) AS last_sale_date,
+
+  -- Last Payment Date
+  (
+    SELECT MAX(fp.date)
+    FROM farmer_payments fp
+    WHERE fp.farmer_id = f.id
+  ) AS last_payment_date
+
+FROM farmers f
+
+LEFT JOIN sales s ON f.id = s.farmer_id
+
+-- Sale Expenses
+LEFT JOIN (
+  SELECT sale_id, SUM(amount) AS total_expense
+  FROM sale_farmer_expenses
+  GROUP BY sale_id
+) exp ON s.id = exp.sale_id
+
+-- Advances
+LEFT JOIN (
+  SELECT farmer_id, SUM(amount) AS total_advance
+  FROM advances
+  GROUP BY farmer_id
+) adv ON f.id = adv.farmer_id
+
+-- Payments
+LEFT JOIN (
+  SELECT farmer_id, SUM(amount) AS total_payment
+  FROM farmer_payments
+  GROUP BY farmer_id
+) pay ON f.id = pay.farmer_id
+
+GROUP BY f.id, f.name
+HAVING net_payable > 0  -- Optional: show only farmers who are owed money
+ORDER BY net_payable DESC;
+  `;
+
+  db.query(query, (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.status(400).json({ message: "Error While Fetching Farmer Payable" });
+    }
+
+    res.json(result);
+  });
+};
+
 module.exports = {
   RegisterFarmer,
   GetAllFarmers,
   getFarmerByIdFull,
+  GetAllFarmerPayable
 };
