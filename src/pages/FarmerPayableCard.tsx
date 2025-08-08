@@ -1,13 +1,31 @@
-import { useState  , useEffect} from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Printer, Download, FileText } from "lucide-react";
@@ -24,32 +42,33 @@ export function FarmerPayableCard() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("sales");
- 
-const [FarmerPayables, setFarmerPayables] = useState<FarmerData | undefined>();
+
+  const [FarmerPayables, setFarmerPayables] = useState<
+    FarmerData | undefined
+  >();
   const [paymentDialog, setPaymentDialog] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
     paymentMode: "cash",
     bankAccount: "",
     refNo: "",
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split("T")[0],
     uploadProof: "",
-    notes: ""
+    notes: "",
   });
 
-const farmer = FarmerPayables;
+  const farmer = FarmerPayables;
 
-
- useEffect(() => {
+  useEffect(() => {
     const fetchFarmerSummary = async () => {
       try {
         const data = await GetFarmerPayableSummary(id);
-             const mappedData = {
+        const mappedData = {
           name: data.farmer_name,
           netPayable: Number(data.net_payable),
           totalSales: Number(data.total_sales),
           sales: data.sales_history.map((sale, index) => ({
-            id: index + 1, 
+            id: index + 1,
             date: sale.sale_date,
             crop: sale.crop,
             amount: Number(sale.sale_amount),
@@ -68,7 +87,6 @@ const farmer = FarmerPayables;
           })),
         };
 
-
         setFarmerPayables(mappedData);
       } catch (error) {
         console.log(error);
@@ -80,19 +98,18 @@ const farmer = FarmerPayables;
     }
   }, [id]);
 
-  
- if (!FarmerPayables) {
-  return (
-    <div className="p-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">Loading farmer data...</h1>
-        <Button asChild className="mt-4">
-          <Link to="/payables">Back to Payables</Link>
-        </Button>
+  if (!FarmerPayables) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Loading farmer data...</h1>
+          <Button asChild className="mt-4">
+            <Link to="/payables">Back to Payables</Link>
+          </Button>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
   const handlePaymentSubmit = () => {
     console.log("Payment submitted:", paymentForm);
     setPaymentDialog(false);
@@ -102,16 +119,16 @@ const farmer = FarmerPayables;
       paymentMode: "cash",
       bankAccount: "",
       refNo: "",
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
       uploadProof: "",
-      notes: ""
+      notes: "",
     });
   };
 
   const openPaymentModal = () => {
     setPaymentForm({
       ...paymentForm,
-      amount: farmer.netPayable.toString()
+      amount: farmer.netPayable.toString(),
     });
     setPaymentDialog(true);
   };
@@ -125,7 +142,9 @@ const farmer = FarmerPayables;
         </Button>
         <div>
           <h1 className="text-3xl font-bold">Farmer Payable Card</h1>
-          <p className="text-muted-foreground">Payment details for {farmer.name}</p>
+          <p className="text-muted-foreground">
+            Payment details for {farmer.name}
+          </p>
         </div>
       </div>
 
@@ -136,17 +155,26 @@ const farmer = FarmerPayables;
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Farmer</label>
+              <label className="text-sm font-medium text-muted-foreground">
+                Farmer
+              </label>
               <p className="text-lg font-semibold">{farmer.name}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Net Payable</label>
-              <p className="text-lg font-semibold text-red-600">PKR {farmer.netPayable.toLocaleString()}</p>
+              <label className="text-sm font-medium text-muted-foreground">
+                Net Payable
+              </label>
+              <p className="text-lg font-semibold text-red-600">
+                PKR {farmer.netPayable.toLocaleString()}
+              </p>
             </div>
           </div>
-          
+
           <div className="flex gap-2">
-            <Button onClick={openPaymentModal} disabled={farmer.netPayable <= 0}>
+            <Button
+              onClick={openPaymentModal}
+              disabled={farmer.netPayable <= 0}
+            >
               Add Payment
             </Button>
             <Button variant="outline" size="sm">
@@ -189,7 +217,9 @@ const farmer = FarmerPayables;
                       <TableCell>{sale.date}</TableCell>
                       <TableCell>{sale.crop}</TableCell>
                       <TableCell>PKR {sale.amount.toLocaleString()}</TableCell>
-                      <TableCell>PKR {sale.commission.toLocaleString()}</TableCell>
+                      <TableCell>
+                        PKR {sale.commission.toLocaleString()}
+                      </TableCell>
                       <TableCell>
                         <Button asChild variant="ghost" size="sm">
                           <Link to={`/sales/statement/${sale.id}`}>
@@ -227,7 +257,9 @@ const farmer = FarmerPayables;
                     farmer.payments.map((payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>{payment.date}</TableCell>
-                        <TableCell>PKR {payment.amount.toLocaleString()}</TableCell>
+                        <TableCell>
+                          PKR {payment.amount.toLocaleString()}
+                        </TableCell>
                         <TableCell>{payment.mode}</TableCell>
                         <TableCell>{payment.bank}</TableCell>
                         <TableCell>{payment.ref}</TableCell>
@@ -236,7 +268,10 @@ const farmer = FarmerPayables;
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={6}
+                        className="text-center text-muted-foreground"
+                      >
                         No payments found
                       </TableCell>
                     </TableRow>
@@ -259,23 +294,29 @@ const farmer = FarmerPayables;
               <Label>Farmer</Label>
               <Input value={farmer.name} disabled className="bg-muted" />
             </div>
-            
+
             <div>
-              <Label>Amount to pay (max: {farmer.netPayable.toLocaleString()})</Label>
-              <Input 
-                type="number" 
+              <Label>
+                Amount to pay (max: {farmer.netPayable.toLocaleString()})
+              </Label>
+              <Input
+                type="number"
                 max={farmer.netPayable}
                 value={paymentForm.amount}
-                onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
+                onChange={(e) =>
+                  setPaymentForm({ ...paymentForm, amount: e.target.value })
+                }
                 placeholder="Enter amount"
               />
             </div>
 
             <div>
               <Label>Payment Mode</Label>
-              <RadioGroup 
-                value={paymentForm.paymentMode} 
-                onValueChange={(value) => setPaymentForm({...paymentForm, paymentMode: value})}
+              <RadioGroup
+                value={paymentForm.paymentMode}
+                onValueChange={(value) =>
+                  setPaymentForm({ ...paymentForm, paymentMode: value })
+                }
                 className="flex gap-4 mt-2"
               >
                 <div className="flex items-center space-x-2">
@@ -292,13 +333,22 @@ const farmer = FarmerPayables;
             {paymentForm.paymentMode === "bank" && (
               <div>
                 <Label>Select Bank Account</Label>
-                <Select value={paymentForm.bankAccount} onValueChange={(value) => setPaymentForm({...paymentForm, bankAccount: value})}>
+                <Select
+                  value={paymentForm.bankAccount}
+                  onValueChange={(value) =>
+                    setPaymentForm({ ...paymentForm, bankAccount: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select bank account" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="account1">Main Business Account - ***4567</SelectItem>
-                    <SelectItem value="account2">Secondary Account - ***8901</SelectItem>
+                    <SelectItem value="account1">
+                      Main Business Account - ***4567
+                    </SelectItem>
+                    <SelectItem value="account2">
+                      Secondary Account - ***8901
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -306,35 +356,46 @@ const farmer = FarmerPayables;
 
             <div>
               <Label>Reference No. (optional)</Label>
-              <Input 
+              <Input
                 value={paymentForm.refNo}
-                onChange={(e) => setPaymentForm({...paymentForm, refNo: e.target.value})}
+                onChange={(e) =>
+                  setPaymentForm({ ...paymentForm, refNo: e.target.value })
+                }
                 placeholder="Enter reference number"
               />
             </div>
 
             <div>
               <Label>Date</Label>
-              <Input 
+              <Input
                 type="date"
                 value={paymentForm.date}
-                onChange={(e) => setPaymentForm({...paymentForm, date: e.target.value})}
+                onChange={(e) =>
+                  setPaymentForm({ ...paymentForm, date: e.target.value })
+                }
               />
             </div>
 
             <div>
               <Label>Upload Proof (optional)</Label>
-              <Input 
+              <Input
                 type="file"
-                onChange={(e) => setPaymentForm({...paymentForm, uploadProof: e.target.value})}
+                onChange={(e) =>
+                  setPaymentForm({
+                    ...paymentForm,
+                    uploadProof: e.target.value,
+                  })
+                }
               />
             </div>
 
             <div>
               <Label>Notes (optional)</Label>
-              <Textarea 
+              <Textarea
                 value={paymentForm.notes}
-                onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
+                onChange={(e) =>
+                  setPaymentForm({ ...paymentForm, notes: e.target.value })
+                }
                 placeholder="Enter any notes"
                 rows={3}
               />
@@ -344,7 +405,11 @@ const farmer = FarmerPayables;
               <Button onClick={handlePaymentSubmit} className="flex-1">
                 Save Payment
               </Button>
-              <Button variant="outline" onClick={() => setPaymentDialog(false)} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => setPaymentDialog(false)}
+                className="flex-1"
+              >
                 Cancel
               </Button>
             </div>

@@ -1,57 +1,40 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Eye, Plus, Download, Search, Filter, Trash2 } from "lucide-react";
-import { RegisterVendor } from "@/Api/Api";
-
-
-const mockVendors = [
-  {
-    id: 1,
-    name: "AgriMart",
-    type: "Supplier",
-    netPayable: 112000,
-    lastPurchase: "10-Jul",
-    lastPayment: "11-Jul"
-  },
-  {
-    id: 2,
-    name: "Kissan Agri",
-    type: "Supplier",
-    netPayable: 47500,
-    lastPurchase: "09-Jul",
-    lastPayment: null
-  },
-  {
-    id: 3,
-    name: "Expense",
-    type: "Expense",
-    netPayable: 28000,
-    lastPurchase: "01-Jul",
-    lastPayment: null
-  },
-  {
-    id: 4,
-    name: "Farm Equipment Co",
-    type: "Supplier",
-    netPayable: 0,
-    lastPurchase: "15-Jun",
-    lastPayment: "16-Jun"
-  }
-];
+import { RegisterVendor, GetVendorList } from "@/Api/Api";
 
 export function VendorsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [vendors, setVendors] = useState<any[]>([]);
   const [outstandingOnly, setOutstandingOnly] = useState(false);
   const [addVendorDialog, setAddVendorDialog] = useState(false);
   const [vendorForm, setVendorForm] = useState({
@@ -60,20 +43,25 @@ export function VendorsPage() {
     contacts: [""],
     bankAccounts: [{ bankName: "", accountNo: "", iban: "" }],
     wallets: [{ provider: "", number: "" }],
-    notes: ""
+    notes: "",
   });
 
-  const filteredVendors = mockVendors.filter(vendor => {
-    const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === "all" || vendor.type.toLowerCase() === typeFilter.toLowerCase();
-    const matchesOutstanding = !outstandingOnly || vendor.netPayable > 0;
+  const filteredVendors = vendors.filter((vendor) => {
+    const matchesSearch = vendor.VendorName?.toLowerCase().includes(
+      searchTerm.toLowerCase()
+    );
+    const matchesType =
+      typeFilter === "all" ||
+      vendor.Type?.toLowerCase() === typeFilter.toLowerCase();
+    const matchesOutstanding =
+      !outstandingOnly || parseFloat(vendor.NetPayable) > 0;
     return matchesSearch && matchesType && matchesOutstanding;
   });
 
   const handleAddContact = () => {
     setVendorForm({
       ...vendorForm,
-      contacts: [...vendorForm.contacts, ""]
+      contacts: [...vendorForm.contacts, ""],
     });
   };
 
@@ -82,7 +70,7 @@ export function VendorsPage() {
     newContacts[index] = value;
     setVendorForm({
       ...vendorForm,
-      contacts: newContacts
+      contacts: newContacts,
     });
   };
 
@@ -90,95 +78,107 @@ export function VendorsPage() {
     const newContacts = vendorForm.contacts.filter((_, i) => i !== index);
     setVendorForm({
       ...vendorForm,
-      contacts: newContacts.length > 0 ? newContacts : [""]
+      contacts: newContacts.length > 0 ? newContacts : [""],
     });
   };
 
   const addBankAccount = () => {
-    setVendorForm(prev => ({
+    setVendorForm((prev) => ({
       ...prev,
-      bankAccounts: [...prev.bankAccounts, { bankName: "", accountNo: "", iban: "" }]
+      bankAccounts: [
+        ...prev.bankAccounts,
+        { bankName: "", accountNo: "", iban: "" },
+      ],
     }));
   };
 
   const removeBankAccount = (index: number) => {
     if (vendorForm.bankAccounts.length > 1) {
-      setVendorForm(prev => ({
+      setVendorForm((prev) => ({
         ...prev,
-        bankAccounts: prev.bankAccounts.filter((_, i) => i !== index)
+        bankAccounts: prev.bankAccounts.filter((_, i) => i !== index),
       }));
     }
   };
 
   const updateBankAccount = (index: number, field: string, value: string) => {
-    setVendorForm(prev => ({
+    setVendorForm((prev) => ({
       ...prev,
-      bankAccounts: prev.bankAccounts.map((account, i) => 
+      bankAccounts: prev.bankAccounts.map((account, i) =>
         i === index ? { ...account, [field]: value } : account
-      )
+      ),
     }));
   };
 
   const addWallet = () => {
-    setVendorForm(prev => ({
+    setVendorForm((prev) => ({
       ...prev,
-      wallets: [...prev.wallets, { provider: "", number: "" }]
+      wallets: [...prev.wallets, { provider: "", number: "" }],
     }));
   };
 
   const removeWallet = (index: number) => {
     if (vendorForm.wallets.length > 1) {
-      setVendorForm(prev => ({
+      setVendorForm((prev) => ({
         ...prev,
-        wallets: prev.wallets.filter((_, i) => i !== index)
+        wallets: prev.wallets.filter((_, i) => i !== index),
       }));
     }
   };
 
   const updateWallet = (index: number, field: string, value: string) => {
-    setVendorForm(prev => ({
+    setVendorForm((prev) => ({
       ...prev,
-      wallets: prev.wallets.map((wallet, i) => 
+      wallets: prev.wallets.map((wallet, i) =>
         i === index ? { ...wallet, [field]: value } : wallet
-      )
+      ),
     }));
   };
 
-const handleSaveVendor = async () => {
-  try {
-    console.log("Submitting vendor:", vendorForm);
-    await RegisterVendor({
-      tenant_id: 1, 
-      ...vendorForm
-    });
+  const handleSaveVendor = async () => {
+    try {
+      console.log("Submitting vendor:", vendorForm);
+      await RegisterVendor({
+        tenant_id: 1,
+        ...vendorForm,
+      });
 
-    // Close modal and reset form
-    setAddVendorDialog(false);
-    setVendorForm({
-      name: "",
-      type: "supplier",
-      contacts: [""],
-      bankAccounts: [{ bankName: "", accountNo: "", iban: "" }],
-      wallets: [{ provider: "", number: "" }],
-      notes: ""
-    });
+      // Close modal and reset form
+      setAddVendorDialog(false);
+      setVendorForm({
+        name: "",
+        type: "supplier",
+        contacts: [""],
+        bankAccounts: [{ bankName: "", accountNo: "", iban: "" }],
+        wallets: [{ provider: "", number: "" }],
+        notes: "",
+      });
+    } catch (error) {
+      console.error("Error saving vendor:", error);
+    }
+  };
 
-    
+  const FetchVendorList = async () => {
+    try {
+      const data = await GetVendorList();
+      setVendors(data || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-  } catch (error) {
-    console.error("Error saving vendor:", error);
-    
-  }
-};
-
-
+  useEffect(() => {
+    FetchVendorList();
+  }, []);
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Vendors</h1>
-          <p className="text-muted-foreground">Manage suppliers and expense vendors</p>
+          <p className="text-muted-foreground">
+            Manage suppliers and expense vendors
+          </p>
         </div>
         <div className="flex gap-2">
           <Dialog open={addVendorDialog} onOpenChange={setAddVendorDialog}>
@@ -258,24 +258,41 @@ const handleSaveVendor = async () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredVendors.map((vendor) => (
-                <TableRow key={vendor.id}>
-                  <TableCell className="font-medium">{vendor.name}</TableCell>
-                  <TableCell>{vendor.type}</TableCell>
-                  <TableCell>PKR {vendor.netPayable.toLocaleString()}</TableCell>
-                  <TableCell>{vendor.lastPurchase}</TableCell>
-                  <TableCell>{vendor.lastPayment || "—"}</TableCell>
+              {filteredVendors.map((vendor, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">
+                    {vendor.VendorName}
+                  </TableCell>
+                  <TableCell>{vendor.Type}</TableCell>
+                  <TableCell>
+                    {vendor.NetPayable !== null
+                      ? `PKR ${parseFloat(vendor.NetPayable).toLocaleString()}`
+                      : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {vendor.LastPurchase
+                      ? new Date(vendor.LastPurchase).toLocaleDateString()
+                      : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {vendor.LastPayment
+                      ? new Date(vendor.LastPayment).toLocaleDateString()
+                      : "—"}
+                  </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button asChild variant="outline" size="sm">
-                        <Link to={`/vendors/${vendor.id}`}>
+                        <Link to={`/vendors/${vendor.id || index}`}>
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Link>
                       </Button>
-                      <Button 
-                        size="sm" 
-                        disabled={vendor.netPayable <= 0}
+                      <Button
+                        size="sm"
+                        disabled={
+                          !vendor.NetPayable ||
+                          parseFloat(vendor.NetPayable) <= 0
+                        }
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Add Payment
@@ -301,16 +318,20 @@ const handleSaveVendor = async () => {
               <Input
                 id="name"
                 value={vendorForm.name}
-                onChange={(e) => setVendorForm({...vendorForm, name: e.target.value})}
+                onChange={(e) =>
+                  setVendorForm({ ...vendorForm, name: e.target.value })
+                }
                 placeholder="Enter vendor name"
               />
             </div>
 
             <div>
               <Label>Type</Label>
-              <RadioGroup 
-                value={vendorForm.type} 
-                onValueChange={(value) => setVendorForm({...vendorForm, type: value})}
+              <RadioGroup
+                value={vendorForm.type}
+                onValueChange={(value) =>
+                  setVendorForm({ ...vendorForm, type: value })
+                }
                 className="flex gap-4 mt-2"
               >
                 <div className="flex items-center space-x-2">
@@ -359,9 +380,14 @@ const handleSaveVendor = async () => {
             <div>
               <Label>Bank Accounts</Label>
               {vendorForm.bankAccounts.map((account, index) => (
-                <div key={index} className="border rounded-lg p-3 space-y-3 mt-2">
+                <div
+                  key={index}
+                  className="border rounded-lg p-3 space-y-3 mt-2"
+                >
                   <div className="flex justify-between items-center">
-                    <h4 className="font-medium text-sm">Bank Account {index + 1}</h4>
+                    <h4 className="font-medium text-sm">
+                      Bank Account {index + 1}
+                    </h4>
                     {vendorForm.bankAccounts.length > 1 && (
                       <Button
                         type="button"
@@ -373,10 +399,12 @@ const handleSaveVendor = async () => {
                       </Button>
                     )}
                   </div>
-                  
-                  <Select 
-                    value={account.bankName} 
-                    onValueChange={(value) => updateBankAccount(index, 'bankName', value)}
+
+                  <Select
+                    value={account.bankName}
+                    onValueChange={(value) =>
+                      updateBankAccount(index, "bankName", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select bank" />
@@ -389,16 +417,20 @@ const handleSaveVendor = async () => {
                       <SelectItem value="allied">Allied Bank</SelectItem>
                     </SelectContent>
                   </Select>
-                  
+
                   <Input
                     value={account.accountNo}
-                    onChange={(e) => updateBankAccount(index, 'accountNo', e.target.value)}
+                    onChange={(e) =>
+                      updateBankAccount(index, "accountNo", e.target.value)
+                    }
                     placeholder="Account number"
                   />
-                  
+
                   <Input
                     value={account.iban}
-                    onChange={(e) => updateBankAccount(index, 'iban', e.target.value)}
+                    onChange={(e) =>
+                      updateBankAccount(index, "iban", e.target.value)
+                    }
                     placeholder="IBAN"
                   />
                 </div>
@@ -418,9 +450,14 @@ const handleSaveVendor = async () => {
             <div>
               <Label>Mobile Wallets</Label>
               {vendorForm.wallets.map((wallet, index) => (
-                <div key={index} className="border rounded-lg p-3 space-y-3 mt-2">
+                <div
+                  key={index}
+                  className="border rounded-lg p-3 space-y-3 mt-2"
+                >
                   <div className="flex justify-between items-center">
-                    <h4 className="font-medium text-sm">Mobile Wallet {index + 1}</h4>
+                    <h4 className="font-medium text-sm">
+                      Mobile Wallet {index + 1}
+                    </h4>
                     {vendorForm.wallets.length > 1 && (
                       <Button
                         type="button"
@@ -432,10 +469,12 @@ const handleSaveVendor = async () => {
                       </Button>
                     )}
                   </div>
-                  
-                  <Select 
-                    value={wallet.provider} 
-                    onValueChange={(value) => updateWallet(index, 'provider', value)}
+
+                  <Select
+                    value={wallet.provider}
+                    onValueChange={(value) =>
+                      updateWallet(index, "provider", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select wallet provider" />
@@ -447,10 +486,12 @@ const handleSaveVendor = async () => {
                       <SelectItem value="nayapay">NayaPay</SelectItem>
                     </SelectContent>
                   </Select>
-                  
+
                   <Input
                     value={wallet.number}
-                    onChange={(e) => updateWallet(index, 'number', e.target.value)}
+                    onChange={(e) =>
+                      updateWallet(index, "number", e.target.value)
+                    }
                     placeholder="Wallet number"
                   />
                 </div>
@@ -471,7 +512,9 @@ const handleSaveVendor = async () => {
               <Label>Notes</Label>
               <Textarea
                 value={vendorForm.notes}
-                onChange={(e) => setVendorForm({...vendorForm, notes: e.target.value})}
+                onChange={(e) =>
+                  setVendorForm({ ...vendorForm, notes: e.target.value })
+                }
                 placeholder="Additional notes"
                 rows={3}
               />
@@ -481,7 +524,11 @@ const handleSaveVendor = async () => {
               <Button onClick={handleSaveVendor} className="flex-1">
                 Save Vendor
               </Button>
-              <Button variant="outline" onClick={() => setAddVendorDialog(false)} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => setAddVendorDialog(false)}
+                className="flex-1"
+              >
                 Cancel
               </Button>
             </div>

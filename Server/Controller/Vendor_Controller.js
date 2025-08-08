@@ -130,13 +130,32 @@ const getVendor = (req, res) => {
   });
 };
 
-
-
-const GetAllVendorPayables = (req , res ) =>{
-
-  const query =`
-
-  `
+const GetVendorList = (req , res) =>{
+  const query = `
+  
+SELECT 
+    v.name AS VendorName,
+    v.type AS Type,
+    SUM(ikp.total_amount - IFNULL(ikp.paid_now, 0)) AS NetPayable,
+    MAX(a.date) AS LastPurchase,
+    MAX(CASE 
+            WHEN ikp.paid_now > 0 THEN a.date
+        END) AS LastPayment
+FROM vendors v
+LEFT JOIN in_kind_purchases ikp 
+    ON v.id = ikp.vendor_id
+LEFT JOIN advances a
+    ON ikp.advance_id = a.id
+GROUP BY v.id, v.name, v.type
+ORDER BY v.name;
+  `;
+  db.query(query ,  (err,  result )=>{
+    if(err){
+      console.log(error)
+      res.status(500).json({message : "Error While Fetching"})
+    }
+    res.json(result);
+  })
 }
 
 
@@ -146,4 +165,6 @@ const GetAllVendorPayables = (req , res ) =>{
 module.exports = {
   RegisterVendor,
   getVendor,
+  GetVendorList
+
 };

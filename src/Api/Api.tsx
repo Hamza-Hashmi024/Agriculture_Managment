@@ -262,3 +262,14 @@ export const GetFarmerPayableSummary = async(id)=>{
     throw error
   }
 }
+
+export const GetVendorList = async()=>{
+  try{
+    const response = await axios.get(`${Base_Url}/api/vendor/details` )
+    return response.data 
+  }
+  catch(error){
+    console.log( "Api Response Error" ,   error )
+    throw error
+  }
+}
