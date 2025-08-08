@@ -124,7 +124,6 @@ const GetAllFarmers = (req, res) => {
   });
 };
 
-
 const getFarmerByIdFull = (req, res) => {
   const { id } = req.params;
 
@@ -272,7 +271,6 @@ GROUP BY
     }
   });
 };
-
 
 const GetAllFarmerPayable = (req, res) => {
   const query = `
@@ -474,8 +472,6 @@ LIMIT 1;
     return res.json(result);
   });
 };
-
-
 
 module.exports = {
   RegisterFarmer,

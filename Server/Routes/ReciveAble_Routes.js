@@ -1,13 +1,14 @@
 const express = require("express");
 const router = express.Router();
+const asyncHandler = require("../MiddleWare/ErrorBoundry");
 const {
   getBuyerReceivables,
   AddPayment,
-  getBuyerReceivableCard
+  getBuyerReceivableCard,
 } = require("../Controller/Recivable_Controller");
 
-router.get("/get", getBuyerReceivables);
-router.post("/addPayment", AddPayment);
-router.get("/getCard/:buyerId", getBuyerReceivableCard);
+router.get("/get", asyncHandler(getBuyerReceivables));
+router.post("/addPayment", asyncHandler(AddPayment));
+router.get("/getCard/:buyerId", asyncHandler(getBuyerReceivableCard));
 
 module.exports = router;

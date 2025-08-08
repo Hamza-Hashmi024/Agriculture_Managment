@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-
+const asyncHandler = require("../MiddleWare/ErrorBoundry");
 const {
   registerBuyer,
   GetAllBuyers,
@@ -8,20 +8,17 @@ const {
   GetBuyerById,
   GetBuyerInstallments,
   getBuyersWithReceivables,
-  GetAllBuyersWithRecivables ,
-  getBuyerDetails
+  GetAllBuyersWithRecivables,
+  getBuyerDetails,
 } = require("../Controller/Buyer_Controller");
 
-
-router.post("/register", registerBuyer);
-router.get("/get", GetAllBuyers);
-router.get("/banks", GetAllBuyerBankAccounts);
-router.get("/:buyerId", GetBuyerById);
-router.get("/installments/:buyerId", GetBuyerInstallments);
-router.get("/getBuyers", getBuyersWithReceivables);
-router.get("/getBuyers/recivable", GetAllBuyersWithRecivables );
-router.get('/:id/details', getBuyerDetails);
-
-
+router.post("/register", asyncHandler(registerBuyer));
+router.get("/get", asyncHandler(GetAllBuyers));
+router.get("/banks", asyncHandler(GetAllBuyerBankAccounts));
+router.get("/:buyerId", asyncHandler(GetBuyerById));
+router.get("/installments/:buyerId", asyncHandler(GetBuyerInstallments));
+router.get("/getBuyers", asyncHandler(getBuyersWithReceivables));
+router.get("/getBuyers/recivable", asyncHandler(GetAllBuyersWithRecivables));
+router.get("/:id/details", asyncHandler(getBuyerDetails));
 
 module.exports = router;
