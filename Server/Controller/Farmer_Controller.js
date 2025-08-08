@@ -380,6 +380,101 @@ const AddFarmerPayments = (req, res) => {
   });
 };
 
+const FarmerPayableSummary = (req, res) => {
+  const farmerId = Number(req.params.farmer_id);
+  if (!Number.isInteger(farmerId) || farmerId <= 0) {
+    return res.status(400).json({ message: 'Invalid farmer_id param' });
+  }
+
+  const query = `
+SELECT 
+    f.name AS farmer_name,
+    COALESCE(sales_data.total_sales, 0) AS total_sales,
+    COALESCE(sales_data.net_payable, 0) AS net_payable,
+    COALESCE(sales_data.sales_history, JSON_ARRAY()) AS sales_history,
+    COALESCE(payments_data.payment_history, JSON_ARRAY()) AS payment_history
+FROM farmers f
+LEFT JOIN (
+    SELECT 
+        s.farmer_id,
+        SUM(s.total_buyer_payable) AS total_sales,
+        SUM(s.total_buyer_payable - ((s.commission_percent / 100) * s.total_buyer_payable)) AS net_payable,
+        JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'sale_date', s.arrival_date,
+                'crop', s.crop,
+                'sale_amount', s.total_buyer_payable,
+                'commission_percent', s.commission_percent,
+                'sale_status', s.status
+            )
+        ) AS sales_history
+    FROM sales s
+    WHERE s.farmer_id = ?
+    GROUP BY s.farmer_id
+) AS sales_data 
+    ON f.id = sales_data.farmer_id
+LEFT JOIN (
+    SELECT 
+        p.farmer_id,
+        JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'payment_date', p.date,
+                'payment_amount', p.amount,
+                'payment_mode', p.payment_mode,
+                'bank_reference', p.reference_no,
+                'notes', p.notes
+            )
+        ) AS payment_history
+    FROM farmer_payments p
+    WHERE p.farmer_id = ?
+    GROUP BY p.farmer_id
+) AS payments_data 
+    ON f.id = payments_data.farmer_id
+WHERE f.id = ?
+LIMIT 1;
+`;
+
+  db.query(query, [farmerId, farmerId, farmerId], (err, rows) => {
+    if (err) {
+      console.error('SQL Error:', err.sqlMessage || err);
+      return res.status(500).json({ message: 'Error Fetching FarmerPayableSummary', error: err.sqlMessage || String(err) });
+    }
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: 'Farmer not found' });
+    }
+
+    const row = rows[0];
+
+    // Helper to safely parse JSON (mysql2 may return JSON columns as strings)
+    const safeParse = (val) => {
+      if (!val) return [];
+      if (typeof val === 'object') return val; // already parsed
+      try { return JSON.parse(val); } catch (e) { return []; }
+    };
+
+    let salesHistory = safeParse(row.sales_history);
+    let paymentHistory = safeParse(row.payment_history);
+
+    // Sort in descending date order (newest first)
+    const parseDate = (d) => d ? new Date(d) : new Date(0);
+    salesHistory.sort((a, b) => parseDate(b.sale_date) - parseDate(a.sale_date));
+    paymentHistory.sort((a, b) => parseDate(b.payment_date) - parseDate(a.payment_date));
+
+    
+
+    const result = {
+      farmer_name: row.farmer_name,
+      total_sales: row.total_sales,
+      net_payable: row.net_payable,
+      sales_history: salesHistory,
+      payment_history: paymentHistory
+    };
+
+    return res.json(result);
+  });
+};
+
 
 
 module.exports = {
@@ -387,5 +482,6 @@ module.exports = {
   GetAllFarmers,
   getFarmerByIdFull,
   GetAllFarmerPayable,
-  AddFarmerPayments
+  AddFarmerPayments,
+  FarmerPayableSummary
 };

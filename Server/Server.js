@@ -30,6 +30,15 @@ app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
+
+app.use((err, req, res, next) => {
+  console.error("Error:", err.message);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

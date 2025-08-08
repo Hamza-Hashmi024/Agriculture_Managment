@@ -29,8 +29,13 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Plus, Download } from "lucide-react";
-import { GetAllNetFarmerPayable, GetBankAccountsWithBalance , AddPaymentFarmer } from "@/Api/Api";
+import { Eye, Plus, Download, ImageOff } from "lucide-react";
+import {
+  GetAllNetFarmerPayable,
+  GetBankAccountsWithBalance,
+  AddPaymentFarmer,
+} from "@/Api/Api";
+
 
 const mockVendorsPayables = [
   {
@@ -72,44 +77,43 @@ export function PayablesPage() {
     notes: "",
   });
 
-  
-const handlePaymentSubmit = async () => {
-  try {
-    const payload = {
-      farmer_id: selectedPayable?.id,
-      sale_id: null,
-      amount: paymentForm.amount,
-      payment_mode: paymentForm.paymentMode,
-      bank_account_id: paymentForm.paymentMode === "bank" ? paymentForm.bankAccount : null,
-      reference_no: paymentForm.refNo,
-      date: paymentForm.date,
-      proof_file_url: paymentForm.uploadProof,
-      notes: paymentForm.notes,
-    };
+  const handlePaymentSubmit = async () => {
+    try {
+      const payload = {
+        farmer_id: selectedPayable?.id,
+        sale_id: null,
+        amount: paymentForm.amount,
+        payment_mode: paymentForm.paymentMode,
+        bank_account_id:
+          paymentForm.paymentMode === "bank" ? paymentForm.bankAccount : null,
+        reference_no: paymentForm.refNo,
+        date: paymentForm.date,
+        proof_file_url: paymentForm.uploadProof,
+        notes: paymentForm.notes,
+      };
 
-    const response = await AddPaymentFarmer(payload);
+      const response = await AddPaymentFarmer(payload);
 
-    console.log("Payment Response:", response);
-    alert("Payment submitted successfully");
+      console.log("Payment Response:", response);
+      alert("Payment submitted successfully");
 
-    // Reset state
-    setPaymentDialog(false);
-    setSelectedPayable(null);
-    setPaymentForm({
-      amount: "",
-      paymentMode: "cash",
-      bankAccount: "",
-      refNo: "",
-      date: new Date().toISOString().split("T")[0],
-      uploadProof: "",
-      notes: "",
-    });
-  } catch (error) {
-    alert("Failed to submit payment.");
-    console.error(error);
-  }
-};
-
+      // Reset state
+      setPaymentDialog(false);
+      setSelectedPayable(null);
+      setPaymentForm({
+        amount: "",
+        paymentMode: "cash",
+        bankAccount: "",
+        refNo: "",
+        date: new Date().toISOString().split("T")[0],
+        uploadProof: "",
+        notes: "",
+      });
+    } catch (error) {
+      alert("Failed to submit payment.");
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
     const fetchFarmer = async () => {
@@ -142,7 +146,6 @@ const handlePaymentSubmit = async () => {
     });
     setPaymentDialog(true);
   };
-
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
