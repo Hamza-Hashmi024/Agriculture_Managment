@@ -142,22 +142,32 @@ const getFarmerByIdFull = (req, res) => {
         wallets: [],
         advances: [],
         settlements: [],
-        cropSales: [] 
+        cropSales: [],
       };
 
-      db.query("SELECT phone_number FROM farmer_contacts WHERE farmer_id = ?", [farmerId], (err, contacts) => {
-        if (err) return reject(err);
-        data.contacts = contacts.map((c) => c.phone_number);
-
-        db.query("SELECT bank_name AS bank, account_number AS account, iban FROM farmer_bank_accounts WHERE farmer_id = ?", [farmerId], (err, banks) => {
+      db.query(
+        "SELECT phone_number FROM farmer_contacts WHERE farmer_id = ?",
+        [farmerId],
+        (err, contacts) => {
           if (err) return reject(err);
-          data.bankAccounts = banks;
+          data.contacts = contacts.map((c) => c.phone_number);
 
-          db.query("SELECT provider, wallet_number AS number FROM farmer_wallets WHERE farmer_id = ?", [farmerId], (err, wallets) => {
-            if (err) return reject(err);
-            data.wallets = wallets;
+          db.query(
+            "SELECT bank_name AS bank, account_number AS account, iban FROM farmer_bank_accounts WHERE farmer_id = ?",
+            [farmerId],
+            (err, banks) => {
+              if (err) return reject(err);
+              data.bankAccounts = banks;
 
-            db.query(`
+              db.query(
+                "SELECT provider, wallet_number AS number FROM farmer_wallets WHERE farmer_id = ?",
+                [farmerId],
+                (err, wallets) => {
+                  if (err) return reject(err);
+                  data.wallets = wallets;
+
+                  db.query(
+                    `
               SELECT 
                 a.id,
                 a.date,
@@ -175,11 +185,14 @@ const getFarmerByIdFull = (req, res) => {
               FROM advances a
               WHERE a.farmer_id = ?
               ORDER BY a.date ASC
-            `, [farmerId], (err, advances) => {
-              if (err) return reject(err);
-              data.advances = advances;
+            `,
+                    [farmerId],
+                    (err, advances) => {
+                      if (err) return reject(err);
+                      data.advances = advances;
 
-              db.query(`
+                      db.query(
+                        `
                 SELECT 
                   fs.id, 
                   s.arrival_date AS date,
@@ -191,10 +204,13 @@ const getFarmerByIdFull = (req, res) => {
                 JOIN sales s ON fs.sale_id = s.id
                 JOIN crops c ON s.crop = c.id
                 WHERE s.farmer_id = ?
-              `, [farmerId], (err, settlements) => {
-                if (err) return reject(err);
+              `,
+                        [farmerId],
+                        (err, settlements) => {
+                          if (err) return reject(err);
 
-                db.query(`
+                          db.query(
+                            `
                   SELECT 
                     id, date, amount, payment_mode,
                     reference_no AS reference,
@@ -204,16 +220,25 @@ const getFarmerByIdFull = (req, res) => {
                     'Payment to Farmer' AS description
                   FROM farmer_payments
                   WHERE farmer_id = ?
-                `, [farmerId], (err, payments) => {
-                  if (err) return reject(err);
+                `,
+                            [farmerId],
+                            (err, payments) => {
+                              if (err) return reject(err);
 
-                  // Combine transaction history
-                  const history = [...settlements, ...payments, ...advances];
-                  history.sort((a, b) => new Date(a.date) - new Date(b.date));
-                  data.settlements = history;
+                              // Combine transaction history
+                              const history = [
+                                ...settlements,
+                                ...payments,
+                                ...advances,
+                              ];
+                              history.sort(
+                                (a, b) => new Date(a.date) - new Date(b.date)
+                              );
+                              data.settlements = history;
 
-                  // Now fetch Crop Sales (the part that was missing)
-                  db.query(`SELECT 
+                              // Now fetch Crop Sales (the part that was missing)
+                              db.query(
+                                `SELECT 
   s.id,
   s.arrival_date,
   s.crop,
@@ -238,17 +263,26 @@ GROUP BY
   s.id, s.arrival_date, s.crop, b.name, 
   s.commission_percent, s.status, s.total_buyer_payable;
     
-   `, [farmerId], (err, cropSales) => {
-                    if (err) return reject(err);
-                    data.cropSales = cropSales; 
-                    resolve(data); 
-                  });
-                });
-              });
-            });
-          });
-        });
-      });
+   `,
+                                [farmerId],
+                                (err, cropSales) => {
+                                  if (err) return reject(err);
+                                  data.cropSales = cropSales;
+                                  resolve(data);
+                                }
+                              );
+                            }
+                          );
+                        }
+                      );
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
     });
   };
 
@@ -329,7 +363,9 @@ ORDER BY net_payable DESC;
   db.query(query, (err, result) => {
     if (err) {
       console.log(err);
-      return res.status(400).json({ message: "Error While Fetching Farmer Payable" });
+      return res
+        .status(400)
+        .json({ message: "Error While Fetching Farmer Payable" });
     }
 
     res.json(result);
@@ -368,7 +404,9 @@ const AddFarmerPayments = (req, res) => {
   db.query(query, values, (err, result) => {
     if (err) {
       console.error("DB Insert Error:", err);
-      return res.status(400).json({ message: "Error while adding farmer payment" });
+      return res
+        .status(400)
+        .json({ message: "Error while adding farmer payment" });
     }
 
     return res.status(201).json({
@@ -381,14 +419,20 @@ const AddFarmerPayments = (req, res) => {
 const FarmerPayableSummary = (req, res) => {
   const farmerId = Number(req.params.farmer_id);
   if (!Number.isInteger(farmerId) || farmerId <= 0) {
-    return res.status(400).json({ message: 'Invalid farmer_id param' });
+    return res.status(400).json({ message: "Invalid farmer_id param" });
   }
 
   const query = `
 SELECT 
     f.name AS farmer_name,
     COALESCE(sales_data.total_sales, 0) AS total_sales,
-    COALESCE(sales_data.net_payable, 0) AS net_payable,
+    COALESCE(
+        sales_data.total_sales
+        - sales_data.total_commission
+        - COALESCE(expenses_data.total_expenses, 0)
+        - COALESCE(payments_data.total_payments, 0),
+        0
+    ) AS net_payable,
     COALESCE(sales_data.sales_history, JSON_ARRAY()) AS sales_history,
     COALESCE(payments_data.payment_history, JSON_ARRAY()) AS payment_history
 FROM farmers f
@@ -396,7 +440,7 @@ LEFT JOIN (
     SELECT 
         s.farmer_id,
         SUM(s.total_buyer_payable) AS total_sales,
-        SUM(s.total_buyer_payable - ((s.commission_percent / 100) * s.total_buyer_payable)) AS net_payable,
+        SUM(s.total_buyer_payable * (s.commission_percent / 100)) AS total_commission,
         JSON_ARRAYAGG(
             JSON_OBJECT(
                 'sale_date', s.arrival_date,
@@ -413,7 +457,17 @@ LEFT JOIN (
     ON f.id = sales_data.farmer_id
 LEFT JOIN (
     SELECT 
+        s.farmer_id,
+        SUM(e.amount) AS total_expenses
+    FROM sales s
+    JOIN sale_farmer_expenses e ON s.id = e.sale_id
+    GROUP BY s.farmer_id
+) AS expenses_data
+    ON f.id = expenses_data.farmer_id
+LEFT JOIN (
+    SELECT 
         p.farmer_id,
+        SUM(p.amount) AS total_payments,
         JSON_ARRAYAGG(
             JSON_OBJECT(
                 'payment_date', p.date,
@@ -434,12 +488,17 @@ LIMIT 1;
 
   db.query(query, [farmerId, farmerId, farmerId], (err, rows) => {
     if (err) {
-      console.error('SQL Error:', err.sqlMessage || err);
-      return res.status(500).json({ message: 'Error Fetching FarmerPayableSummary', error: err.sqlMessage || String(err) });
+      console.error("SQL Error:", err.sqlMessage || err);
+      return res
+        .status(500)
+        .json({
+          message: "Error Fetching FarmerPayableSummary",
+          error: err.sqlMessage || String(err),
+        });
     }
 
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ message: 'Farmer not found' });
+      return res.status(404).json({ message: "Farmer not found" });
     }
 
     const row = rows[0];
@@ -447,26 +506,32 @@ LIMIT 1;
     // Helper to safely parse JSON (mysql2 may return JSON columns as strings)
     const safeParse = (val) => {
       if (!val) return [];
-      if (typeof val === 'object') return val; // already parsed
-      try { return JSON.parse(val); } catch (e) { return []; }
+      if (typeof val === "object") return val; // already parsed
+      try {
+        return JSON.parse(val);
+      } catch (e) {
+        return [];
+      }
     };
 
     let salesHistory = safeParse(row.sales_history);
     let paymentHistory = safeParse(row.payment_history);
 
     // Sort in descending date order (newest first)
-    const parseDate = (d) => d ? new Date(d) : new Date(0);
-    salesHistory.sort((a, b) => parseDate(b.sale_date) - parseDate(a.sale_date));
-    paymentHistory.sort((a, b) => parseDate(b.payment_date) - parseDate(a.payment_date));
-
-    
+    const parseDate = (d) => (d ? new Date(d) : new Date(0));
+    salesHistory.sort(
+      (a, b) => parseDate(b.sale_date) - parseDate(a.sale_date)
+    );
+    paymentHistory.sort(
+      (a, b) => parseDate(b.payment_date) - parseDate(a.payment_date)
+    );
 
     const result = {
       farmer_name: row.farmer_name,
       total_sales: row.total_sales,
       net_payable: row.net_payable,
       sales_history: salesHistory,
-      payment_history: paymentHistory
+      payment_history: paymentHistory,
     };
 
     return res.json(result);
@@ -479,5 +544,5 @@ module.exports = {
   getFarmerByIdFull,
   GetAllFarmerPayable,
   AddFarmerPayments,
-  FarmerPayableSummary
+  FarmerPayableSummary,
 };

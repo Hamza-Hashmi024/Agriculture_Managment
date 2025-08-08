@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState  , useEffect} from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,56 +11,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Printer, Download, FileText } from "lucide-react";
+import { GetFarmerPayableSummary } from "@/Api/Api";
 
-const mockFarmerPayables = {
-  "1": {
-    id: 1,
-    name: "Akbar Ali",
-    netPayable: 261500,
-    sales: [
-      {
-        id: 1,
-        date: "2024-07-12",
-        crop: "Wheat",
-        amount: 504000,
-        commission: 42500,
-        statement: "Statement-001"
-      }
-    ],
-    payments: [
-      {
-        id: 1,
-        date: "2024-07-14",
-        amount: 200000,
-        mode: "Bank",
-        bank: "HBL",
-        ref: "1234",
-        notes: "First payment"
-      }
-    ]
-  },
-  "2": {
-    id: 2,
-    name: "Rafiq Ahmad",
-    netPayable: 420000,
-    sales: [
-      {
-        id: 1,
-        date: "2024-07-13",
-        crop: "Rice",
-        amount: 420000,
-        commission: 0,
-        statement: "Statement-002"
-      }
-    ],
-    payments: []
-  }
+type FarmerData = {
+  name: string;
+  netPayable: number;
+  sales: any[];
+  payments: any[];
 };
 
 export function FarmerPayableCard() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("sales");
+ 
+const [FarmerPayables, setFarmerPayables] = useState<FarmerData | undefined>();
   const [paymentDialog, setPaymentDialog] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
@@ -72,21 +37,62 @@ export function FarmerPayableCard() {
     notes: ""
   });
 
-  const farmer = mockFarmerPayables[id as keyof typeof mockFarmerPayables];
-  
-  if (!farmer) {
-    return (
-      <div className="p-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Farmer Not Found</h1>
-          <Button asChild className="mt-4">
-            <Link to="/payables">Back to Payables</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
+const farmer = FarmerPayables;
 
+
+ useEffect(() => {
+    const fetchFarmerSummary = async () => {
+      try {
+        const data = await GetFarmerPayableSummary(id);
+             const mappedData = {
+          name: data.farmer_name,
+          netPayable: Number(data.net_payable),
+          totalSales: Number(data.total_sales),
+          sales: data.sales_history.map((sale, index) => ({
+            id: index + 1, 
+            date: sale.sale_date,
+            crop: sale.crop,
+            amount: Number(sale.sale_amount),
+            commission:
+              (Number(sale.sale_amount) * Number(sale.commission_percent)) /
+              100,
+          })),
+          payments: data.payment_history.map((payment, index) => ({
+            id: index + 1,
+            date: payment.payment_date,
+            amount: Number(payment.payment_amount),
+            mode: payment.payment_mode,
+            bank: payment.bank_reference,
+            ref: payment.bank_reference,
+            notes: payment.notes,
+          })),
+        };
+
+
+        setFarmerPayables(mappedData);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    if (id) {
+      fetchFarmerSummary();
+    }
+  }, [id]);
+
+  
+ if (!FarmerPayables) {
+  return (
+    <div className="p-6">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold">Loading farmer data...</h1>
+        <Button asChild className="mt-4">
+          <Link to="/payables">Back to Payables</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
   const handlePaymentSubmit = () => {
     console.log("Payment submitted:", paymentForm);
     setPaymentDialog(false);

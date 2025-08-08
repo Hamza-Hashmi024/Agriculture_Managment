@@ -1,5 +1,6 @@
 import { Base_Url } from "@/Globle/Base_URL";
 import axios from "axios";
+import { error } from "console";
 
 export const RegisterFarmer = async (data) => {
   try {
@@ -250,3 +251,14 @@ export const AddPaymentFarmer = async (data) => {
     throw error;
   }
 };
+
+export const GetFarmerPayableSummary = async(id)=>{
+  try {
+    const response = await axios.get(`${Base_Url}/api/farmer/summary/${id}`)
+    return response.data;
+
+  }catch(error){
+    console.log(error , "Error get FarmerPayableSummary")
+    throw error
+  }
+}
