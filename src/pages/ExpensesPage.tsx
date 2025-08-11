@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, Plus, Download, Eye, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,65 +22,11 @@ import {
 } from "@/components/ui/select";
 import { AddEditExpenseModal } from "@/components/AddEditExpenseModal";
 import { ExpenseDetailModal } from "@/components/ExpenseDetailModal";
+import { GetAllExpenses } from "@/Api/Api";
 
-// Mock data for expenses
-const mockExpenses = [
-  {
-    id: "1",
-    date: "01-Jul",
-    category: "Rent",
-    description: "July Office Rent",
-    amount: 20000,
-    paymentMode: "Bank",
-    status: "Paid",
-    vendor: "Expense",
-    hasDoc: true,
-  },
-  {
-    id: "2",
-    date: "05-Jul",
-    category: "Utilities",
-    description: "WAPDA June Bill",
-    amount: 8000,
-    paymentMode: "Credit",
-    status: "Credit",
-    vendor: "Expense",
-    hasDoc: false,
-  },
-  {
-    id: "3",
-    date: "07-Jul",
-    category: "Food",
-    description: "Team Lunch",
-    amount: 3500,
-    paymentMode: "Cash",
-    status: "Paid",
-    vendor: "Expense",
-    hasDoc: true,
-  },
-  {
-    id: "4",
-    date: "09-Jul",
-    category: "Salary",
-    description: "July – Ghulam",
-    amount: 18000,
-    paymentMode: "Cash",
-    status: "Paid",
-    vendor: "Expense",
-    hasDoc: false,
-  },
-  {
-    id: "5",
-    date: "10-Jul",
-    category: "Diesel",
-    description: "Tractor Fuel",
-    amount: 5500,
-    paymentMode: "Cash",
-    status: "Paid",
-    vendor: "Kissan Agri",
-    hasDoc: true,
-  },
-];
+
+
+
 
 export function ExpensesPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -89,8 +35,42 @@ export function ExpensesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [viewingExpense, setViewingExpense] = useState<any>(null);
+  const [expenses, setExpenses] = useState<any>([]);
 
-  const filteredExpenses = mockExpenses.filter((expense) => {
+
+
+  function capitalize(str: string) {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
+  useEffect(() => {
+  const FetchExpenses = async () => {
+    try {
+      const response = await GetAllExpenses();
+
+      const mappedExpenses = response.map((item: any) => ({
+        id: item.id,
+        date: new Date(item.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), // e.g., "11-Aug"
+        category: item.category || "",
+        description: item.description || "",
+        amount: parseFloat(item.amount) || 0,
+        paymentMode: item.payment_mode ? capitalize(item.payment_mode) : "",
+        status: item.paid_status ? capitalize(item.paid_status) : "",
+        vendor: item.vendor_id ? `Vendor #${item.vendor_id}` : "N/A",
+        hasDoc: !!item.invoice_file_url
+      }));
+
+      setExpenses(mappedExpenses);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  FetchExpenses();
+}, []);
+
+  const filteredExpenses = expenses.filter((expense) => {
     const matchesSearch = 
       expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       expense.category.toLowerCase().includes(searchTerm.toLowerCase());

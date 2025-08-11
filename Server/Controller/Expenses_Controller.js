@@ -50,47 +50,19 @@ const AddExpenses = (req, res) => {
   });
 };
 
-// const AddExpensse = (req, res) => {
-//   const {
-//     category,
-//     vendor_id,
-//     description,
-//     amount,
-//     paid_status,
-//     payment_mode,
-//     paid_now,
-//     bank_account_id,
-//     reference_no,
-//     invoice_file_url,
-//   } = req.body;
+const GetAllExpenses = (req , res) =>{
+    const query = "SELECT * FROM expenses";
+    db.query(query, (err, result) => {
+        if(err){
+            console.log(err);
+            return res.status(500).json({message: "Error in database query", error: err})
+        }
+        res.json(result);
+    })
+}
 
-//   const query = `insert into expenses (category , vendor_id ,  description , amount  ,  paid_status ,  payment_mode , paid_now ,
-//        bank_account_id ,  reference_no , invoice_file_url ) 
-//         VALUES (?,?,?,?,?,?,?,?,?,?)`;
-//   const values = [
-//     category,
-//     vendor_id,
-//     description,
-//     amount,
-//     paid_status,
-//     payment_mode,
-//     paid_now,
-//     bank_account_id,
-//     reference_no,
-//     invoice_file_url,
-//   ];
-   
-//   db.query(query, values, (err, result) => {
-//     if(err){
-//         console.log(err)
-//         res.status(500).json({message: "Error in database query", error: err});
-
-//     }
-//     res.json(result)
-//   })
-
-// };
 
 module.exports ={
-    AddExpenses
+    AddExpenses,
+    GetAllExpenses
 }

@@ -303,3 +303,14 @@ export const AddExpense = async (data)=>{
     throw error;
   }
 }
+
+export const GetAllExpenses = async(data) =>{
+  try {
+    const response = await axios.get(`${Base_Url}/api/expenses/`)
+    return response.data
+  }catch(err){
+    console.log("Error Get All Expenses" , err)
+    throw err
+  }
+}
+
