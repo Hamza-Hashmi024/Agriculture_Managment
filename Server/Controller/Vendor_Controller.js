@@ -130,10 +130,10 @@ const getVendor = (req, res) => {
   });
 };
 
-const GetVendorList = (req , res) =>{
+const GetVendorList = (req, res) => {
   const query = `
-  
 SELECT 
+    v.id AS id,   -- 👈 Ye add karein
     v.name AS VendorName,
     v.type AS Type,
     SUM(ikp.total_amount - IFNULL(ikp.paid_now, 0)) AS NetPayable,
@@ -149,22 +149,96 @@ LEFT JOIN advances a
 GROUP BY v.id, v.name, v.type
 ORDER BY v.name;
   `;
-  db.query(query ,  (err,  result )=>{
-    if(err){
-      console.log(error)
-      res.status(500).json({message : "Error While Fetching"})
+  db.query(query, (err, result) => {
+    if (err) {
+      console.log(error);
+      res.status(500).json({ message: "Error While Fetching" });
     }
     res.json(result);
-  })
-}
+  });
+};
 
+const VendorProfile = (req, res) => {
+  const id = req.params.id;
 
+  let vendor = {
+    name: "",
+    type: "",
+    contacts: [],
+    bankAccounts: [],
+    wallets: [],
+    netPayable: 0,
+    purchases: [],
+    payments: []
+  };
+
+  db.query("SELECT name, type FROM vendors WHERE id = ?", [id], (err, details) => {
+    if (err) return res.status(500).json({ message: "Error While Fetching Vendor Details" });
+    if (!details.length) return res.status(404).json({ message: "Vendor not found" });
+
+    vendor.name = details[0].name;
+    vendor.type = details[0].type;
+
+    db.query("SELECT phone_number FROM vendor_contacts WHERE vendor_id = ?", [id], (err, contacts) => {
+      if (err) return res.status(500).json({ message: "Error While Fetching Vendor Contacts" });
+      vendor.contacts = contacts.map(c => c.phone_number);
+
+      db.query("SELECT bank_name AS bank, account_number AS account, iban FROM vendor_bank_accounts WHERE vendor_id = ?", [id], (err, bankAccounts) => {
+        if (err) return res.status(500).json({ message: "Error While Fetching Vendor Bank Accounts" });
+        vendor.bankAccounts = bankAccounts;
+
+        db.query("SELECT provider, wallet_number AS number FROM vendor_wallets WHERE vendor_id = ?", [id], (err, wallets) => {
+          if (err) return res.status(500).json({ message: "Error While Fetching Vendor Wallets" });
+          vendor.wallets = wallets;
+
+          const purchaseQuery = `
+            SELECT 
+              ik.id,
+              DATE_FORMAT(a.date, '%d-%b') AS date,
+              ik.description,
+              ik.total_amount AS amount,
+              ik.paid_now AS paid,
+              (ik.total_amount - ik.paid_now) AS balance
+            FROM in_kind_purchases ik
+            LEFT JOIN advances a ON a.id = ik.advance_id
+            WHERE ik.vendor_id = ?
+          `;
+          db.query(purchaseQuery, [id], (err, purchases) => {
+            if (err) return res.status(500).json({ message: "Error While Fetching Purchases" });
+            vendor.purchases = purchases;
+            vendor.netPayable = purchases.reduce((sum, p) => sum + p.balance, 0);
+
+            const paymentQuery = `
+              SELECT
+                vp.id,
+                DATE_FORMAT(vp.payment_date, '%d-%b') AS date,
+                vp.amount,
+                vp.payment_mode AS mode,
+                vb.bank_name AS bank,
+                vp.refrence_no AS ref,
+                vp.notes
+              FROM vendors_payments vp
+              LEFT JOIN vendor_bank_accounts vb ON vb.vendor_id = vp.vendor_id
+              WHERE vp.vendor_id = ?
+            `;
+            db.query(paymentQuery, [id], (err, payments) => {
+              if (err) return res.status(500).json({ message: "Error While Fetching Payments" });
+              vendor.payments = payments;
+
+              res.json(vendor);
+            });
+          });
+        });
+      });
+    });
+  });
+};
 
 
 
 module.exports = {
   RegisterVendor,
   getVendor,
-  GetVendorList
-
+  GetVendorList,
+  VendorProfile,
 };

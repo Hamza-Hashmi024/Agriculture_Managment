@@ -282,7 +282,7 @@ export function VendorsPage() {
                   <TableCell>
                     <div className="flex gap-2">
                       <Button asChild variant="outline" size="sm">
-                        <Link to={`/vendors/${vendor.id || index}`}>
+                        <Link to={`/vendors/${vendor.id}`}>
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Link>

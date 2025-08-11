@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,127 +11,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Plus, Edit, Download, FileText, Building2, Phone, CreditCard, Wallet } from "lucide-react";
+import { GetVendorProfile} from "@/Api/Api"
 
-const mockVendorData: Record<string, {
-  name: string;
-  type: string;
-  contacts: string[];
-  bankAccounts: Array<{
-    bank: string;
-    account: string;
-    iban: string;
-  }>;
-  wallets: Array<{
-    provider: string;
-    number: string;
-  }>;
-  netPayable: number;
-  purchases: Array<{
-    id: number;
-    date: string;
-    description: string;
-    amount: number;
-    paid: number;
-    balance: number;
-  }>;
-  payments: Array<{
-    id: number;
-    date: string;
-    amount: number;
-    mode: string;
-    bank: string;
-    ref: string;
-    notes: string;
-  }>;
-}> = {
-  "1": {
-    name: "AgriMart",
-    type: "Supplier",
-    contacts: ["0312-1234567", "0345-9876543"],
-    bankAccounts: [
-      {
-        bank: "Meezan Bank",
-        account: "0123456789",
-        iban: "PK36MEZN0000000123456789"
-      },
-      {
-        bank: "HBL Bank",
-        account: "9876543210", 
-        iban: "PK24HABB0000009876543210"
-      }
-    ],
-    wallets: [
-      {
-        provider: "JazzCash",
-        number: "0321-1111111"
-      },
-      {
-        provider: "Easypaisa",
-        number: "0300-1111111"
-      }
-    ],
-    netPayable: 112000,
-    purchases: [
-      {
-        id: 1,
-        date: "02-Jul",
-        description: "Pesticide",
-        amount: 45000,
-        paid: 30000,
-        balance: 15000
-      },
-      {
-        id: 2,
-        date: "09-Jul",
-        description: "Fertilizer",
-        amount: 27500,
-        paid: 0,
-        balance: 27500
-      }
-    ],
-    payments: [
-      {
-        id: 1,
-        date: "11-Jul",
-        amount: 30000,
-        mode: "Bank",
-        bank: "Meezan",
-        ref: "908",
-        notes: "Partial payment"
-      }
-    ]
-  },
-  "2": {
-    name: "Kissan Agri",
-    type: "Supplier",
-    contacts: ["0300-2222222"],
-    bankAccounts: [
-      {
-        bank: "HBL",
-        account: "9876543210",
-        iban: "PK24HABB0000009876543210"
-      }
-    ],
-    wallets: [
-      {
-        provider: "EasyPaisa",
-        number: "0333-2222222"
-      }
-    ],
-    netPayable: 47500,
-    purchases: [
-      {
-        id: 1,
-        date: "09-Jul",
-        description: "Seeds",
-        amount: 47500,
-        paid: 0,
-        balance: 47500
-      }
-    ],
-    payments: []
-  }
-};
+
 
 export function VendorProfile() {
   const { id } = useParams();
@@ -140,6 +21,7 @@ export function VendorProfile() {
   const [activeTab, setActiveTab] = useState("purchases");
   const [paymentDialog, setPaymentDialog] = useState(false);
   const [editDialog, setEditDialog] = useState(false);
+  const [vendor, setVendor] = useState(null); 
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
     paymentMode: "cash",
@@ -161,7 +43,23 @@ export function VendorProfile() {
     notes: ""
   });
 
-  const vendor = mockVendorData[id as keyof typeof mockVendorData];
+useEffect(() => {
+  const FetchVendor = async () => {
+    try {
+      const response = await GetVendorProfile(id)
+      setVendor(response)
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  if (id) {  
+    FetchVendor();
+  }
+}, [id])
+
+
+
+
   
   if (!vendor) {
     return (
@@ -218,6 +116,8 @@ export function VendorProfile() {
     console.log("Edit submitted:", editForm);
     setEditDialog(false);
   };
+
+ 
 
   return (
     <div className="p-6">
