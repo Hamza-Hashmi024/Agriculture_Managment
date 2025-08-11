@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Plus, Edit, Download, FileText, Building2, Phone, CreditCard, Wallet } from "lucide-react";
-import { GetVendorProfile} from "@/Api/Api"
+import { GetVendorProfile , AddVendorPayment} from "@/Api/Api"
 
 
 
@@ -74,10 +74,43 @@ useEffect(() => {
     );
   }
 
-  const handlePaymentSubmit = () => {
-    console.log("Payment submitted:", paymentForm);
+  // const handlePaymentSubmit = () => {
+  //   console.log("Payment submitted:", paymentForm);
+  //   setPaymentDialog(false);
+  //   // Reset form
+  //   setPaymentForm({
+  //     amount: "",
+  //     paymentMode: "cash",
+  //     bankAccount: "",
+  //     refNo: "",
+  //     date: new Date().toISOString().split('T')[0],
+  //     uploadProof: "",
+  //     notes: ""
+  //   });
+  // };
+
+
+  const handlePaymentSubmit = async () => {
+  try {
+   const paymentData = {
+  // tenant_id: currentTenantId,
+  vendor_id: id,
+  amount: paymentForm.amount,
+  payment_mode: paymentForm.paymentMode,
+  payment_date: paymentForm.date,
+  refrence_no: paymentForm.refNo,
+  upload_proof: paymentForm.uploadProof,
+  notes: paymentForm.notes
+};
+
+    console.log("Sending Payment Data:", paymentData);
+
+    const response = await AddVendorPayment(paymentData);
+
+    console.log("Payment Added:", response.data);
+
+    // Close dialog & reset form
     setPaymentDialog(false);
-    // Reset form
     setPaymentForm({
       amount: "",
       paymentMode: "cash",
@@ -87,8 +120,11 @@ useEffect(() => {
       uploadProof: "",
       notes: ""
     });
-  };
 
+  } catch (error) {
+    console.error("Error while adding vendor payment:", error);
+  }
+};
   const openPaymentModal = () => {
     setPaymentForm({
       ...paymentForm,

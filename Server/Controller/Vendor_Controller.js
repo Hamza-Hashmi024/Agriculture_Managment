@@ -132,23 +132,36 @@ const getVendor = (req, res) => {
 
 const GetVendorList = (req, res) => {
   const query = `
-SELECT 
-    v.id AS id,   -- 👈 Ye add karein
+ SELECT
+    v.id AS id,
     v.name AS VendorName,
     v.type AS Type,
-    SUM(ikp.total_amount - IFNULL(ikp.paid_now, 0)) AS NetPayable,
-    MAX(a.date) AS LastPurchase,
-    MAX(CASE 
-            WHEN ikp.paid_now > 0 THEN a.date
-        END) AS LastPayment
+    COALESCE(p.total_purchase, 0) - COALESCE(pay.total_paid, 0) AS NetPayable,
+    p.LastPurchase,
+    pay.LastPayment
 FROM vendors v
-LEFT JOIN in_kind_purchases ikp 
-    ON v.id = ikp.vendor_id
-LEFT JOIN advances a
-    ON ikp.advance_id = a.id
-GROUP BY v.id, v.name, v.type
+LEFT JOIN (
+    SELECT 
+        vendor_id,
+        SUM(total_amount - IFNULL(paid_now, 0)) AS total_purchase,
+        MAX(a.date) AS LastPurchase
+    FROM in_kind_purchases ikp
+    LEFT JOIN advances a ON ikp.advance_id = a.id
+    GROUP BY vendor_id
+) p ON v.id = p.vendor_id
+LEFT JOIN (
+    SELECT 
+        vendor_id,
+        SUM(amount) AS total_paid,
+        MAX(payment_date) AS LastPayment
+    FROM vendors_payments
+    GROUP BY vendor_id
+) pay ON v.id = pay.vendor_id
 ORDER BY v.name;
+
   `;
+
+
   db.query(query, (err, result) => {
     if (err) {
       console.log(error);
@@ -172,12 +185,27 @@ const VendorProfile = (req, res) => {
     payments: []
   };
 
-  db.query("SELECT name, type FROM vendors WHERE id = ?", [id], (err, details) => {
+  const vendorQuery = `
+    SELECT 
+      v.name,
+      v.type,
+      COALESCE(SUM(ik.total_amount - IFNULL(ik.paid_now, 0)), 0) 
+        - COALESCE(SUM(vp.amount), 0) AS netPayable
+    FROM vendors v
+    LEFT JOIN in_kind_purchases ik ON ik.vendor_id = v.id
+    LEFT JOIN vendors_payments vp ON vp.vendor_id = v.id
+    WHERE v.id = ?
+    GROUP BY v.id
+  `;
+
+  db.query(vendorQuery, [id], (err, details) => {
     if (err) return res.status(500).json({ message: "Error While Fetching Vendor Details" });
     if (!details.length) return res.status(404).json({ message: "Vendor not found" });
 
     vendor.name = details[0].name;
     vendor.type = details[0].type;
+    vendor.netPayable = details[0].netPayable;
+
 
     db.query("SELECT phone_number FROM vendor_contacts WHERE vendor_id = ?", [id], (err, contacts) => {
       if (err) return res.status(500).json({ message: "Error While Fetching Vendor Contacts" });
@@ -234,6 +262,38 @@ const VendorProfile = (req, res) => {
   });
 };
 
+const AddPaymentVendor = (req, res) => {
+  const { vendor_id, amount, payment_mode, payment_date, refrence_no, upload_proof, notes } = req.body;
+
+  // Pehle vendor ka tenant_id nikal lo
+  db.query("SELECT tenant_id FROM vendors WHERE id = ?", [vendor_id], (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Error fetching tenant_id" });
+    }
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    const tenant_id = result[0].tenant_id;
+
+    // Ab insert query chalao
+    const query = `
+      INSERT INTO vendors_payments 
+      (tenant_id, vendor_id, amount, payment_mode, payment_date, refrence_no, upload_proof, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    db.query(query, [tenant_id, vendor_id, amount, payment_mode, payment_date, refrence_no, upload_proof, notes], (err, result) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ message: "Error While Adding Payment" });
+      }
+      res.json(result);
+    });
+  });
+};
+
+
 
 
 module.exports = {
@@ -241,4 +301,5 @@ module.exports = {
   getVendor,
   GetVendorList,
   VendorProfile,
+  AddPaymentVendor
 };

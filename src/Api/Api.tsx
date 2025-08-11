@@ -283,3 +283,13 @@ export const GetVendorProfile = async(id) =>{
     throw error
   }
 }
+
+export const AddVendorPayment = async(data) =>{
+  try {
+    const response = axios.post(`${Base_Url}/api/vendor/addpayment` ,data )
+    return response
+  }catch(error){
+    console.log("Error Add Vendor Payment" , error)
+    throw error
+  }
+}
