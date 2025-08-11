@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +17,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  AddExpense,
+  GetBankAccountsWithBalance,
+  GetAllVendor,
+} from "@/Api/Api";
 
 interface AddEditExpenseModalProps {
   open: boolean;
@@ -25,7 +29,11 @@ interface AddEditExpenseModalProps {
   expense?: any;
 }
 
-export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpenseModalProps) {
+export function AddEditExpenseModal({
+  open,
+  onOpenChange,
+  expense,
+}: AddEditExpenseModalProps) {
   const [formData, setFormData] = useState({
     category: "",
     vendor: "Expense",
@@ -38,6 +46,11 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
     paidNow: "",
     file: null as File | null,
   });
+
+  const [bankAccounts, setBankAccounts] = useState<
+    { id: string; name: string; balance: number }[]
+  >([]);
+  const [vendors, setVendors] = useState<string[]>([]);
 
   useEffect(() => {
     if (expense) {
@@ -69,35 +82,113 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
     }
   }, [expense, open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Fetch bank accounts once when modal opens
+  useEffect(() => {
+    const fetchBanks = async () => {
+      try {
+        const data = await GetBankAccountsWithBalance();
+        if (Array.isArray(data)) {
+          setBankAccounts(data);
+        }
+      } catch (err) {
+        console.error("Error fetching bank accounts:", err);
+      }
+    };
+
+    const fetchVendors = async () => {
+      try {
+        const data = await GetAllVendor();
+        if (Array.isArray(data)) {
+          setVendors(data);
+        }
+      } catch (err) {
+        console.error("Error fetching vendors:", err);
+      }
+    };
+    if (open) {
+      fetchBanks();
+      fetchVendors();
+    }
+  }, [open]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Expense form submitted:", formData);
-    onOpenChange(false);
+
+    try {
+      // map payment_mode from fundingSource
+      let payment_mode = "";
+      if (formData.paymentMode === "credit") {
+        payment_mode = null; // no payment source for credit
+      } else {
+        payment_mode =
+          formData.fundingSource === "Cash Box" ? "cashbox" : "bank";
+      }
+
+      // map paid_status from radio group
+      let paid_status = "credit";
+      let paid_now = 0;
+      if (formData.paymentMode === "paid-full") {
+        paid_status = "paid";
+        paid_now = parseFloat(formData.amount || "0");
+      } else if (formData.paymentMode === "partial") {
+        paid_status = "partial";
+        paid_now = parseFloat(formData.paidNow || "0");
+      }
+
+      const payload = {
+        category: formData.category,
+        vendor_id: null, // you’ll map vendor name to ID if needed
+        description: formData.description,
+        amount: parseFloat(formData.amount || "0"),
+        paid_status,
+        payment_mode,
+        paid_now,
+        bank_account_id: payment_mode === "bank" ? formData.bankAccount : null,
+        reference_no: formData.referenceNo,
+        invoice_file_url: null, // handle file upload separately
+      };
+
+      console.log("Submitting expense payload:", payload);
+
+      const res = await AddExpense(payload);
+
+      if (res.status === 200) {
+        console.log("Expense added successfully:", res.data);
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error("Error adding expense:", error);
+    }
   };
-
   const categories = [
-    "Rent", "Salary", "Utilities", "Food", "Diesel", "Fertilizer", "Seeds", "Others"
-  ];
-
-  const vendors = [
-    "Expense", "AgriMart", "Kissan Agri", "Green Valley", "Farm Tech"
+    "Rent",
+    "Salary",
+    "Utilities",
+    "Food",
+    "Diesel",
+    "Fertilizer",
+    "Seeds",
+    "Others",
   ];
 
   const fundingSources = [
-    "Cash Box", "HBL Account", "Meezan Account", "Allied Bank"
+    "Cash Box",
+    "HBL Account",
+    "Meezan Account",
+    "Allied Bank",
   ];
 
   const isVendorLinked = formData.vendor !== "Expense";
-  const showFundingFields = formData.paymentMode === "paid-full" || formData.paymentMode === "partial";
-  const showBankFields = showFundingFields && formData.fundingSource !== "Cash Box";
+  const showFundingFields =
+    formData.paymentMode === "paid-full" || formData.paymentMode === "partial";
+  const showBankFields =
+    showFundingFields && formData.fundingSource !== "Cash Box";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {expense ? "Edit Expense" : "Add Expense"}
-          </DialogTitle>
+          <DialogTitle>{expense ? "Edit Expense" : "Add Expense"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -106,7 +197,9 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
               <Label htmlFor="category">Category *</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, category: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
@@ -125,17 +218,21 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
               <Label htmlFor="vendor">Vendor</Label>
               <Select
                 value={formData.vendor}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, vendor: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, vendor: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {vendors.map((vendor) => (
-                    <SelectItem key={vendor} value={vendor}>
-                      {vendor}
-                    </SelectItem>
-                  ))}
+                <SelectContent>
+  {vendors.map((vendor) => (
+    <SelectItem key={vendor.id} value={vendor.name}>
+      {vendor.name}
+    </SelectItem>
+  ))}
+</SelectContent>
                 </SelectContent>
               </Select>
             </div>
@@ -148,7 +245,9 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
                 id="amount"
                 type="number"
                 value={formData.amount}
-                onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, amount: e.target.value }))
+                }
                 placeholder="Enter amount"
                 required
               />
@@ -159,7 +258,12 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
               <Input
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Enter description"
               />
             </div>
@@ -169,7 +273,9 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
             <Label>Payment Mode *</Label>
             <RadioGroup
               value={formData.paymentMode}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMode: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, paymentMode: value }))
+              }
               className="flex gap-6 mt-2"
             >
               <div className="flex items-center space-x-2">
@@ -196,7 +302,9 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
                   <Label htmlFor="fundingSource">Funding Source *</Label>
                   <Select
                     value={formData.fundingSource}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, fundingSource: value }))}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, fundingSource: value }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select funding source" />
@@ -216,7 +324,12 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
                   <Input
                     id="referenceNo"
                     value={formData.referenceNo}
-                    onChange={(e) => setFormData(prev => ({ ...prev, referenceNo: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        referenceNo: e.target.value,
+                      }))
+                    }
                     placeholder="Enter reference number"
                   />
                 </div>
@@ -227,15 +340,28 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
                   <Label htmlFor="bankAccount">Bank Account *</Label>
                   <Select
                     value={formData.bankAccount}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, bankAccount: value }))}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, bankAccount: value }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select bank account" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="hbl-main">HBL - Main Account</SelectItem>
-                      <SelectItem value="meezan-current">Meezan - Current Account</SelectItem>
-                      <SelectItem value="allied-savings">Allied - Savings Account</SelectItem>
+                      {bankAccounts
+                        .filter((acc) => acc.type === "bank") // only show bank accounts
+                        .map((bank) => (
+                          <SelectItem key={bank.id} value={String(bank.id)}>
+                            {bank.title} — Balance:{" "}
+                            {parseFloat(bank.balance).toLocaleString()}
+                          </SelectItem>
+                        ))}
+                      {bankAccounts.filter((acc) => acc.type === "bank")
+                        .length === 0 && (
+                        <SelectItem value="no-banks" disabled>
+                          No bank accounts found
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -251,16 +377,25 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
                   id="paidNow"
                   type="number"
                   value={formData.paidNow}
-                  onChange={(e) => setFormData(prev => ({ ...prev, paidNow: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      paidNow: e.target.value,
+                    }))
+                  }
                   placeholder="Amount paid now"
                 />
               </div>
               <div>
                 <Label>Remaining to Pay</Label>
                 <Input
-                  value={formData.amount && formData.paidNow 
-                    ? (parseFloat(formData.amount) - parseFloat(formData.paidNow || "0")).toString()
-                    : "0"
+                  value={
+                    formData.amount && formData.paidNow
+                      ? (
+                          parseFloat(formData.amount) -
+                          parseFloat(formData.paidNow || "0")
+                        ).toString()
+                      : "0"
                   }
                   disabled
                   className="bg-gray-50"
@@ -274,19 +409,26 @@ export function AddEditExpenseModal({ open, onOpenChange, expense }: AddEditExpe
             <Input
               id="file"
               type="file"
-              onChange={(e) => setFormData(prev => ({ ...prev, file: e.target.files?.[0] || null }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  file: e.target.files?.[0] || null,
+                }))
+              }
               accept=".pdf,.jpg,.jpeg,.png"
               className="mt-1"
             />
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit">
-              {expense ? "Update" : "Save"}
-            </Button>
+            <Button type="submit">{expense ? "Update" : "Save"}</Button>
           </div>
         </form>
       </DialogContent>

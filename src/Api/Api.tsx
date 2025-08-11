@@ -293,3 +293,13 @@ export const AddVendorPayment = async(data) =>{
     throw error
   }
 }
+
+export const AddExpense = async (data)=>{
+  try {
+    const response = axios.post(`${Base_Url}/api/expenses/regiterexpense` , data )
+    return response
+  }catch(error){
+    console.log("Error Add Expense" , error)
+    throw error;
+  }
+}

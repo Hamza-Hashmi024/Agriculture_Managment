@@ -9,6 +9,7 @@ const AccountRoutes = require("./Routes/Account_Routes");
 const AdvanceRouter = require("./Routes/Advance_Routes");
 const SalesRoutes = require("./Routes/Sales_Routes");
 const ReciveAbleRoutes = require("./Routes/ReciveAble_Routes");
+const ExpensesRouter = require("./Routes/Expenses_Route")
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use("/api/accounts", AccountRoutes);
 app.use("/api/advance", AdvanceRouter);
 app.use("/api/sales", SalesRoutes);
 app.use("/api/receivables", ReciveAbleRoutes);
+app.use("/api/expenses" , ExpensesRouter );
 
 app.get("/", (req, res) => {
   res.send("Server is running");
