@@ -273,6 +273,7 @@ export const GetVendorList = async()=>{
     throw error
   }
 }
+
 export const GetVendorProfile = async(id) =>{
   try {
     const response = await axios.get(`${Base_Url}/api/vendor/profile/${id}`)
