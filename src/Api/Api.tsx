@@ -314,3 +314,12 @@ export const GetAllExpenses = async(data) =>{
   }
 }
 
+export const EditExpense = async (id: string, payload: any) => {
+  try {
+    const response = await axios.put(`${Base_Url}/api/expenses/editexpense/${id}`, payload);
+    return response.data;
+  } catch (err) {
+    console.error("Error Edit Expense", err);
+    throw err;
+  }
+};

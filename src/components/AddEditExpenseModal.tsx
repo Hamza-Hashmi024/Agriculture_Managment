@@ -21,8 +21,16 @@ import {
   AddExpense,
   GetBankAccountsWithBalance,
   GetAllVendor,
+  EditExpense
 } from "@/Api/Api";
 
+
+type BankAccount = {
+  id: string;
+  title: string;
+  type: string;
+  balance: number;
+};
 interface AddEditExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -50,37 +58,70 @@ export function AddEditExpenseModal({
   const [bankAccounts, setBankAccounts] = useState<
     { id: string; name: string; balance: number }[]
   >([]);
-  const [vendors, setVendors] = useState<string[]>([]);
+ const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
 
-  useEffect(() => {
-    if (expense) {
-      setFormData({
-        category: expense.category || "",
-        vendor: expense.vendor || "Expense",
-        amount: expense.amount?.toString() || "",
-        description: expense.description || "",
-        paymentMode: expense.status === "Credit" ? "credit" : "paid-full",
-        fundingSource: "",
-        bankAccount: "",
-        referenceNo: "",
-        paidNow: "",
-        file: null,
-      });
-    } else {
-      setFormData({
-        category: "",
-        vendor: "Expense",
-        amount: "",
-        description: "",
-        paymentMode: "paid-full",
-        fundingSource: "",
-        bankAccount: "",
-        referenceNo: "",
-        paidNow: "",
-        file: null,
-      });
+ useEffect(() => {
+  if (!open) return;
+
+  // Fetch banks and vendors
+  const fetchData = async () => {
+    try {
+      const [banksData, vendorsData] = await Promise.all([
+        GetBankAccountsWithBalance(),
+        GetAllVendor(),
+      ]);
+
+      if (Array.isArray(banksData)) setBankAccounts(banksData);
+      if (Array.isArray(vendorsData)) setVendors(vendorsData);
+    } catch (err) {
+      console.error("Error fetching banks/vendors:", err);
     }
-  }, [expense, open]);
+  };
+
+  fetchData();
+
+  // Pre-fill form if editing
+  if (expense) {
+    setFormData({
+      category: expense.category || "",
+      vendor: expense.vendor || "Expense",
+      amount: expense.amount?.toString() || "",
+      description: expense.description || "",
+      paymentMode:
+        expense.status?.toLowerCase() === "credit"
+          ? "credit"
+          : expense.status?.toLowerCase() === "partial"
+          ? "partial"
+          : "paid-full",
+      fundingSource:
+        expense.paymentMode === "cashbox"
+          ? "Cash Box"
+          : expense.paymentMode === "bank"
+          ? banksData?.find((b) => b.id === expense.bank_account_id)?.title || ""
+          : "",
+      bankAccount: expense.bank_account_id || "",
+      referenceNo: expense.reference_no || "",
+      paidNow:
+        expense.status?.toLowerCase() === "partial"
+          ? expense.paid_now?.toString() || ""
+          : "",
+      file: null,
+    });
+  } else {
+    setFormData({
+      category: "",
+      vendor: "Expense",
+      amount: "",
+      description: "",
+      paymentMode: "paid-full",
+      fundingSource: "",
+      bankAccount: "",
+      referenceNo: "",
+      paidNow: "",
+      file: null,
+    });
+  }
+}, [open, expense]);
 
   // Fetch bank accounts once when modal opens
   useEffect(() => {
@@ -111,55 +152,65 @@ export function AddEditExpenseModal({
     }
   }, [open]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    try {
-      // map payment_mode from fundingSource
-      let payment_mode = "";
-      if (formData.paymentMode === "credit") {
-        payment_mode = null; // no payment source for credit
-      } else {
-        payment_mode =
-          formData.fundingSource === "Cash Box" ? "cashbox" : "bank";
-      }
+  try {
+    // Find vendor ID
+    const vendorId =
+      formData.vendor !== "Expense"
+        ? vendors.find((v) => v.name === formData.vendor)?.id || null
+        : null;
 
-      // map paid_status from radio group
-      let paid_status = "credit";
-      let paid_now = 0;
-      if (formData.paymentMode === "paid-full") {
-        paid_status = "paid";
-        paid_now = parseFloat(formData.amount || "0");
-      } else if (formData.paymentMode === "partial") {
-        paid_status = "partial";
-        paid_now = parseFloat(formData.paidNow || "0");
-      }
-
-      const payload = {
-        category: formData.category,
-        vendor_id: null, // you’ll map vendor name to ID if needed
-        description: formData.description,
-        amount: parseFloat(formData.amount || "0"),
-        paid_status,
-        payment_mode,
-        paid_now,
-        bank_account_id: payment_mode === "bank" ? formData.bankAccount : null,
-        reference_no: formData.referenceNo,
-        invoice_file_url: null, // handle file upload separately
-      };
-
-      console.log("Submitting expense payload:", payload);
-
-      const res = await AddExpense(payload);
-
-      if (res.status === 200) {
-        console.log("Expense added successfully:", res.data);
-        onOpenChange(false);
-      }
-    } catch (error) {
-      console.error("Error adding expense:", error);
+    // Map payment_mode
+    let payment_mode: string | null = null;
+    if (formData.paymentMode !== "credit") {
+      payment_mode =
+        formData.fundingSource === "Cash Box" ? "cashbox" : "bank";
     }
-  };
+
+    // Map paid_status + paid_now
+    let paid_status = "credit";
+    let paid_now = 0;
+    if (formData.paymentMode === "paid-full") {
+      paid_status = "paid";
+      paid_now = parseFloat(formData.amount || "0");
+    } else if (formData.paymentMode === "partial") {
+      paid_status = "partial";
+      paid_now = parseFloat(formData.paidNow || "0");
+    }
+
+    const payload = {
+      category: formData.category,
+      vendor_id: vendorId,
+      description: formData.description,
+      amount: parseFloat(formData.amount || "0"),
+      paid_status,
+      payment_mode,
+      paid_now,
+      bank_account_id:
+        payment_mode === "bank" ? formData.bankAccount || null : null,
+      reference_no: formData.referenceNo || null,
+      invoice_file_url: null, // handle file upload separately
+    };
+
+    console.log("Submitting expense payload:", payload);
+
+    let res;
+    if (expense) {
+      res = await EditExpense(expense.id, payload);
+    } else {
+      res = await AddExpense(payload);
+    }
+
+    if (res.status === 200) {
+      console.log("Expense saved successfully:", res.data);
+      onOpenChange(false);
+    }
+  } catch (error) {
+    console.error("Error saving expense:", error);
+  }
+};
   const categories = [
     "Rent",
     "Salary",
