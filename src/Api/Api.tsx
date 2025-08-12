@@ -323,3 +323,15 @@ export const EditExpense = async (id: string, payload: any) => {
     throw err;
   }
 };
+
+export const GetALLcashboxTransaction = async()=>{
+  try {
+    const response = await axios.get(`${Base_Url}/api/accounts/cash/transaction`)
+    return response.data
+  }
+  catch(err){
+    console.log("Error While Fetching Transaction :-> " ,  err)
+    throw err
+
+  }
+}

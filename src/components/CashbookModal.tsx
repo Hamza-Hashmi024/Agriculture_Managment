@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,73 +17,67 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { GetALLcashboxTransaction } from "@/Api/Api";
 
 interface CashbookModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-// Mock cashbook transactions
-const mockCashTransactions = [
-  {
-    id: "1",
-    date: "2025-07-01",
-    description: "Opening Balance",
-    debit: 0,
-    credit: 200000,
-    balance: 200000
-  },
-  {
-    id: "2",
-    date: "2025-07-02",
-    description: "Advance to Akbar",
-    debit: 20000,
-    credit: 0,
-    balance: 180000
-  },
-  {
-    id: "3",
-    date: "2025-07-04",
-    description: "Sale Deposit",
-    debit: 0,
-    credit: 50000,
-    balance: 230000
-  },
-  {
-    id: "4",
-    date: "2025-07-05",
-    description: "Transfer to Bank",
-    debit: 30000,
-    credit: 0,
-    balance: 200000
-  },
-  {
-    id: "5",
-    date: "2025-07-07",
-    description: "Office Rent",
-    debit: 10000,
-    credit: 0,
-    balance: 190000
-  },
-  {
-    id: "6",
-    date: "2025-07-09",
-    description: "Salary Payment",
-    debit: 20000,
-    credit: 0,
-    balance: 170000
-  }
-];
-
 export function CashbookModal({ open, onOpenChange }: CashbookModalProps) {
+  const [CashTransactions, setCashTransactions] = useState<any[]>([]);
   const [dateRange, setDateRange] = useState({
     from: "2025-07-01",
-    to: new Date().toISOString().split('T')[0]
+    to: new Date().toISOString().split("T")[0],
   });
 
   const handleExport = () => {
     console.log("Exporting cashbook data...");
   };
+
+  useEffect(() => {
+    const FetchTransaction = async () => {
+      try {
+        const data = await GetALLcashboxTransaction();
+        if (data && data.transactions) {
+          let runningBalance = parseFloat(data.opening_balance);
+
+          // Add opening balance as first row
+          const openingRow = {
+            id: 0,
+            date: dateRange.from,
+            description: "Opening Balance",
+            debit: 0,
+            credit: runningBalance,
+            balance: runningBalance,
+          };
+
+          const formattedTransactions = data.transactions.map(
+            (t: any, index: number) => {
+              const debit = parseFloat(t.debit);
+              const credit = parseFloat(t.credit);
+              runningBalance = runningBalance + credit - debit;
+
+              return {
+                id: index + 1,
+                date: t.date,
+                description: t.description,
+                debit,
+                credit,
+                balance: runningBalance,
+              };
+            }
+          );
+
+          setCashTransactions([openingRow, ...formattedTransactions]);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    FetchTransaction();
+  }, [dateRange.from]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -102,7 +95,9 @@ export function CashbookModal({ open, onOpenChange }: CashbookModalProps) {
                 id="dateFrom"
                 type="date"
                 value={dateRange.from}
-                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                onChange={(e) =>
+                  setDateRange((prev) => ({ ...prev, from: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-2">
@@ -111,7 +106,9 @@ export function CashbookModal({ open, onOpenChange }: CashbookModalProps) {
                 id="dateTo"
                 type="date"
                 value={dateRange.to}
-                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                onChange={(e) =>
+                  setDateRange((prev) => ({ ...prev, to: e.target.value }))
+                }
               />
             </div>
             <Button variant="outline" onClick={handleExport}>
@@ -121,9 +118,9 @@ export function CashbookModal({ open, onOpenChange }: CashbookModalProps) {
           </div>
 
           {/* Transactions Table */}
-          <div className="border rounded-lg">
+          <div className="border rounded-lg max-h-[400px] overflow-y-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 bg-white z-10">
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
@@ -133,21 +130,38 @@ export function CashbookModal({ open, onOpenChange }: CashbookModalProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockCashTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{transaction.description}</TableCell>
-                    <TableCell className="text-right">
-                      {transaction.debit > 0 ? transaction.debit.toLocaleString() : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {transaction.credit > 0 ? transaction.credit.toLocaleString() : "—"}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {transaction.balance.toLocaleString()}
+                {CashTransactions?.length > 0 ? (
+                  CashTransactions.map((transaction: any, index: number) => (
+                    <TableRow key={transaction.id || index}>
+                      <TableCell>
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>{transaction.description}</TableCell>
+                      <TableCell className="text-right">
+                        {transaction.debit > 0
+                          ? transaction.debit.toLocaleString()
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {transaction.credit > 0
+                          ? transaction.credit.toLocaleString()
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {transaction.balance.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="text-center text-muted-foreground"
+                    >
+                      No transactions found
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
@@ -158,19 +172,29 @@ export function CashbookModal({ open, onOpenChange }: CashbookModalProps) {
               <div>
                 <p className="text-sm text-muted-foreground">Total Debits</p>
                 <p className="text-lg font-semibold text-red-600">
-                  PKR {mockCashTransactions.reduce((sum, t) => sum + t.debit, 0).toLocaleString()}
+                  PKR{" "}
+                  {CashTransactions.reduce(
+                    (sum, t) => sum + (t.debit || 0),
+                    0
+                  ).toLocaleString()}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Credits</p>
                 <p className="text-lg font-semibold text-green-600">
-                  PKR {mockCashTransactions.reduce((sum, t) => sum + t.credit, 0).toLocaleString()}
+                  PKR{" "}
+                  {CashTransactions.reduce(
+                    (sum, t) => sum + (t.credit || 0),
+                    0
+                  ).toLocaleString()}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Closing Balance</p>
                 <p className="text-lg font-semibold">
-                  PKR {mockCashTransactions[mockCashTransactions.length - 1]?.balance.toLocaleString()}
+                  PKR{" "}
+                  {CashTransactions[CashTransactions.length - 1]?.balance?.toLocaleString() ||
+                    "0"}
                 </p>
               </div>
             </div>
