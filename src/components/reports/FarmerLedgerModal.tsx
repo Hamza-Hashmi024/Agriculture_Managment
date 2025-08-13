@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
@@ -10,23 +9,19 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ReportModal } from "./ReportModal";
 import { FarmerLedgerReport } from "./FarmerLedgerReport";
+import { GetAllFarmer } from "@/Api/Api";
 
 interface FarmerLedgerModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const mockFarmers = [
-  { id: "1", name: "Akbar Ali" },
-  { id: "2", name: "Rafiq Ahmad" },
-  { id: "3", name: "Muhammad Hassan" },
-];
-
 export function FarmerLedgerModal({ isOpen, onClose }: FarmerLedgerModalProps) {
   const [selectedFarmer, setSelectedFarmer] = useState<string>("");
   const [fromDate, setFromDate] = useState<Date>(new Date());
   const [toDate, setToDate] = useState<Date>(new Date());
   const [showReport, setShowReport] = useState(false);
+  const [farmers, setFarmers] = useState<any[]>([]);
 
   const handleGenerate = () => {
     if (selectedFarmer) {
@@ -35,9 +30,21 @@ export function FarmerLedgerModal({ isOpen, onClose }: FarmerLedgerModalProps) {
   };
 
   const dateRange = {
-    from: fromDate.toISOString().split('T')[0],
-    to: toDate.toISOString().split('T')[0]
+    from: fromDate.toISOString().split("T")[0],
+    to: toDate.toISOString().split("T")[0],
   };
+
+  useEffect(() => {
+    const fetchFarmers = async () => {
+      try {
+        const response = await GetAllFarmer();
+        setFarmers(response);
+      } catch (error) {
+        console.log("Error fetching farmers:", error);
+      }
+    };
+    fetchFarmers();
+  }, []);
 
   return (
     <ReportModal isOpen={isOpen} onClose={onClose} title="Farmer Ledger Report">
@@ -45,6 +52,7 @@ export function FarmerLedgerModal({ isOpen, onClose }: FarmerLedgerModalProps) {
         {!showReport ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Farmer Select */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Select Farmer</Label>
                 <Select value={selectedFarmer} onValueChange={setSelectedFarmer}>
@@ -52,8 +60,8 @@ export function FarmerLedgerModal({ isOpen, onClose }: FarmerLedgerModalProps) {
                     <SelectValue placeholder="Choose farmer" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockFarmers.map((farmer) => (
-                      <SelectItem key={farmer.id} value={farmer.id}>
+                    {farmers.map((farmer) => (
+                      <SelectItem key={farmer.id} value={farmer.id.toString()}>
                         {farmer.name}
                       </SelectItem>
                     ))}
@@ -61,6 +69,7 @@ export function FarmerLedgerModal({ isOpen, onClose }: FarmerLedgerModalProps) {
                 </Select>
               </div>
 
+              {/* From Date */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">From Date</Label>
                 <Popover>
@@ -82,12 +91,12 @@ export function FarmerLedgerModal({ isOpen, onClose }: FarmerLedgerModalProps) {
                       selected={fromDate}
                       onSelect={setFromDate}
                       initialFocus
-                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
               </div>
 
+              {/* To Date */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">To Date</Label>
                 <Popover>
@@ -109,13 +118,13 @@ export function FarmerLedgerModal({ isOpen, onClose }: FarmerLedgerModalProps) {
                       selected={toDate}
                       onSelect={setToDate}
                       initialFocus
-                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
               </div>
             </div>
 
+            {/* Actions */}
             <div className="flex gap-3">
               <Button onClick={handleGenerate} disabled={!selectedFarmer}>
                 Generate Report
@@ -140,7 +149,9 @@ export function FarmerLedgerModal({ isOpen, onClose }: FarmerLedgerModalProps) {
                 Print
               </Button>
             </div>
-            <FarmerLedgerReport dateRange={dateRange} />
+
+            {/* Pass ID and Dates to Report */}
+            <FarmerLedgerReport dateRange={dateRange} farmerId={selectedFarmer} />
           </div>
         )}
       </div>

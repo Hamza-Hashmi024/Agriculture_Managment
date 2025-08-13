@@ -352,3 +352,13 @@ export const GetAllBankAccountsTransaction = async () => {
     throw error;
   }
 };
+
+export const GetFarmerLedgerReport = async (id) => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/reports/reports/farmer/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error While Fetching Ledger Report :-> ", error);
+    throw error;
+  }
+};
