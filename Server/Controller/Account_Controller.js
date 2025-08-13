@@ -324,11 +324,160 @@ const getAllCashBoxTransaction = (req, res) => {
   });
 };
 
+const GetAllBankAccountsTransaction = (req , res ) =>{
+  const query = `
+  SELECT
+    'opening' AS id,
+    a.opening_date AS date,
+    'Opening Balance' AS description,
+    0 AS debit,
+    a.opening_balance AS credit,
+    a.opening_balance AS balance,
+    a.id AS accountId
+FROM accounts a
+WHERE a.type = 'bank'
+
+UNION ALL
+
+SELECT
+    CONCAT('tx-', t.id) AS id,
+    t.date,
+    t.description,
+    COALESCE(t.debit, 0) AS debit,
+    COALESCE(t.credit, 0) AS credit,
+    NULL AS balance,
+    t.account_id AS accountId
+FROM transactions t
+JOIN accounts a ON t.account_id = a.id
+WHERE a.type = 'bank'
+
+UNION ALL
+
+SELECT
+    CONCAT('adv-', adv.id) AS id,
+    adv.date,
+    CONCAT('Advance to Farmer: ', f.name) AS description,
+    adv.amount AS debit,
+    0 AS credit,
+    NULL AS balance,
+    adv.bank_account_id AS accountId
+FROM advances adv
+JOIN accounts a ON adv.bank_account_id = a.id
+JOIN farmers f ON adv.farmer_id = f.id
+WHERE adv.source_type = 'bank'
+
+UNION ALL
+
+SELECT
+    CONCAT('ikp-', ikp.id) AS id,
+    adv.date AS date,
+    CONCAT('In-kind Purchase from Vendor: ', v.name) AS description,
+    ikp.total_amount AS debit,
+    0 AS credit,
+    NULL AS balance,
+    ikp.bank_account_id AS accountId
+FROM in_kind_purchases ikp
+JOIN vendors v ON ikp.vendor_id = v.id
+JOIN accounts a2 ON ikp.bank_account_id = a2.id
+JOIN advances adv ON ikp.advance_id = adv.id
+WHERE ikp.funding_source = 'bank'
+
+
+UNION ALL
+
+-- Vendor payments (no bank account column, so use 'all' as placeholder)
+SELECT
+    CONCAT('vp-', vp.id) AS id,
+    vp.payment_date AS date,
+    CONCAT('Vendor Payment: ', v.name) AS description,
+    vp.amount AS debit,
+    0 AS credit,
+    NULL AS balance,
+    'all' AS accountId
+FROM vendors_payments vp
+JOIN vendors v ON vp.vendor_id = v.id
+WHERE vp.payment_mode = 'bank'
+
+UNION ALL
+
+SELECT
+    CONCAT('bp-', bp.id) AS id,
+    bp.date,
+    CONCAT('Buyer Payment: ', b.name) AS description,
+    0 AS debit,
+    bp.amount AS credit,
+    NULL AS balance,
+    bp.bank_account_id AS accountId
+FROM buyer_payments bp
+JOIN buyers b ON bp.buyer_id = b.id
+WHERE bp.payment_mode = 'bank'
+
+UNION ALL
+
+SELECT
+    CONCAT('fp-', fp.id) AS id,
+    fp.date,
+    CONCAT('Farmer Payment: ', f.name) AS description,
+    fp.amount AS debit,
+    0 AS credit,
+    NULL AS balance,
+    fp.bank_account_id AS accountId
+FROM farmer_payments fp
+JOIN farmers f ON fp.farmer_id = f.id
+WHERE fp.payment_mode = 'bank'
+
+UNION ALL
+
+-- Account transfers: money going out of this bank account
+SELECT
+    CONCAT('xfer-out-', at.id) AS id,
+    at.date,
+    CONCAT('Transfer to ', to_acc.title) AS description,
+    at.amount AS debit,
+    0 AS credit,
+    NULL AS balance,
+    from_acc.id AS accountId
+FROM account_transfers at
+JOIN accounts from_acc ON at.from_account_id = from_acc.id
+JOIN accounts to_acc ON at.to_account_id = to_acc.id
+WHERE from_acc.type = 'bank'
+
+UNION ALL
+
+-- Account transfers: money coming into this bank account
+SELECT
+    CONCAT('xfer-in-', at.id) AS id,
+    at.date,
+    CONCAT('Transfer from ', from_acc.title) AS description,
+    0 AS debit,
+    at.amount AS credit,
+    NULL AS balance,
+    to_acc.id AS accountId
+FROM account_transfers at
+JOIN accounts from_acc ON at.from_account_id = from_acc.id
+JOIN accounts to_acc ON at.to_account_id = to_acc.id
+WHERE to_acc.type = 'bank'
+
+ORDER BY date ASC;
+  
+  `;
+
+
+  db.query(query ,  (err , result ) =>{
+    if (err){
+      console.log(err);
+      res.status(500).json({message : "Error While Fetching Get Bank TransAction "})
+    }
+    res.json(result)
+  })
+}
+
 
 
 module.exports = {
   addBankAccount,
   createTransfer,
   getAccountsWithBalance,
-  getAllCashBoxTransaction
+  getAllCashBoxTransaction,
+  GetAllBankAccountsTransaction
 };

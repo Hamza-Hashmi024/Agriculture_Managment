@@ -40,7 +40,7 @@ const mockBankTransactions = [
     debit: 0,
     credit: 300000,
     balance: 300000,
-    accountId: "all"
+    accountId: "all",
   },
   {
     id: "2",
@@ -49,7 +49,7 @@ const mockBankTransactions = [
     debit: 0,
     credit: 30000,
     balance: 330000,
-    accountId: "1"
+    accountId: "1",
   },
   {
     id: "3",
@@ -58,7 +58,7 @@ const mockBankTransactions = [
     debit: 10000,
     credit: 0,
     balance: 320000,
-    accountId: "1"
+    accountId: "1",
   },
   {
     id: "4",
@@ -67,7 +67,7 @@ const mockBankTransactions = [
     debit: 0,
     credit: 80000,
     balance: 400000,
-    accountId: "2"
+    accountId: "2",
   },
   {
     id: "5",
@@ -76,20 +76,27 @@ const mockBankTransactions = [
     debit: 25000,
     credit: 0,
     balance: 375000,
-    accountId: "1"
-  }
+    accountId: "1",
+  },
 ];
 
-export function BankbookModal({ open, onOpenChange, accounts }: BankbookModalProps) {
+export function BankbookModal({
+  open,
+  onOpenChange,
+  accounts,
+}: BankbookModalProps) {
   const [selectedAccount, setSelectedAccount] = useState("all");
   const [dateRange, setDateRange] = useState({
     from: "2025-07-01",
-    to: new Date().toISOString().split('T')[0]
+    to: new Date().toISOString().split("T")[0],
   });
 
-  const filteredTransactions = selectedAccount === "all" 
-    ? mockBankTransactions 
-    : mockBankTransactions.filter(t => t.accountId === selectedAccount || t.accountId === "all");
+  const filteredTransactions =
+    selectedAccount === "all"
+      ? mockBankTransactions
+      : mockBankTransactions.filter(
+          (t) => t.accountId === selectedAccount || t.accountId === "all"
+        );
 
   const handleExport = () => {
     console.log("Exporting bankbook data for account:", selectedAccount);
@@ -107,7 +114,10 @@ export function BankbookModal({ open, onOpenChange, accounts }: BankbookModalPro
           <div className="flex gap-4 items-end">
             <div className="space-y-2">
               <Label htmlFor="accountSelect">Select Account</Label>
-              <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+              <Select
+                value={selectedAccount}
+                onValueChange={setSelectedAccount}
+              >
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -121,27 +131,31 @@ export function BankbookModal({ open, onOpenChange, accounts }: BankbookModalPro
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="dateFrom">From Date</Label>
               <Input
                 id="dateFrom"
                 type="date"
                 value={dateRange.from}
-                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                onChange={(e) =>
+                  setDateRange((prev) => ({ ...prev, from: e.target.value }))
+                }
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="dateTo">To Date</Label>
               <Input
                 id="dateTo"
                 type="date"
                 value={dateRange.to}
-                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                onChange={(e) =>
+                  setDateRange((prev) => ({ ...prev, to: e.target.value }))
+                }
               />
             </div>
-            
+
             <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
@@ -163,13 +177,19 @@ export function BankbookModal({ open, onOpenChange, accounts }: BankbookModalPro
               <TableBody>
                 {filteredTransactions.map((transaction) => (
                   <TableRow key={transaction.id}>
-                    <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {new Date(transaction.date).toLocaleDateString()}
+                    </TableCell>
                     <TableCell>{transaction.description}</TableCell>
                     <TableCell className="text-right">
-                      {transaction.debit > 0 ? transaction.debit.toLocaleString() : "—"}
+                      {transaction.debit > 0
+                        ? transaction.debit.toLocaleString()
+                        : "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {transaction.credit > 0 ? transaction.credit.toLocaleString() : "—"}
+                      {transaction.credit > 0
+                        ? transaction.credit.toLocaleString()
+                        : "—"}
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       {transaction.balance.toLocaleString()}
@@ -186,19 +206,28 @@ export function BankbookModal({ open, onOpenChange, accounts }: BankbookModalPro
               <div>
                 <p className="text-sm text-muted-foreground">Total Debits</p>
                 <p className="text-lg font-semibold text-red-600">
-                  PKR {filteredTransactions.reduce((sum, t) => sum + t.debit, 0).toLocaleString()}
+                  PKR{" "}
+                  {filteredTransactions
+                    .reduce((sum, t) => sum + t.debit, 0)
+                    .toLocaleString()}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Credits</p>
                 <p className="text-lg font-semibold text-green-600">
-                  PKR {filteredTransactions.reduce((sum, t) => sum + t.credit, 0).toLocaleString()}
+                  PKR{" "}
+                  {filteredTransactions
+                    .reduce((sum, t) => sum + t.credit, 0)
+                    .toLocaleString()}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Current Balance</p>
                 <p className="text-lg font-semibold">
-                  PKR {filteredTransactions[filteredTransactions.length - 1]?.balance.toLocaleString()}
+                  PKR{" "}
+                  {filteredTransactions[
+                    filteredTransactions.length - 1
+                  ]?.balance.toLocaleString()}
                 </p>
               </div>
             </div>
