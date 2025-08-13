@@ -127,8 +127,57 @@ const VendorLedgerReports = (req, res) => {
 };
 
 
+const AdvanceLedger = (req, res) => {
+  const { id } = req.params; // farmer id or 'all'
+  const { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ error: "startDate and endDate are required" });
+  }
+
+  // Base query
+  let query = `
+    SELECT 
+      a.id AS advance_id,
+      f.name AS farmer,
+      DATE_FORMAT(a.date, '%Y-%m-%d') AS date,
+      a.type AS advance_type,
+      a.amount,
+      a.balance,
+      a.source,
+      CASE 
+        WHEN a.balance = 0 THEN 'Settled'
+        ELSE 'Outstanding'
+      END AS status
+    FROM advances a
+    JOIN farmers f ON a.farmer_id = f.id
+    WHERE a.date BETWEEN ? AND ?`;
+
+  const params = [startDate, endDate];
+
+  // Add farmer filter if not 'all'
+  if (id !== "all") {
+    query += " AND f.id = ?";
+    params.push(id);
+  }
+
+  query += " ORDER BY a.date;";
+
+  // Execute query
+  db.query(query, params, (err, results) => {
+    if (err) {
+      console.error("DB Error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    return res.json({ advances: results });
+  });
+};
+
+
+
 module.exports = {
   FarmerLedgerReports,
    BuyerLedgerReports ,
    VendorLedgerReports,
+   AdvanceLedger,
 };
