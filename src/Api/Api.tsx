@@ -362,3 +362,12 @@ export const GetFarmerLedgerReport = async (id) => {
     throw error;
   }
 };
+
+export const GetBuyersledger = async (id)=>{
+  try {
+    const response = await axios.get(`${Base_Url}/api/reports/buyer/report/${id}`)
+    return response.data;
+  }catch(error){
+    console.error("Error While Fetching Ledger Report :-> ", error);
+    throw error;
+  }}

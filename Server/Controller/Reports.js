@@ -70,7 +70,65 @@ ORDER BY p.date;`;
   });
 };
 
+
+const VendorLedgerReports = (req, res) => {
+  const { id } = req.params;
+  const { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ message: "startDate and endDate are required" });
+  }
+
+  const query = `
+    SELECT 
+        v.id AS vendor_id,
+        v.name AS vendor_name,
+        'purchase' AS type,
+        ik.id AS transaction_id,
+        DATE_FORMAT(a.date, '%Y-%m-%d') AS date,
+        ik.description AS details,
+        ik.total_amount AS amount,
+        ik.paid_now AS paid,
+        (ik.total_amount - ik.paid_now) AS balance
+    FROM in_kind_purchases ik
+    LEFT JOIN advances a ON ik.advance_id = a.id
+    JOIN vendors v ON ik.vendor_id = v.id
+    WHERE ik.vendor_id = ? 
+      AND a.date BETWEEN ? AND ?
+
+    UNION ALL
+
+    SELECT 
+        v.id AS vendor_id,
+        v.name AS vendor_name,
+        'payment' AS type,
+        vp.id AS transaction_id,
+        DATE_FORMAT(vp.payment_date, '%Y-%m-%d') AS date,
+        vp.notes AS details,
+        vp.amount AS amount,
+        vp.amount AS paid,
+        0 AS balance
+    FROM vendors_payments vp
+    JOIN vendors v ON vp.vendor_id = v.id
+    WHERE vp.vendor_id = ? 
+      AND vp.payment_date BETWEEN ? AND ?
+
+    ORDER BY date, type;
+  `;
+
+  db.query(query, [id, startDate, endDate, id, startDate, endDate], (err, results) => {
+    if (err) {
+      console.error("Error fetching vendor ledger:", err);
+      return res.status(500).json({ message: "Error fetching vendor ledger" });
+    }
+
+    res.status(200).json(results);
+  });
+};
+
+
 module.exports = {
   FarmerLedgerReports,
-   BuyerLedgerReports 
+   BuyerLedgerReports ,
+   VendorLedgerReports,
 };
