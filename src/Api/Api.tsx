@@ -185,7 +185,6 @@ export const GetBuyerInstallments = async (buyerId) => {
   }
 };
 
-
 export const GetBuyerReceivableCard = async (
   buyerId: string
 ): Promise<Buyer> => {
@@ -202,22 +201,23 @@ export const GetBuyerReceivableCard = async (
 
 export const GetAllBuyersWithReceivables = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/buyer/getBuyers/recivable`);
+    const response = await axios.get(
+      `${Base_Url}/api/buyer/getBuyers/recivable`
+    );
     return response.data;
-  }catch (error){
+  } catch (error) {
     console.error("Get All Buyers With Receivables API error", error);
     throw error;
   }
 };
 
-export const GetBuyerDeatilById = async (id) =>{
+export const GetBuyerDeatilById = async (id) => {
   try {
     const response = await axios.get(`${Base_Url}/api/buyer/${id}/details`);
     return response.data;
-  }catch (error ){
+  } catch (error) {
     console.error("Get Buyer Detail By ID API error", error);
   }
-
 };
 
 export const GetAllFarmersFull = async (id) => {
@@ -230,21 +230,22 @@ export const GetAllFarmersFull = async (id) => {
   }
 };
 
-export const GetAllNetFarmerPayable = async ()=>{
+export const GetAllNetFarmerPayable = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/farmer/netpayable`)
+    const response = await axios.get(`${Base_Url}/api/farmer/netpayable`);
     return response.data;
-  }
-  catch(error) {
+  } catch (error) {
     console.error("Get All Net Farmer Payable API error");
     throw error;
-
   }
-}
+};
 
 export const AddPaymentFarmer = async (data) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/farmer/addpayment`, data);
+    const response = await axios.post(
+      `${Base_Url}/api/farmer/addpayment`,
+      data
+    );
     return response.data;
   } catch (error) {
     console.error("Add Payment Farmer API error", error);
@@ -252,71 +253,75 @@ export const AddPaymentFarmer = async (data) => {
   }
 };
 
-export const GetFarmerPayableSummary = async(id)=>{
+export const GetFarmerPayableSummary = async (id) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/farmer/summary/${id}`)
+    const response = await axios.get(`${Base_Url}/api/farmer/summary/${id}`);
     return response.data;
-
-  }catch(error){
-    console.log(error , "Error get FarmerPayableSummary")
-    throw error
-  }
-}
-
-export const GetVendorList = async()=>{
-  try{
-    const response = await axios.get(`${Base_Url}/api/vendor/details` )
-    return response.data 
-  }
-  catch(error){
-    console.log( "Api Response Error" ,   error )
-    throw error
-  }
-}
-
-export const GetVendorProfile = async(id) =>{
-  try {
-    const response = await axios.get(`${Base_Url}/api/vendor/profile/${id}`)
-    return response.data
-  }catch(error){
-    console.log("Error Vendor Profile" ,  error)
-    throw error
-  }
-}
-
-export const AddVendorPayment = async(data) =>{
-  try {
-    const response = axios.post(`${Base_Url}/api/vendor/addpayment` ,data )
-    return response
-  }catch(error){
-    console.log("Error Add Vendor Payment" , error)
-    throw error
-  }
-}
-
-export const AddExpense = async (data)=>{
-  try {
-    const response = axios.post(`${Base_Url}/api/expenses/regiterexpense` , data )
-    return response
-  }catch(error){
-    console.log("Error Add Expense" , error)
+  } catch (error) {
+    console.log(error, "Error get FarmerPayableSummary");
     throw error;
   }
-}
+};
 
-export const GetAllExpenses = async(data) =>{
+export const GetVendorList = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/expenses/`)
-    return response.data
-  }catch(err){
-    console.log("Error Get All Expenses" , err)
-    throw err
+    const response = await axios.get(`${Base_Url}/api/vendor/details`);
+    return response.data;
+  } catch (error) {
+    console.log("Api Response Error", error);
+    throw error;
   }
-}
+};
+
+export const GetVendorProfile = async (id) => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/vendor/profile/${id}`);
+    return response.data;
+  } catch (error) {
+    console.log("Error Vendor Profile", error);
+    throw error;
+  }
+};
+
+export const AddVendorPayment = async (data) => {
+  try {
+    const response = axios.post(`${Base_Url}/api/vendor/addpayment`, data);
+    return response;
+  } catch (error) {
+    console.log("Error Add Vendor Payment", error);
+    throw error;
+  }
+};
+
+export const AddExpense = async (data) => {
+  try {
+    const response = axios.post(
+      `${Base_Url}/api/expenses/regiterexpense`,
+      data
+    );
+    return response;
+  } catch (error) {
+    console.log("Error Add Expense", error);
+    throw error;
+  }
+};
+
+export const GetAllExpenses = async (data) => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/expenses/`);
+    return response.data;
+  } catch (err) {
+    console.log("Error Get All Expenses", err);
+    throw err;
+  }
+};
 
 export const EditExpense = async (id: string, payload: any) => {
   try {
-    const response = await axios.put(`${Base_Url}/api/expenses/editexpense/${id}`, payload);
+    const response = await axios.put(
+      `${Base_Url}/api/expenses/editexpense/${id}`,
+      payload
+    );
     return response.data;
   } catch (err) {
     console.error("Error Edit Expense", err);
@@ -324,14 +329,26 @@ export const EditExpense = async (id: string, payload: any) => {
   }
 };
 
-export const GetALLcashboxTransaction = async()=>{
+export const GetALLcashboxTransaction = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/accounts/cash/transaction`)
-    return response.data
+    const response = await axios.get(
+      `${Base_Url}/api/accounts/cash/transaction`
+    );
+    return response.data;
+  } catch (err) {
+    console.log("Error While Fetching Transaction :-> ", err);
+    throw err;
   }
-  catch(err){
-    console.log("Error While Fetching Transaction :-> " ,  err)
-    throw err
+};
 
+export const GetAllBankAccountsTransaction = async () => {
+  try {
+    const response = await axios.get(
+      `${Base_Url}/api/accounts/GetAllBankAccountsTransaction`
+    );
+    return response.data;
+  } catch (error) {
+    console.log("Error While Fetching Transaction :-> ", error);
+    throw error;
   }
-}
+};

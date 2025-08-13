@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { GetAllBankAccountsTransaction } from "@/Api/Api";
 
 interface BankbookModalProps {
   open: boolean;
@@ -31,72 +32,42 @@ interface BankbookModalProps {
   accounts: any[];
 }
 
-// Mock bank transactions
-const mockBankTransactions = [
-  {
-    id: "1",
-    date: "2025-07-01",
-    description: "Opening Balance",
-    debit: 0,
-    credit: 300000,
-    balance: 300000,
-    accountId: "all",
-  },
-  {
-    id: "2",
-    date: "2025-07-03",
-    description: "Transfer from Cash",
-    debit: 0,
-    credit: 30000,
-    balance: 330000,
-    accountId: "1",
-  },
-  {
-    id: "3",
-    date: "2025-07-04",
-    description: "Advance Payment",
-    debit: 10000,
-    credit: 0,
-    balance: 320000,
-    accountId: "1",
-  },
-  {
-    id: "4",
-    date: "2025-07-05",
-    description: "Buyer Payment",
-    debit: 0,
-    credit: 80000,
-    balance: 400000,
-    accountId: "2",
-  },
-  {
-    id: "5",
-    date: "2025-07-08",
-    description: "Vendor Payment",
-    debit: 25000,
-    credit: 0,
-    balance: 375000,
-    accountId: "1",
-  },
-];
-
 export function BankbookModal({
   open,
   onOpenChange,
   accounts,
 }: BankbookModalProps) {
   const [selectedAccount, setSelectedAccount] = useState("all");
+  const [bankTransactions, setBankTransactions] = useState<any[]>([]);
   const [dateRange, setDateRange] = useState({
     from: "2025-07-01",
     to: new Date().toISOString().split("T")[0],
   });
 
-  const filteredTransactions =
-    selectedAccount === "all"
-      ? mockBankTransactions
-      : mockBankTransactions.filter(
-          (t) => t.accountId === selectedAccount || t.accountId === "all"
-        );
+  // Fetch transactions from API
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const response = await GetAllBankAccountsTransaction();
+        setBankTransactions(response || []);
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+      }
+    };
+    fetchTransactions();
+  }, []);
+
+  // Filtered transactions by account and date
+  const filteredTransactions = useMemo(() => {
+    return bankTransactions.filter((t) => {
+      const matchAccount =
+        selectedAccount === "all" || t.accountId === selectedAccount;
+      const date = new Date(t.date);
+      const fromDate = new Date(dateRange.from);
+      const toDate = new Date(dateRange.to);
+      return matchAccount && date >= fromDate && date <= toDate;
+    });
+  }, [bankTransactions, selectedAccount, dateRange]);
 
   const handleExport = () => {
     console.log("Exporting bankbook data for account:", selectedAccount);
@@ -119,7 +90,7 @@ export function BankbookModal({
                 onValueChange={setSelectedAccount}
               >
                 <SelectTrigger className="w-48">
-                  <SelectValue />
+                  <SelectValue placeholder="Select Account" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Bank Accounts</SelectItem>
@@ -163,42 +134,55 @@ export function BankbookModal({
           </div>
 
           {/* Transactions Table */}
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Debit</TableHead>
-                  <TableHead className="text-right">Credit</TableHead>
-                  <TableHead className="text-right">Balance</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>
-                      {new Date(transaction.date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>{transaction.description}</TableCell>
-                    <TableCell className="text-right">
-                      {transaction.debit > 0
-                        ? transaction.debit.toLocaleString()
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {transaction.credit > 0
-                        ? transaction.credit.toLocaleString()
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {transaction.balance.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <div className="border rounded-lg max-h-[400px] overflow-auto">
+  <Table>
+    <TableHeader className="sticky top-0 bg-white z-10">
+      <TableRow>
+        <TableHead>Date</TableHead>
+        <TableHead>Description</TableHead>
+        <TableHead className="text-right">Debit</TableHead>
+        <TableHead className="text-right">Credit</TableHead>
+        <TableHead className="text-right">Balance</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {filteredTransactions.length > 0 ? (
+        filteredTransactions.map((transaction) => (
+          <TableRow key={transaction.id}>
+            <TableCell>
+              {new Date(transaction.date).toLocaleDateString()}
+            </TableCell>
+            <TableCell>{transaction.description}</TableCell>
+            <TableCell className="text-right">
+              {parseFloat(transaction.debit) > 0
+                ? parseFloat(transaction.debit).toLocaleString()
+                : "—"}
+            </TableCell>
+            <TableCell className="text-right">
+              {parseFloat(transaction.credit) > 0
+                ? parseFloat(transaction.credit).toLocaleString()
+                : "—"}
+            </TableCell>
+            <TableCell className="text-right font-medium">
+              {transaction.balance
+                ? parseFloat(transaction.balance).toLocaleString()
+                : "—"}
+            </TableCell>
+          </TableRow>
+        ))
+      ) : (
+        <TableRow>
+          <TableCell
+            colSpan={5}
+            className="text-center text-muted-foreground"
+          >
+            No transactions found
+          </TableCell>
+        </TableRow>
+      )}
+    </TableBody>
+  </Table>
+</div>
 
           {/* Summary */}
           <div className="bg-muted p-4 rounded-lg">
@@ -208,7 +192,7 @@ export function BankbookModal({
                 <p className="text-lg font-semibold text-red-600">
                   PKR{" "}
                   {filteredTransactions
-                    .reduce((sum, t) => sum + t.debit, 0)
+                    .reduce((sum, t) => sum + parseFloat(t.debit || 0), 0)
                     .toLocaleString()}
                 </p>
               </div>
@@ -217,7 +201,7 @@ export function BankbookModal({
                 <p className="text-lg font-semibold text-green-600">
                   PKR{" "}
                   {filteredTransactions
-                    .reduce((sum, t) => sum + t.credit, 0)
+                    .reduce((sum, t) => sum + parseFloat(t.credit || 0), 0)
                     .toLocaleString()}
                 </p>
               </div>
@@ -225,9 +209,13 @@ export function BankbookModal({
                 <p className="text-sm text-muted-foreground">Current Balance</p>
                 <p className="text-lg font-semibold">
                   PKR{" "}
-                  {filteredTransactions[
-                    filteredTransactions.length - 1
-                  ]?.balance.toLocaleString()}
+                  {filteredTransactions.length > 0 &&
+                  filteredTransactions[filteredTransactions.length - 1].balance
+                    ? parseFloat(
+                        filteredTransactions[filteredTransactions.length - 1]
+                          .balance
+                      ).toLocaleString()
+                    : "—"}
                 </p>
               </div>
             </div>
