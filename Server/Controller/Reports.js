@@ -329,7 +329,6 @@ const CashBook = (req, res) => {
     res.json(result);
   });
 };
-
 const BankBook = (req, res) => {
   const { from, to } = req.query;
 
@@ -337,27 +336,32 @@ const BankBook = (req, res) => {
     SELECT 
       t.txn_date,
       t.bank_account_id,
-      ba.account_name,
+      CONCAT(ba.bank_name, ' - ', ba.account_number) AS account_name, -- ✅ meaningful account label
       t.description,
       t.type,
       t.amount,
       SUM(CASE WHEN t.type = 'Credit' THEN t.amount ELSE -t.amount END) 
-          OVER (PARTITION BY t.bank_account_id ORDER BY t.txn_date, t.id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) 
-          AS running_balance
+          OVER (
+            PARTITION BY t.bank_account_id 
+            ORDER BY t.txn_date, t.id 
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+          ) AS running_balance
     FROM (
+        -- Buyer Bank Receipts (Credit)
         SELECT 
-            r.id,
-            r.receipt_date AS txn_date,
-            r.bank_account_id,
+            bp.id,
+            bp.date AS txn_date,
+            bp.bank_account_id,
             CONCAT('Bank Receipt from Buyer: ', b.name) AS description,
             'Credit' AS type,
-            r.amount AS amount
-        FROM receipts r
-        JOIN buyers b ON r.buyer_id = b.id
-        WHERE r.bank_account_id IS NOT NULL
+            bp.amount AS amount
+        FROM buyer_payments bp
+        JOIN buyers b ON bp.buyer_id = b.id
+        WHERE bp.payment_mode = 'bank' AND bp.bank_account_id IS NOT NULL
 
         UNION ALL
 
+        -- Vendor Bank Payments (Debit)
         SELECT 
             e.id,
             e.created_at AS txn_date,
@@ -369,7 +373,7 @@ const BankBook = (req, res) => {
         JOIN vendors v ON e.vendor_id = v.id
         WHERE e.payment_mode = 'bank' AND e.bank_account_id IS NOT NULL
     ) t
-    JOIN bank_accounts ba ON t.bank_account_id = ba.id
+    JOIN vendor_bank_accounts ba ON t.bank_account_id = ba.id
     WHERE t.txn_date BETWEEN ? AND ?
     ORDER BY t.bank_account_id, t.txn_date, t.id;
   `;
@@ -379,8 +383,6 @@ const BankBook = (req, res) => {
     res.json(result);
   });
 };
-
-
 
 module.exports = {
   FarmerLedgerReports,

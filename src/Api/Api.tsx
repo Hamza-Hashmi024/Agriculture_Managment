@@ -411,3 +411,16 @@ export const GetCashbook = async (from: string, to: string) => {
     throw error;
   }
 };
+
+export const GetBankBooks = async (from: string, to: string) => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/reports/bankbook`, {
+      params: { from, to },
+    });
+    console.log("Bankbook Data:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching bankbook:", error);
+    throw error;
+  }
+};
