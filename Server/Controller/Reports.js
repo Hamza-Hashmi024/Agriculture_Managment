@@ -5,30 +5,56 @@ const FarmerLedgerReports = (req, res) => {
 
   const query = `
     SELECT 
-        p.id AS payment_id,
-        p.date,
-        CASE 
-            WHEN p.payment_type = 'upfront' THEN 'Advance'
-            WHEN p.payment_type = 'later' THEN 'Payment'
-            WHEN p.payment_type = 'sale' THEN 'Sale/Lot'
-            ELSE 'Other'
-        END AS type,
-        CONCAT('#P', p.id) AS ref,
-        CASE WHEN p.payment_type = 'upfront' THEN p.amount ELSE 0 END AS debit,
-        CASE WHEN p.payment_type IN ('later','sale') THEN p.amount ELSE 0 END AS credit,
-        @balance := @balance + 
-            (CASE WHEN p.payment_type IN ('later','sale') 
-                  THEN p.amount 
-                  ELSE -p.amount END) AS balance,
-        p.notes
-    FROM buyers b
-    JOIN buyer_payments p ON p.buyer_id = b.id
-    CROSS JOIN (SELECT @balance := 0) vars
-    WHERE b.id = ?
-    ORDER BY p.date;
+        ledger_date AS date,
+        ledger_type AS type,
+        reference_no AS reference,
+        credit,
+        debit,
+        @running_balance := @running_balance +  IFNULL(debit,0) - IFNULL(credit,0)  AS balance,
+        notes
+    FROM (
+        -- Farmer Advances / Payments (Credit)
+        SELECT 
+            a.date AS ledger_date,
+            'Advance / Payment' AS ledger_type,
+            a.reference_no,
+            a.amount AS credit,
+            NULL AS debit,
+            'Advance / Payment' AS notes
+        FROM advances a
+        WHERE a.farmer_id = ?
+
+        UNION ALL
+
+        -- Farmer Side Expenses (Debit)
+        SELECT 
+            sfe.created_at AS ledger_date,
+            'Expense' AS ledger_type,
+            sfe.reference_no,
+            NULL AS credit,
+            sfe.amount AS debit,
+            sfe.description AS notes
+        FROM sale_farmer_expenses sfe
+        WHERE sfe.farmer_id = ?
+
+        UNION ALL
+
+        -- Sales (net amount after commission) (Debit)
+        SELECT 
+            s.arrival_date AS ledger_date,
+            'Sale' AS ledger_type,
+            CONCAT('Sale ID: ', s.id) AS reference_no,
+            NULL AS credit,
+            IFNULL(s.total_buyer_payable,0) - (IFNULL(s.total_buyer_payable,0) * IFNULL(s.commission_percent,0)/100) AS debit,
+            CONCAT(s.crop, ' - ', s.weight, 'kg @ ', s.rate) AS notes
+        FROM sales s
+        WHERE s.farmer_id = ?
+    ) AS ledger
+    CROSS JOIN (SELECT @running_balance := 0) AS init
+    ORDER BY ledger_date, ledger_type, reference_no;
   `;
 
-  db.query(query, [id], (err, result) => {
+  db.query(query, [id, id, id], (err, result) => {
     if (err) {
       console.error("Error fetching farmer ledger:", err);
       return res.status(500).json({ message: "Error fetching data" });

@@ -126,37 +126,44 @@ export function FarmerLedgerReport({ dateRange }: FarmerLedgerReportProps) {
                     <TableHead>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {transactions.map((transaction) => (
-                    <TableRow key={transaction.payment_id}>
-                      <TableCell>
-                        {new Date(transaction.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>{transaction.type}</TableCell>
-                      <TableCell>{transaction.ref}</TableCell>
-                      <TableCell className="text-right">
-                        {transaction.debit > 0
-                          ? transaction.debit.toLocaleString()
-                          : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {transaction.credit > 0
-                          ? transaction.credit.toLocaleString()
-                          : "—"}
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-medium ${
-                          transaction.balance < 0
-                            ? "text-red-600"
-                            : "text-green-600"
-                        }`}
-                      >
-                        {transaction.balance.toLocaleString()}
-                      </TableCell>
-                      <TableCell>{transaction.notes}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+               <TableBody>
+  {transactions.map((transaction) => (
+    <TableRow key={transaction.ref}>
+      <TableCell>
+        {new Date(transaction.date).toLocaleDateString()}
+      </TableCell>
+      <TableCell>{transaction.type}</TableCell>
+      <TableCell>{transaction.ref}</TableCell>
+      <TableCell className="text-right">
+        {transaction.debit
+          ? Number(transaction.debit).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          : "—"}
+      </TableCell>
+      <TableCell className="text-right">
+        {transaction.credit
+          ? Number(transaction.credit).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          : "—"}
+      </TableCell>
+      <TableCell
+        className={`text-right font-medium ${
+          transaction.balance < 0 ? "text-red-600" : "text-green-600"
+        }`}
+      >
+        {Number(transaction.balance).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </TableCell>
+      <TableCell>{transaction.notes}</TableCell>
+    </TableRow>
+  ))}
+</TableBody>
               </Table>
             </div>
 
@@ -164,36 +171,38 @@ export function FarmerLedgerReport({ dateRange }: FarmerLedgerReportProps) {
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Debits</p>
-                  <p className="text-lg font-semibold text-red-600">
-                    PKR{" "}
-                    {transactions
-                      .reduce((sum, t) => sum + t.debit, 0)
-                      .toLocaleString()}
-                  </p>
+                <p className="text-lg font-semibold text-red-600">
+  PKR{" "}
+  {Number(
+    transactions.reduce((sum, t) => sum + (t.debit || 0), 0)
+  ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Credits</p>
-                  <p className="text-lg font-semibold text-green-600">
-                    PKR{" "}
-                    {transactions
-                      .reduce((sum, t) => sum + t.credit, 0)
-                      .toLocaleString()}
-                  </p>
+                 
+<p className="text-lg font-semibold text-green-600">
+  PKR{" "}
+  {Number(
+    transactions.reduce((sum, t) => sum + (t.credit || 0), 0)
+  ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+</p>
+
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Final Balance</p>
                   <p
-                    className={`text-lg font-semibold ${
-                      transactions[transactions.length - 1]?.balance < 0
-                        ? "text-red-600"
-                        : "text-green-600"
-                    }`}
-                  >
-                    PKR{" "}
-                    {transactions[
-                      transactions.length - 1
-                    ]?.balance.toLocaleString()}
-                  </p>
+  className={`text-lg font-semibold ${
+    transactions[transactions.length - 1]?.balance < 0
+      ? "text-red-600"
+      : "text-green-600"
+  }`}
+>
+  PKR{" "}
+  {Number(
+    transactions[transactions.length - 1]?.balance || 0
+  ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+</p>
                 </div>
               </div>
             </div>

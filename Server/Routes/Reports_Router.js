@@ -11,6 +11,7 @@ const {
   SalesReport,
 } = require("../Controller/Reports");
 
+
 router.get("/reports/farmer/:id", asyncHandler(FarmerLedgerReports));
 router.get("/buyer/report/:id", asyncHandler(BuyerLedgerReports));
 router.get("/salesReport", asyncHandler(SalesReport));
