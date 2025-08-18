@@ -70,13 +70,14 @@ ORDER BY p.date;`;
   });
 };
 
-
 const VendorLedgerReports = (req, res) => {
   const { id } = req.params;
   const { startDate, endDate } = req.query;
 
   if (!startDate || !endDate) {
-    return res.status(400).json({ message: "startDate and endDate are required" });
+    return res
+      .status(400)
+      .json({ message: "startDate and endDate are required" });
   }
 
   const query = `
@@ -116,23 +117,30 @@ const VendorLedgerReports = (req, res) => {
     ORDER BY date, type;
   `;
 
-  db.query(query, [id, startDate, endDate, id, startDate, endDate], (err, results) => {
-    if (err) {
-      console.error("Error fetching vendor ledger:", err);
-      return res.status(500).json({ message: "Error fetching vendor ledger" });
+  db.query(
+    query,
+    [id, startDate, endDate, id, startDate, endDate],
+    (err, results) => {
+      if (err) {
+        console.error("Error fetching vendor ledger:", err);
+        return res
+          .status(500)
+          .json({ message: "Error fetching vendor ledger" });
+      }
+
+      res.status(200).json(results);
     }
-
-    res.status(200).json(results);
-  });
+  );
 };
-
 
 const AdvanceLedger = (req, res) => {
   const { id } = req.params; // farmer id or 'all'
   const { startDate, endDate } = req.query;
 
   if (!startDate || !endDate) {
-    return res.status(400).json({ error: "startDate and endDate are required" });
+    return res
+      .status(400)
+      .json({ error: "startDate and endDate are required" });
   }
 
   // Base query
@@ -173,11 +181,215 @@ const AdvanceLedger = (req, res) => {
   });
 };
 
+const SalesReport = (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  const query = `
+    SELECT
+      s.id AS sale_id,
+      f.name AS farmer,
+      b.name AS buyer,
+      DATE_FORMAT(s.date, '%Y-%m-%d') AS date,
+      s.total_amount,
+      s.commission,
+      (s.total_amount - s.commission) AS net_amount
+    FROM sales s
+    JOIN farmers f ON s.farmer_id = f.id
+    JOIN buyers b ON s.buyer_id = b.id
+    WHERE s.date BETWEEN ? AND ?
+    ORDER BY s.date;
+  `;
+
+  db.query(query, [startDate, endDate], (err, results) => {
+    if (err) {
+      console.error("Error fetching sales report:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+
+    res.json(results);
+  });
+};
+
+const ReceivableAging = (req, res) => {
+  const query = `
+  SELECT 
+    b.id AS buyer_id,
+    b.name AS buyer_name,
+
+    SUM(CASE WHEN DATEDIFF(CURDATE(), s.arrival_date) <= 0 
+             THEN s.total_buyer_payable ELSE 0 END) 
+      - IFNULL(SUM(CASE WHEN DATEDIFF(CURDATE(), s.arrival_date) <= 0 THEN bp.amount ELSE 0 END), 0) AS current,
+
+    SUM(CASE WHEN DATEDIFF(CURDATE(), s.arrival_date) BETWEEN 1 AND 7 
+             THEN s.total_buyer_payable ELSE 0 END) 
+      - IFNULL(SUM(CASE WHEN DATEDIFF(CURDATE(), s.arrival_date) BETWEEN 1 AND 7 THEN bp.amount ELSE 0 END), 0) AS due1to7,
+
+    SUM(CASE WHEN DATEDIFF(CURDATE(), s.arrival_date) BETWEEN 8 AND 30 
+             THEN s.total_buyer_payable ELSE 0 END) 
+      - IFNULL(SUM(CASE WHEN DATEDIFF(CURDATE(), s.arrival_date) BETWEEN 8 AND 30 THEN bp.amount ELSE 0 END), 0) AS due8to30,
+
+    SUM(CASE WHEN DATEDIFF(CURDATE(), s.arrival_date) > 30 
+             THEN s.total_buyer_payable ELSE 0 END) 
+      - IFNULL(SUM(CASE WHEN DATEDIFF(CURDATE(), s.arrival_date) > 30 THEN bp.amount ELSE 0 END), 0) AS due30plus,
+
+    SUM(s.total_buyer_payable) - IFNULL(SUM(bp.amount), 0) AS total_outstanding
+
+FROM buyers b
+LEFT JOIN sales s 
+  ON b.id = s.buyer_id AND s.status IN ('open','partial')
+LEFT JOIN buyer_payments bp 
+  ON b.id = bp.buyer_id
+GROUP BY b.id, b.name
+ORDER BY b.name;
+
+`;
+
+  db.query(query, (err, result) => {
+    if (err) return res.status(500).json({ message: "Error in database query", error: err });
+    res.json(result);
+  });
+};
+
+
+
+const PayableAging = (req, res) => {
+  const query = `
+    SELECT 
+      v.id AS vendor_id,
+      v.name AS vendor_name,
+
+      SUM(CASE WHEN DATEDIFF(CURDATE(), e.due_date) <= 0 
+               THEN (e.amount - e.paid_now) ELSE 0 END) AS current,
+
+      SUM(CASE WHEN DATEDIFF(CURDATE(), e.due_date) BETWEEN 1 AND 7 
+               THEN (e.amount - e.paid_now) ELSE 0 END) AS due1to7,
+
+      SUM(CASE WHEN DATEDIFF(CURDATE(), e.due_date) BETWEEN 8 AND 30 
+               THEN (e.amount - e.paid_now) ELSE 0 END) AS due8to30,
+
+      SUM(CASE WHEN DATEDIFF(CURDATE(), e.due_date) > 30 
+               THEN (e.amount - e.paid_now) ELSE 0 END) AS due30plus,
+
+      SUM(e.amount - e.paid_now) AS total_outstanding
+    FROM vendors v
+    LEFT JOIN expenses e ON v.id = e.vendor_id
+    GROUP BY v.id, v.name
+    ORDER BY v.name;
+  `;
+
+  db.query(query, (err, result) => {
+    if (err) return res.status(500).json({ message: "Error in database query", error: err });
+    res.json(result);
+  });
+};
+
+
+
+const CashBook = (req, res) => {
+  const { from, to } = req.query; // pass date range from UI
+
+  const query = `
+    SELECT 
+      t.txn_date,
+      t.description,
+      t.type,
+      t.amount,
+      SUM(CASE WHEN t.type = 'Credit' THEN t.amount ELSE -t.amount END) 
+          OVER (ORDER BY t.txn_date, t.id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) 
+          AS running_balance
+    FROM (
+        SELECT 
+            r.id,
+            r.receipt_date AS txn_date,
+            CONCAT('Receipt from Buyer: ', b.name) AS description,
+            'Credit' AS type,
+            r.amount AS amount
+        FROM receipts r
+        JOIN buyers b ON r.buyer_id = b.id
+
+        UNION ALL
+
+        SELECT 
+            e.id,
+            e.created_at AS txn_date,
+            CONCAT('Payment to Vendor: ', v.name) AS description,
+            'Debit' AS type,
+            e.paid_now AS amount
+        FROM expenses e
+        JOIN vendors v ON e.vendor_id = v.id
+        WHERE e.payment_mode = 'cash'
+    ) t
+    WHERE t.txn_date BETWEEN ? AND ?
+    ORDER BY t.txn_date, t.id;
+  `;
+
+  db.query(query, [from, to], (err, result) => {
+    if (err) return res.status(500).json({ message: "Error in database query", error: err });
+    res.json(result);
+  });
+};
+
+
+const BankBook = (req, res) => {
+  const { from, to } = req.query;
+
+  const query = `
+    SELECT 
+      t.txn_date,
+      t.bank_account_id,
+      ba.account_name,
+      t.description,
+      t.type,
+      t.amount,
+      SUM(CASE WHEN t.type = 'Credit' THEN t.amount ELSE -t.amount END) 
+          OVER (PARTITION BY t.bank_account_id ORDER BY t.txn_date, t.id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) 
+          AS running_balance
+    FROM (
+        SELECT 
+            r.id,
+            r.receipt_date AS txn_date,
+            r.bank_account_id,
+            CONCAT('Bank Receipt from Buyer: ', b.name) AS description,
+            'Credit' AS type,
+            r.amount AS amount
+        FROM receipts r
+        JOIN buyers b ON r.buyer_id = b.id
+        WHERE r.bank_account_id IS NOT NULL
+
+        UNION ALL
+
+        SELECT 
+            e.id,
+            e.created_at AS txn_date,
+            e.bank_account_id,
+            CONCAT('Bank Payment to Vendor: ', v.name) AS description,
+            'Debit' AS type,
+            e.paid_now AS amount
+        FROM expenses e
+        JOIN vendors v ON e.vendor_id = v.id
+        WHERE e.payment_mode = 'bank' AND e.bank_account_id IS NOT NULL
+    ) t
+    JOIN bank_accounts ba ON t.bank_account_id = ba.id
+    WHERE t.txn_date BETWEEN ? AND ?
+    ORDER BY t.bank_account_id, t.txn_date, t.id;
+  `;
+
+  db.query(query, [from, to], (err, result) => {
+    if (err) return res.status(500).json({ message: "Error in database query", error: err });
+    res.json(result);
+  });
+};
+
 
 
 module.exports = {
   FarmerLedgerReports,
-   BuyerLedgerReports ,
-   VendorLedgerReports,
-   AdvanceLedger,
+  BuyerLedgerReports,
+  VendorLedgerReports,
+  AdvanceLedger,
+  SalesReport,
+  ReceivableAging ,
+  PayableAging,
+  CashBook,
+  BankBook
 };

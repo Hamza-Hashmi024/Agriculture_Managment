@@ -371,3 +371,16 @@ export const GetBuyersledger = async (id)=>{
     console.error("Error While Fetching Ledger Report :-> ", error);
     throw error;
   }}
+
+
+export const RecivableAging = async () =>{
+  try {
+    const response = await axios.get(`${Base_Url}/api/reports/receivable-aging`)
+    console.log(response.data)
+    return response.data;
+  }
+  catch (error){
+    console.log(error)
+    throw(error)
+  }
+}
