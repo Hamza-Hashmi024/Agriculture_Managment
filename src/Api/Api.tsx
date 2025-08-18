@@ -397,3 +397,17 @@ export const PayAbleAging = async()=>{
    }
 
 }
+
+
+export const GetCashbook = async (from: string, to: string) => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/reports/cashbook`, {
+      params: { from, to },
+    });
+    console.log("Cashbook Data:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching cashbook:", error);
+    throw error;
+  }
+};

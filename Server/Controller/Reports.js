@@ -283,8 +283,6 @@ const PayableAging = (req, res) => {
   });
 };
 
-
-
 const CashBook = (req, res) => {
   const { from, to } = req.query; // pass date range from UI
 
@@ -298,17 +296,20 @@ const CashBook = (req, res) => {
           OVER (ORDER BY t.txn_date, t.id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) 
           AS running_balance
     FROM (
+        -- Buyer cash payments (CREDIT)
         SELECT 
-            r.id,
-            r.receipt_date AS txn_date,
+            bp.id,
+            bp.date AS txn_date,
             CONCAT('Receipt from Buyer: ', b.name) AS description,
             'Credit' AS type,
-            r.amount AS amount
-        FROM receipts r
-        JOIN buyers b ON r.buyer_id = b.id
+            bp.amount AS amount
+        FROM buyer_payments bp
+        JOIN buyers b ON bp.buyer_id = b.id
+        WHERE bp.payment_mode = 'cash'
 
         UNION ALL
 
+        -- Vendor cash payments (DEBIT)
         SELECT 
             e.id,
             e.created_at AS txn_date,
@@ -317,7 +318,7 @@ const CashBook = (req, res) => {
             e.paid_now AS amount
         FROM expenses e
         JOIN vendors v ON e.vendor_id = v.id
-        WHERE e.payment_mode = 'cash'
+        WHERE e.payment_mode = 'cashbox'
     ) t
     WHERE t.txn_date BETWEEN ? AND ?
     ORDER BY t.txn_date, t.id;
@@ -328,7 +329,6 @@ const CashBook = (req, res) => {
     res.json(result);
   });
 };
-
 
 const BankBook = (req, res) => {
   const { from, to } = req.query;
