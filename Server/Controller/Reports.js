@@ -251,28 +251,28 @@ ORDER BY b.name;
 };
 
 
-
 const PayableAging = (req, res) => {
   const query = `
     SELECT 
       v.id AS vendor_id,
       v.name AS vendor_name,
 
-      SUM(CASE WHEN DATEDIFF(CURDATE(), e.due_date) <= 0 
-               THEN (e.amount - e.paid_now) ELSE 0 END) AS current,
+      SUM(CASE WHEN DATEDIFF(CURDATE(), DATE(e.created_at)) <= 0 
+               THEN (e.amount - IFNULL(e.paid_now, 0)) ELSE 0 END) AS current,
 
-      SUM(CASE WHEN DATEDIFF(CURDATE(), e.due_date) BETWEEN 1 AND 7 
-               THEN (e.amount - e.paid_now) ELSE 0 END) AS due1to7,
+      SUM(CASE WHEN DATEDIFF(CURDATE(), DATE(e.created_at)) BETWEEN 1 AND 7 
+               THEN (e.amount - IFNULL(e.paid_now, 0)) ELSE 0 END) AS due1to7,
 
-      SUM(CASE WHEN DATEDIFF(CURDATE(), e.due_date) BETWEEN 8 AND 30 
-               THEN (e.amount - e.paid_now) ELSE 0 END) AS due8to30,
+      SUM(CASE WHEN DATEDIFF(CURDATE(), DATE(e.created_at)) BETWEEN 8 AND 30 
+               THEN (e.amount - IFNULL(e.paid_now, 0)) ELSE 0 END) AS due8to30,
 
-      SUM(CASE WHEN DATEDIFF(CURDATE(), e.due_date) > 30 
-               THEN (e.amount - e.paid_now) ELSE 0 END) AS due30plus,
+      SUM(CASE WHEN DATEDIFF(CURDATE(), DATE(e.created_at)) > 30 
+               THEN (e.amount - IFNULL(e.paid_now, 0)) ELSE 0 END) AS due30plus,
 
-      SUM(e.amount - e.paid_now) AS total_outstanding
+      SUM(e.amount - IFNULL(e.paid_now, 0)) AS total_outstanding
     FROM vendors v
-    LEFT JOIN expenses e ON v.id = e.vendor_id
+    LEFT JOIN expenses e 
+      ON v.id = e.vendor_id
     GROUP BY v.id, v.name
     ORDER BY v.name;
   `;

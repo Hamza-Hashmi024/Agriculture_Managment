@@ -1,14 +1,72 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Download, Printer, Eye } from "lucide-react";
+import { PayAbleAging } from "@/Api/Api";
 
 interface PayablesAgingReportProps {
   dateRange: { from: string; to: string };
 }
 
+interface Payable {
+  vendor_id: string;
+  vendor_name: string;
+  current: number;
+  due1to7: number;
+  due8to30: number;
+  due30plus: number;
+  total_outstanding: number;
+}
+
 export function PayablesAgingReport({ dateRange }: PayablesAgingReportProps) {
   const [isGenerated, setIsGenerated] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<Payable[]>([]);
+
+  const handleGenerate = async () => {
+    setIsGenerated(true);
+    setLoading(true);
+    try {
+      const res = await PayAbleAging();
+
+      // ✅ Ensure numbers are parsed as numbers
+      const parsed = res.map((item: any) => ({
+        vendor_id: item.vendor_id,
+        vendor_name: item.vendor_name,
+        current: Number(item.current) || 0,
+        due1to7: Number(item.due1to7) || 0,
+        due8to30: Number(item.due8to30) || 0,
+        due30plus: Number(item.due30plus) || 0,
+        total_outstanding: Number(item.total_outstanding) || 0,
+      }));
+
+      setData(parsed);
+    } catch (err) {
+      console.error("Failed to fetch payables aging:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Totals
+  const totals = data.reduce(
+    (acc, item) => ({
+      current: acc.current + item.current,
+      due1to7: acc.due1to7 + item.due1to7,
+      due8to30: acc.due8to30 + item.due8to30,
+      due30plus: acc.due30plus + item.due30plus,
+      total: acc.total + item.total_outstanding,
+    }),
+    { current: 0, due1to7: 0, due8to30: 0, due30plus: 0, total: 0 }
+  );
 
   return (
     <Card>
@@ -16,13 +74,82 @@ export function PayablesAgingReport({ dateRange }: PayablesAgingReportProps) {
         <CardTitle>Payables Aging Report</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="text-sm text-muted-foreground">
-          Date Range: {new Date(dateRange.from).toLocaleDateString()} - {new Date(dateRange.to).toLocaleDateString()}
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-muted-foreground">
+            Date Range: {new Date(dateRange.from).toLocaleDateString()} -{" "}
+            {new Date(dateRange.to).toLocaleDateString()}
+          </div>
+          <Button onClick={handleGenerate} disabled={loading}>
+            {loading ? "Loading..." : "Generate Report"}
+          </Button>
         </div>
-        <Button onClick={() => setIsGenerated(true)}>Generate Report</Button>
-        <div className="text-center text-muted-foreground py-8">
-          {isGenerated ? "Payables aging report would be displayed here with vendor outstanding amounts by age" : "Click Generate to view the payables aging report"}
-        </div>
+
+        {isGenerated && !loading && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Payables Aging Analysis</h3>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export PDF
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export XLSX
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print
+                </Button>
+              </div>
+            </div>
+
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead className="text-right">Current</TableHead>
+                    <TableHead className="text-right">1-7 Days Due</TableHead>
+                    <TableHead className="text-right">8-30 Days</TableHead>
+                    <TableHead className="text-right">30+ Days</TableHead>
+                    <TableHead className="text-right">Total Outstanding</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.map((item) => (
+                    <TableRow key={item.vendor_id}>
+                      <TableCell className="font-medium">{item.vendor_name}</TableCell>
+                      <TableCell className="text-right">{item.current.toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-yellow-600">{item.due1to7.toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-orange-600">{item.due8to30.toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-red-600">{item.due30plus.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-medium">{item.total_outstanding.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {data.length > 0 && (
+                    <TableRow className="bg-muted/50 font-medium">
+                      <TableCell>Total</TableCell>
+                      <TableCell className="text-right">{totals.current.toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-yellow-600">{totals.due1to7.toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-orange-600">{totals.due8to30.toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-red-600">{totals.due30plus.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-bold">{totals.total.toLocaleString()}</TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

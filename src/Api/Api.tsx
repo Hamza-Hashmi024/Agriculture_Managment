@@ -384,3 +384,16 @@ export const RecivableAging = async () =>{
     throw(error)
   }
 }
+
+export const PayAbleAging = async()=>{
+   try{
+    const response = await axios.get(`${Base_Url}/api/reports/payable-aging`)
+    console.log(response.data)
+    return response.data;
+   }
+   catch(error){
+    console.log(error)
+    throw error
+   }
+
+}
