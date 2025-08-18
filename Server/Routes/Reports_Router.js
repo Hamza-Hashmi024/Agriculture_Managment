@@ -8,10 +8,12 @@ const {
   PayableAging,
   CashBook,
   BankBook,
+  SalesReport
 } = require("../Controller/Reports");
 
 router.get("/reports/farmer/:id", asyncHandler(FarmerLedgerReports));
 router.get("/buyer/report/:id", asyncHandler(BuyerLedgerReports));
+router.get("/salesReport" ,  SalesReport)
 router.get("/receivable-aging", asyncHandler(ReceivableAging));
 router.get("/payable-aging", asyncHandler(PayableAging));
 router.get("/cashbook", asyncHandler(CashBook));

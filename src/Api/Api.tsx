@@ -424,3 +424,17 @@ export const GetBankBooks = async (from: string, to: string) => {
     throw error;
   }
 };
+
+
+export const GetSalesReport = async (startDate: string, endDate: string) => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/reports/salesReport`, {
+      params: { startDate, endDate },
+    });
+    console.log("Sales Report Data:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching sales report:", error);
+    throw error;
+  }
+};

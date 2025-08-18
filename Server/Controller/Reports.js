@@ -189,15 +189,20 @@ const SalesReport = (req, res) => {
       s.id AS sale_id,
       f.name AS farmer,
       b.name AS buyer,
-      DATE_FORMAT(s.date, '%Y-%m-%d') AS date,
-      s.total_amount,
-      s.commission,
-      (s.total_amount - s.commission) AS net_amount
+      s.crop,
+      DATE_FORMAT(s.created_at, '%Y-%m-%d') AS date,
+      s.weight,
+      s.rate,
+      (s.weight * s.rate) AS gross_amount,
+      s.commission_percent,
+      ROUND((s.weight * s.rate) * (s.commission_percent / 100), 2) AS commission_amount,
+      s.total_buyer_payable,
+      (s.total_buyer_payable - ROUND((s.weight * s.rate) * (s.commission_percent / 100), 2)) AS net_amount
     FROM sales s
     JOIN farmers f ON s.farmer_id = f.id
     JOIN buyers b ON s.buyer_id = b.id
-    WHERE s.date BETWEEN ? AND ?
-    ORDER BY s.date;
+    WHERE s.created_at BETWEEN ? AND ?
+    ORDER BY s.created_at;
   `;
 
   db.query(query, [startDate, endDate], (err, results) => {
@@ -205,10 +210,10 @@ const SalesReport = (req, res) => {
       console.error("Error fetching sales report:", err);
       return res.status(500).json({ error: "Internal server error" });
     }
-
     res.json(results);
   });
 };
+
 
 const ReceivableAging = (req, res) => {
   const query = `
@@ -245,11 +250,13 @@ ORDER BY b.name;
 `;
 
   db.query(query, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error in database query", error: err });
+    if (err)
+      return res
+        .status(500)
+        .json({ message: "Error in database query", error: err });
     res.json(result);
   });
 };
-
 
 const PayableAging = (req, res) => {
   const query = `
@@ -278,7 +285,10 @@ const PayableAging = (req, res) => {
   `;
 
   db.query(query, (err, result) => {
-    if (err) return res.status(500).json({ message: "Error in database query", error: err });
+    if (err)
+      return res
+        .status(500)
+        .json({ message: "Error in database query", error: err });
     res.json(result);
   });
 };
@@ -325,10 +335,14 @@ const CashBook = (req, res) => {
   `;
 
   db.query(query, [from, to], (err, result) => {
-    if (err) return res.status(500).json({ message: "Error in database query", error: err });
+    if (err)
+      return res
+        .status(500)
+        .json({ message: "Error in database query", error: err });
     res.json(result);
   });
 };
+
 const BankBook = (req, res) => {
   const { from, to } = req.query;
 
@@ -379,7 +393,10 @@ const BankBook = (req, res) => {
   `;
 
   db.query(query, [from, to], (err, result) => {
-    if (err) return res.status(500).json({ message: "Error in database query", error: err });
+    if (err)
+      return res
+        .status(500)
+        .json({ message: "Error in database query", error: err });
     res.json(result);
   });
 };
@@ -390,8 +407,8 @@ module.exports = {
   VendorLedgerReports,
   AdvanceLedger,
   SalesReport,
-  ReceivableAging ,
+  ReceivableAging,
   PayableAging,
   CashBook,
-  BankBook
+  BankBook,
 };
