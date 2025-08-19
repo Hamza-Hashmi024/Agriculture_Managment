@@ -4,15 +4,16 @@ const db = require('../config/db');
 const DashboaredData = (req, res) => {
   const queries = {
     Total_Farmer: `
-      SELECT 
-        (SELECT COUNT(*) 
-         FROM farmers 
-         WHERE MONTH(created_at) = MONTH(CURRENT_DATE()) 
-           AND YEAR(created_at) = YEAR(CURRENT_DATE())) AS total_farmers,
-        (SELECT COUNT(*) 
-         FROM farmers 
-         WHERE MONTH(created_at) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) 
-           AND YEAR(created_at) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)) AS last_month_farmers
+     SELECT 
+  (SELECT COUNT(*) FROM farmers) AS total_farmers_all_time,
+  (SELECT COUNT(*) 
+   FROM farmers 
+   WHERE MONTH(created_at) = MONTH(CURRENT_DATE()) 
+     AND YEAR(created_at) = YEAR(CURRENT_DATE())) AS this_month_farmers,
+  (SELECT COUNT(*) 
+   FROM farmers 
+   WHERE MONTH(created_at) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) 
+     AND YEAR(created_at) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)) AS last_month_farmers;
     `,
     Active_Advances: `
       SELECT 
