@@ -4,10 +4,12 @@ import { GetDashboredData } from "@/Api/Api";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { Base_Url } from "@/Globle/Base_URL";
+import { useNavigate } from "react-router-dom";
 
 export function Dashboard() {
   const [data, setdata] = useState(null);
-  
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchdashbored = async () => {
@@ -21,9 +23,6 @@ export function Dashboard() {
 
     fetchdashbored();
   }, []);
-
-
-
 
   if (!data) {
     return <div className="p-6">Loading dashboard...</div>;
@@ -130,15 +129,15 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-  <CardHeader>
-    <CardTitle>Recent Activities</CardTitle>
-  </CardHeader>
-  <CardContent>
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">No activities yet</p>
-    </div>
-  </CardContent>
-</Card>
+          <CardHeader>
+            <CardTitle>Recent Activities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">No activities yet</p>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -146,24 +145,32 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <button className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors">
+              <button className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
+              onClick={()=> navigate("/farmers/add")}
+              >
                 <Users className="h-6 w-6 mb-2 text-primary" />
                 <p className="font-medium">Add Farmer</p>
                 <p className="text-xs text-muted-foreground">
                   Register new farmer
                 </p>
               </button>
-              <button className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors">
+              <button className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
+              onClick={()=>navigate("/advances/add")}
+              >
                 <CreditCard className="h-6 w-6 mb-2 text-primary" />
                 <p className="font-medium">New Advance</p>
                 <p className="text-xs text-muted-foreground">Process advance</p>
               </button>
-              <button className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors">
+              <button className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
+              onClick={()=>navigate("/sales/add")}
+              >
                 <Wheat className="h-6 w-6 mb-2 text-primary" />
                 <p className="font-medium">Record Sale</p>
                 <p className="text-xs text-muted-foreground">Add crop sale</p>
               </button>
-              <button className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors">
+              <button className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
+              onClick={() => navigate("/reports")}
+              >
                 <TrendingUp className="h-6 w-6 mb-2 text-primary" />
                 <p className="font-medium">View Reports</p>
                 <p className="text-xs text-muted-foreground">
