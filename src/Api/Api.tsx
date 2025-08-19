@@ -438,3 +438,15 @@ export const GetSalesReport = async (startDate: string, endDate: string) => {
     throw error;
   }
 };
+
+
+export const GetDashboredData = async ()=>{
+try {
+  const response = await axios.get(`${Base_Url}/api/v1/dashbored`)
+  return response.data
+}
+catch (error){
+  console.log(error);
+  throw error ;
+}
+}
