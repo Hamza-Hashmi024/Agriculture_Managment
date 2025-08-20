@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,49 +8,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Download } from "lucide-react";
+import { GetAdvanceList } from "@/Api/Api";
 
-const mockAdvances = [
-  {
-    id: 1,
-    farmerName: "Akbar Ali",
-    farmerCnic: "35201-1234567-1",
-    date: "2024-07-10",
-    type: "Cash",
-    amount: 50000,
-    source: "Bank",
-    vendor: "—",
-    reference: "TXN001",
-    status: "Active"
-  },
-  {
-    id: 2,
-    farmerName: "Akbar Ali",
-    farmerCnic: "35201-1234567-1",
-    date: "2024-06-01",
-    type: "In-Kind",
-    amount: 35000,
-    source: "Credit",
-    vendor: "AgriMart",
-    reference: "INV002",
-    status: "Partial"
-  },
-  {
-    id: 3,
-    farmerName: "Rafiq Ahmad",
-    farmerCnic: "35203-2345678-2",
-    date: "2024-07-04",
-    type: "Cash",
-    amount: 25000,
-    source: "Cash",
-    vendor: "—",
-    reference: "CSH003",
-    status: "Active"
-  }
-];
+
 
 export function AdvancesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBy, setFilterBy] = useState("all");
+  const [advances, setAdvances] = useState<any[]>([]); 
+  const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+    const FetchAdvanceList = async () => {
+      try {
+        const response = await GetAdvanceList();
+        setAdvances(response);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false); 
+      }
+    };
+    FetchAdvanceList();
+  }, []);
 
   return (
     <div className="p-6">
@@ -136,55 +116,49 @@ export function AdvancesPage() {
         </CardContent>
       </Card>
 
-      <Card>
+        <Card>
         <CardHeader>
-          <CardTitle>Advances List ({mockAdvances.length})</CardTitle>
+          <CardTitle>
+            Advances List {loading ? "" : `(${advances.length})`}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Farmer Name</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockAdvances.map((advance) => (
-                <TableRow key={advance.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{advance.farmerName}</p>
-                      <p className="text-sm text-muted-foreground font-mono">{advance.farmerCnic}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{advance.date}</TableCell>
-                  <TableCell>
-                    <Badge variant={advance.type === "Cash" ? "default" : "secondary"}>
-                      {advance.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">PKR {advance.amount.toLocaleString()}</TableCell>
-                  <TableCell>{advance.source}</TableCell>
-                  <TableCell>{advance.vendor}</TableCell>
-                  <TableCell className="font-mono text-sm">{advance.reference}</TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      advance.status === "Active" ? "default" :
-                      advance.status === "Partial" ? "secondary" : "outline"
-                    }>
-                      {advance.status}
-                    </Badge>
-                  </TableCell>
+          {loading ? (
+            <p>Loading advances...</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Reference</TableHead>
+                  <TableHead>Received By</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {advances.map((advance) => (
+                  <TableRow key={advance.id}>
+                    <TableCell>{advance.id}</TableCell>
+                    <TableCell>{new Date(advance.date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Badge variant={advance.type === "cash" ? "default" : "secondary"}>
+                        {advance.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      PKR {parseFloat(advance.amount).toLocaleString()}
+                    </TableCell>
+                    <TableCell>{advance.source_type ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-sm">{advance.reference_no ?? "—"}</TableCell>
+                    <TableCell>{advance.received_by ?? "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

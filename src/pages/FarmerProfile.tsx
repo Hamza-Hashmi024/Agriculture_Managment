@@ -50,18 +50,17 @@ export function FarmerProfile() {
     notes: "",
   });
 
-
-useEffect(() => {
-  const fetch = async () => {
-    try {
-      const response = await GetAllFarmersFull(id);
-      setFarmer(response); 
-    } catch (error) {
-      console.error("Failed to fetch farmer", error);
-    }
-  };
-  fetch();
-}, [id]);
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const response = await GetAllFarmersFull(id);
+        setFarmer(response);
+      } catch (error) {
+        console.error("Failed to fetch farmer", error);
+      }
+    };
+    fetch();
+  }, [id]);
 
   if (!farmer) {
     return (
@@ -291,60 +290,62 @@ useEffect(() => {
         </TabsContent>
 
         <TabsContent value="sales" className="mt-6">
-  {farmer.cropSales?.length > 0 ? (
-    <Card>
-      <CardHeader>
-        <CardTitle>Crop Sales</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Arrival Date</TableHead>
-              <TableHead>Crop</TableHead>
-              <TableHead>Buyer</TableHead>
-              <TableHead>Commission %</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Total Farmer Payable</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {farmer.cropSales.map((sale) => (
-              <TableRow key={sale.id}>
-                <TableCell>
-                  {new Date(sale.arrival_date).toLocaleDateString()}
-                </TableCell>
-                <TableCell>{sale.crop}</TableCell>
-                <TableCell>{sale.buyer}</TableCell>
-                <TableCell>{sale.commission_percent ?? 0}%</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      sale.status === "settled"
-                        ? "success"
-                        : sale.status === "partial"
-                        ? "secondary"
-                        : "outline"
-                    }
-                  >
-                    {sale.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>Rs. {parseFloat(sale.total_farmer_payable).toFixed(2)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  ) : (
-    <Card>
-      <CardContent>
-        <p className="text-muted-foreground">No crop sales found.</p>
-      </CardContent>
-    </Card>
-  )}
-</TabsContent>
+          {farmer.cropSales?.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Crop Sales</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Arrival Date</TableHead>
+                      <TableHead>Crop</TableHead>
+                      <TableHead>Buyer</TableHead>
+                      <TableHead>Commission %</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Total Farmer Payable</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {farmer.cropSales.map((sale) => (
+                      <TableRow key={sale.id}>
+                        <TableCell>
+                          {new Date(sale.arrival_date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>{sale.crop}</TableCell>
+                        <TableCell>{sale.buyer}</TableCell>
+                        <TableCell>{sale.commission_percent ?? 0}%</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              sale.status === "settled"
+                                ? "success"
+                                : sale.status === "partial"
+                                ? "secondary"
+                                : "outline"
+                            }
+                          >
+                            {sale.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          Rs. {parseFloat(sale.total_farmer_payable).toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent>
+                <p className="text-muted-foreground">No crop sales found.</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
         <TabsContent value="settlements" className="mt-6">
           <Card>

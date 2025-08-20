@@ -1,6 +1,7 @@
 import { Base_Url } from "@/Globle/Base_URL";
 import axios from "axios";
 import { error } from "console";
+import { basename } from "path";
 
 export const RegisterFarmer = async (data) => {
   try {
@@ -355,7 +356,9 @@ export const GetAllBankAccountsTransaction = async () => {
 
 export const GetFarmerLedgerReport = async (id) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/reports/reports/farmer/${id}`);
+    const response = await axios.get(
+      `${Base_Url}/api/reports/reports/farmer/${id}`
+    );
     return response.data;
   } catch (error) {
     console.error("Error While Fetching Ledger Report :-> ", error);
@@ -363,41 +366,41 @@ export const GetFarmerLedgerReport = async (id) => {
   }
 };
 
-export const GetBuyersledger = async (id)=>{
+export const GetBuyersledger = async (id) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/reports/buyer/report/${id}`)
+    const response = await axios.get(
+      `${Base_Url}/api/reports/buyer/report/${id}`
+    );
     return response.data;
-  }catch(error){
+  } catch (error) {
     console.error("Error While Fetching Ledger Report :-> ", error);
     throw error;
-  }}
+  }
+};
 
-
-export const RecivableAging = async () =>{
+export const RecivableAging = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/reports/receivable-aging`)
-    console.log(response.data)
+    const response = await axios.get(
+      `${Base_Url}/api/reports/receivable-aging`
+    );
+    console.log(response.data);
     return response.data;
+  } catch (error) {
+    console.log(error);
+    throw error;
   }
-  catch (error){
-    console.log(error)
-    throw(error)
-  }
-}
+};
 
-export const PayAbleAging = async()=>{
-   try{
-    const response = await axios.get(`${Base_Url}/api/reports/payable-aging`)
-    console.log(response.data)
+export const PayAbleAging = async () => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/reports/payable-aging`);
+    console.log(response.data);
     return response.data;
-   }
-   catch(error){
-    console.log(error)
-    throw error
-   }
-
-}
-
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
 
 export const GetCashbook = async (from: string, to: string) => {
   try {
@@ -425,7 +428,6 @@ export const GetBankBooks = async (from: string, to: string) => {
   }
 };
 
-
 export const GetSalesReport = async (startDate: string, endDate: string) => {
   try {
     const response = await axios.get(`${Base_Url}/api/reports/salesReport`, {
@@ -439,14 +441,21 @@ export const GetSalesReport = async (startDate: string, endDate: string) => {
   }
 };
 
+export const GetDashboredData = async () => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/v1/dashbored`);
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
 
-export const GetDashboredData = async ()=>{
-try {
-  const response = await axios.get(`${Base_Url}/api/v1/dashbored`)
-  return response.data
-}
-catch (error){
-  console.log(error);
-  throw error ;
-}
-}
+export const GetAdvanceList = async () => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/advance/`);
+    return response.data;
+  } catch (error) {
+    console.log(error);
+  }
+};

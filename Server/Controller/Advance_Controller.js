@@ -171,7 +171,22 @@ const createAdvance = async (req, res) => {
   }
 };
 
+const GetAvanceList = (req , res) =>{
+  const query = `select * from advances `
+  db.query(query , (err  , result )=>{
+  if (err){
+     console.log(err);
+    res.status(500).json({message : "Error Occured While Create Advance " , err})
+  }
+   res.json(result)
+  })
+ 
+}
+
+
+
 
 module.exports = {
   createAdvance,
+  GetAvanceList
 };

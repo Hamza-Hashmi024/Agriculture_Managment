@@ -379,8 +379,6 @@ const getBuyerReceivableCard = (req, res) => {
 };
 
 
-
-
 module.exports = {
   getBuyerReceivables,
   AddPayment,
