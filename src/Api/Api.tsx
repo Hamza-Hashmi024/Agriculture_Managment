@@ -1,7 +1,5 @@
 import { Base_Url } from "@/Globle/Base_URL";
 import axios from "axios";
-import { error } from "console";
-import { basename } from "path";
 
 export const RegisterFarmer = async (data) => {
   try {
