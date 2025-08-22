@@ -142,7 +142,7 @@ export function FarmerProfile() {
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Village
+                  Address
                 </label>
                 <p>{farmer.village}</p>
               </div>

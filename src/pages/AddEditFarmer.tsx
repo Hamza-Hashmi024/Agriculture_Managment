@@ -31,6 +31,25 @@ export function AddEditFarmer() {
     wallets: [{ provider: "", number: "" }],
   });
 
+const formatCNIC = (value: string) => {
+  // Remove non-digits
+  let digits = value.replace(/\D/g, "");
+
+  // Restrict to max 13 digits
+  if (digits.length > 13) {
+    digits = digits.slice(0, 13);
+  }
+
+  // Apply CNIC pattern (#####-#######-#)
+  if (digits.length <= 5) {
+    return digits;
+  } else if (digits.length <= 12) {
+    return digits.replace(/(\d{5})(\d{0,7})/, "$1-$2");
+  } else {
+    return digits.replace(/(\d{5})(\d{7})(\d{0,1})/, "$1-$2-$3");
+  }
+};
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -206,15 +225,21 @@ export function AddEditFarmer() {
                   id="cnic"
                   value={formData.cnic}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, cnic: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      cnic: formatCNIC(e.target.value),
+                    }))
                   }
                   placeholder="35201-1234567-1"
                   required
+                    maxLength={15} 
+                  pattern="^[0-9]{5}-[0-9]{7}-[0-9]{1}$"
+                  title="CNIC must be in the format 12345-1234567-1"
                 />
               </div>
 
               <div>
-                <Label htmlFor="village">Village *</Label>
+                <Label htmlFor="village">Address *</Label>
                 <Input
                   id="village"
                   value={formData.village}
