@@ -62,7 +62,6 @@ export const GetBankAccountsWithBalance = async () => {
     console.error("Get Bank Accounts API error");
   }
 };
-
 export const RecordAdvance = async (formData: FormData) => {
   try {
     const response = await axios.post(
@@ -74,10 +73,16 @@ export const RecordAdvance = async (formData: FormData) => {
         },
       }
     );
-    return response.data;
-  } catch (error) {
+
+    return { success: true, ...response.data };
+  } catch (error: any) {
     console.error("Record Advance API error", error);
-    throw error;
+
+   
+    return {
+      success: false,
+      message: error.response?.data?.message || "Network error while creating advance",
+    };
   }
 };
 

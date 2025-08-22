@@ -20,7 +20,7 @@ import {
   RecordAdvance,
   GetAllFarmer,
   GetBankAccountsWithBalance,
-   GetAllVendor
+  GetAllVendor,
 } from "@/Api/Api";
 
 interface VendorPurchase {
@@ -29,7 +29,7 @@ interface VendorPurchase {
   category: string;
   totalAmount: number;
   description: string;
-  paymentMode: "full" | "credit" | "partial";
+  paymentMode: "paid_full" | "credit" | "partial";
   paidNow: number;
   fundingSource: string;
   referenceNo: string;
@@ -67,7 +67,7 @@ export function AddAdvance() {
       category: "",
       totalAmount: 0,
       description: "",
-      paymentMode: "full",
+      paymentMode: "paid_full",
       paidNow: 0,
       fundingSource: "",
       referenceNo: "",
@@ -91,7 +91,7 @@ export function AddAdvance() {
       category: "",
       totalAmount: 0,
       description: "",
-      paymentMode: "full",
+      paymentMode: "paid_full",
       paidNow: 0,
       fundingSource: "",
       referenceNo: "",
@@ -112,86 +112,160 @@ export function AddAdvance() {
     value: any
   ) => {
     setVendorPurchases((purchases) =>
-      purchases.map((p) => (p.id === id ? { ...p, [field]: value } : p))
+       purchases.map((p) => (p.id === id ? { ...p, [field]: value } : p))
     );
-  };
+   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
 
-    const form = new FormData();
+  //   const form = new FormData();
 
-    form.append("farmer_id", formData.farmer);
-    form.append("date", formData.date);
-    form.append(
-      "received_by",
-      formData.receivingType === "self" ? "" : formData.receiverName
-    );
-    form.append("type", formData.advanceType);
+  //   form.append("farmer_id", formData.farmer);
+  //   form.append("date", formData.date);
+  //   form.append(
+  //     "received_by",
+  //     formData.receivingType === "self" ? "" : formData.receiverName
+  //   );
+  //   form.append("type", formData.advanceType);
 
-    if (formData.signedForm) form.append("signedForm", formData.signedForm);
-    if (formData.cashProof) form.append("cashProof", formData.cashProof);
+  //   if (formData.signedForm) form.append("signedForm", formData.signedForm);
+  //   if (formData.cashProof) form.append("cashProof", formData.cashProof);
 
-    if (formData.advanceType === "cash") {
-      form.append("amount", String(formData.cashAmount));
-      form.append("source_type", formData.cashFundingSource);
-      form.append("reference_no", formData.cashReference);
-      form.append("bank_account_id", formData.cashFundingSource);
-    }
+  //   if (formData.advanceType === "cash") {
+  //     form.append("amount", String(formData.cashAmount));
+  //     form.append("source_type", formData.cashFundingSource);
+  //     form.append("reference_no", formData.cashReference);
+  //     form.append("bank_account_id", formData.cashFundingSource);
+  //   }
 
-    if (formData.advanceType === "in_kind") {
-      const purchases = vendorPurchases.map((p) => {
-        const {
-          vendor,
-          category,
-          description,
-          totalAmount,
-          paymentMode,
-          paidNow,
-          fundingSource,
-          referenceNo,
-        } = p;
+  //   if (formData.advanceType === "in_kind") {
+  //     const purchases = vendorPurchases.map((p) => {
+  //       const {
+  //         vendor,
+  //         category,
+  //         description,
+  //         totalAmount,
+  //         paymentMode,
+  //         paidNow,
+  //         fundingSource,
+  //         referenceNo,
+  //       } = p;
 
-        return {
-          vendor_id: vendor,
-          category,
-          description,
-          total_amount: totalAmount,
-          payment_mode: paymentMode,
-          paid_now: paidNow,
-          funding_source: fundingSource,
-          reference_no: referenceNo,
-          bank_account_id: fundingSource,
-        };
-      });
+  //       return {
+  //         vendor_id: vendor,
+  //         category,
+  //         description,
+  //         total_amount: totalAmount,
+  //         payment_mode: paymentMode,
+  //         paid_now: paidNow,
+  //         funding_source: fundingSource,
+  //         reference_no: referenceNo,
+  //         bank_account_id: fundingSource,
+  //       };
+  //     });
 
-      form.append("purchases", JSON.stringify(purchases));
+  //     form.append("purchases", JSON.stringify(purchases));
 
-      vendorPurchases.forEach((p) => {
-        if (p.invoice) {
-          const fileKey = `invoice_${p.vendor}`;
-          form.append(fileKey, p.invoice);
-        }
-      });
-    }
+  //     vendorPurchases.forEach((p) => {
+  //       if (p.invoice) {
+  //         const fileKey = `invoice_${p.vendor}`;
+  //         form.append(fileKey, p.invoice);
+  //       }
+  //     });
+  //   }
 
-    try {
-      await RecordAdvance(form); 
+  //   try {
+  //     await RecordAdvance(form);
 
+  //     toast({
+  //       title: "Advance Recorded",
+  //       description: "Advance added successfully!",
+  //     });
+
+  //     navigate("/advances");
+  //   } catch (err) {
+  //     toast({
+  //       title: "Submission Error",
+  //       description: "Failed to submit advance. Try again.",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // Validation...
+  for (const p of vendorPurchases) {
+    if (
+      (p.paymentMode === "paid_full" || p.paymentMode === "partial") &&
+      !p.fundingSource
+    ) {
       toast({
-        title: "Advance Recorded",
-        description: "Advance added successfully!",
-      });
-
-      navigate("/advances");
-    } catch (err) {
-      toast({
-        title: "Submission Error",
-        description: "Failed to submit advance. Try again.",
+        title: "Missing Funding Source",
+        description: `Please select a funding source for vendor purchase (Vendor ID: ${p.vendor || "N/A"})`,
         variant: "destructive",
       });
+      return;
     }
-  };
+  }
+
+  // ✅ Step 1: Build FormData
+  const form = new FormData();
+  form.append("farmer_id", formData.farmer);
+  form.append("type", formData.advanceType);
+  form.append("date", formData.date);
+  form.append("received_by", formData.receivingType === "self" ? "" : formData.receiverName);
+
+  if (formData.advanceType === "cash") {
+    form.append("amount", String(formData.cashAmount));
+    form.append("bank_account_id", formData.cashFundingSource);
+    form.append("reference_no", formData.cashReference || "");
+    if (formData.cashProof) form.append("cashProof", formData.cashProof);
+  }
+
+  if (formData.advanceType === "in_kind") {
+    const purchases = vendorPurchases.map((p) => ({
+      vendor_id: p.vendor,
+      category: p.category,
+      description: p.description,
+      total_amount: p.totalAmount,
+      payment_mode: p.paymentMode,
+      paid_now: p.paidNow || 0,
+      funding_source: p.fundingSource ? fundingSources.find(s => s.id.toString() === p.fundingSource)?.type : null,
+      bank_account_id: p.fundingSource || null,
+      reference_no: p.referenceNo || null,
+    }));
+
+    form.append("purchases", JSON.stringify(purchases));
+
+    vendorPurchases.forEach((p) => {
+      if (p.invoice) {
+        const fileKey = `invoice_${p.vendor}`;
+        form.append(fileKey, p.invoice);
+      }
+    });
+  }
+
+  // ✅ Step 2: API Call
+  try {
+    const response = await RecordAdvance(form);
+
+    toast({
+      title: "Success",
+      description: "Advance submitted successfully",
+    });
+
+    console.log("Response:", response);
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error.response?.data?.message || "Failed to submit advance",
+      variant: "destructive",
+    });
+  }
+};
 
   useEffect(() => {
     if (farmerId) {
@@ -246,32 +320,23 @@ export function AddAdvance() {
     }
   }, [formData.advanceType, accountsFetched]);
 
-
   const selectedFarmerName = farmers.find((f) => f.id === formData.farmer);
   const displayFarmer =
     selectedFarmer || farmers.find((f) => f.id === formData.farmer);
 
-useEffect(() => {
-  GetAllVendor().then((data) => {
-    if (data && Array.isArray(data)) {
-      setVendors(data); // Store in state
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to load vendors.",
-        variant: "destructive",
-      });
-    }
-  });
-}, []);
-
-
-
-
-
-
-
-
+  useEffect(() => {
+    GetAllVendor().then((data) => {
+      if (data && Array.isArray(data)) {
+        setVendors(data);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load vendors.",
+          variant: "destructive",
+        });
+      }
+    });
+  }, []);
 
   return (
     <div className="p-6">
@@ -517,24 +582,30 @@ useEffect(() => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label>Vendor *</Label>
-                                    <Select
-  value={purchase.vendor}
-  onValueChange={(value) =>
-    updateVendorPurchase(purchase.id, "vendor", value)
-  }
->
-  <SelectTrigger>
-    <SelectValue placeholder="Select vendor" />
-  </SelectTrigger>
-  <SelectContent>
-    {vendors.map((vendor) => (
-      <SelectItem key={vendor.id} value={vendor.id.toString()}>
-        {vendor.name}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
-
+                            <Select
+                              value={purchase.vendor}
+                              onValueChange={(value) =>
+                                updateVendorPurchase(
+                                  purchase.id,
+                                  "vendor",
+                                  value
+                                )
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select vendor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {vendors.map((vendor) => (
+                                  <SelectItem
+                                    key={vendor.id}
+                                    value={vendor.id.toString()}
+                                  >
+                                    {vendor.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
 
                           <div>
@@ -615,10 +686,10 @@ useEffect(() => {
                           >
                             <div className="flex items-center space-x-2">
                               <RadioGroupItem
-                                value="full"
-                                id={`full-${purchase.id}`}
+                                value="paid_full"
+                                id={`paid_full-${purchase.id}`}
                               />
-                              <Label htmlFor={`full-${purchase.id}`}>
+                              <Label htmlFor={`paid_full-${purchase.id}`}>
                                 Paid Full
                               </Label>
                             </div>
@@ -643,7 +714,7 @@ useEffect(() => {
                           </RadioGroup>
                         </div>
 
-                        {(purchase.paymentMode === "full" ||
+                        {(purchase.paymentMode === "paid_full" ||
                           purchase.paymentMode === "partial") && (
                           <div className="space-y-4 p-3 bg-muted/50 rounded">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
