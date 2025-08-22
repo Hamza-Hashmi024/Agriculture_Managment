@@ -31,24 +31,45 @@ export function AddEditFarmer() {
     wallets: [{ provider: "", number: "" }],
   });
 
-const formatCNIC = (value: string) => {
-  // Remove non-digits
-  let digits = value.replace(/\D/g, "");
+  const normalizePhoneNumber = (value: string) => {
+    let digits = value.replace(/\D/g, ""); // keep only numbers
 
-  // Restrict to max 13 digits
-  if (digits.length > 13) {
-    digits = digits.slice(0, 13);
-  }
+    // Handle +92 or 92 prefix
+    if (digits.startsWith("92")) {
+      digits = "0" + digits.slice(2);
+    }
 
-  // Apply CNIC pattern (#####-#######-#)
-  if (digits.length <= 5) {
-    return digits;
-  } else if (digits.length <= 12) {
-    return digits.replace(/(\d{5})(\d{0,7})/, "$1-$2");
-  } else {
-    return digits.replace(/(\d{5})(\d{7})(\d{0,1})/, "$1-$2-$3");
-  }
-};
+    // Restrict to 11 digits
+    if (digits.length > 11) {
+      digits = digits.slice(0, 11);
+    }
+
+    // Format as 03XX-XXXXXXX
+    if (digits.length <= 4) {
+      return digits;
+    } else {
+      return digits.replace(/(\d{4})(\d{0,7})/, "$1-$2");
+    }
+  };
+
+  const formatCNIC = (value: string) => {
+    // Remove non-digits
+    let digits = value.replace(/\D/g, "");
+
+    // Restrict to max 13 digits
+    if (digits.length > 13) {
+      digits = digits.slice(0, 13);
+    }
+
+    // Apply CNIC pattern (#####-#######-#)
+    if (digits.length <= 5) {
+      return digits;
+    } else if (digits.length <= 12) {
+      return digits.replace(/(\d{5})(\d{0,7})/, "$1-$2");
+    } else {
+      return digits.replace(/(\d{5})(\d{7})(\d{0,1})/, "$1-$2-$3");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,11 +89,11 @@ const formatCNIC = (value: string) => {
     }
 
     const submissionData = {
-      tenant_id: 1, // Replace this with actual tenant_id (e.g., from context or user session)
+      tenant_id: 1,
       name: formData.name,
       cnic: formData.cnic,
       village: formData.village,
-      profile_photo_url: "", // You need to handle image upload separately, or remove this if not used
+      profile_photo_url: "",
       contacts: formData.contacts.filter(Boolean),
       bankAccounts: formData.bankAccounts.filter(
         (acc) => acc.bankName || acc.accountNo || acc.iban
@@ -232,7 +253,7 @@ const formatCNIC = (value: string) => {
                   }
                   placeholder="35201-1234567-1"
                   required
-                    maxLength={15} 
+                  maxLength={15}
                   pattern="^[0-9]{5}-[0-9]{7}-[0-9]{1}$"
                   title="CNIC must be in the format 12345-1234567-1"
                 />
@@ -261,9 +282,16 @@ const formatCNIC = (value: string) => {
                     <div key={index} className="flex gap-2">
                       <Input
                         value={contact}
-                        onChange={(e) => updateContact(index, e.target.value)}
-                        placeholder="0300-1234567"
+                        onChange={(e) =>
+                          updateContact(
+                            index,
+                            normalizePhoneNumber(e.target.value)
+                          )
+                        }
+                        placeholder="0331-4824760"
                         required={index === 0}
+                        pattern="^(?:\+92|92|0)3[0-9]{2}-?[0-9]{7}$"
+                        title="Phone must be like 0331-4824760, 03314824760 or +923314824760"
                       />
                       {formData.contacts.length > 1 && (
                         <Button
@@ -436,9 +464,15 @@ const formatCNIC = (value: string) => {
                     <Input
                       value={wallet.number}
                       onChange={(e) =>
-                        updateWallet(index, "number", e.target.value)
+                        updateWallet(
+                          index,
+                          "number",
+                          normalizePhoneNumber(e.target.value)
+                        )
                       }
-                      placeholder="0321-1234567"
+                      placeholder="0331-4824760"
+                      pattern="^(?:\+92|92|0)3[0-9]{2}-?[0-9]{7}$"
+                      title="Wallet number must be like 0331-4824760, 03314824760 or +923314824760"
                     />
                   </div>
                 </div>
