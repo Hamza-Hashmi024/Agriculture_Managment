@@ -56,7 +56,7 @@ useEffect(() => {
 
       if (Array.isArray(response)) {
         const mapped = response.map((buyer: any, index: number) => ({
-          id: (index + 1).toString(),
+          id: buyer.id,
           name: buyer.buyerName,
           netReceivable: buyer.netReceivable,
           lastSale: buyer.lastSaleDate,

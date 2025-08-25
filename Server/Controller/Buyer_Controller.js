@@ -253,6 +253,7 @@ const getBuyersWithReceivables = (req, res) => {
 
 const GetAllBuyersWithRecivables = (req, res) => {
   const query = `SELECT 
+   b.id,
     b.name AS buyer_name,
     IFNULL(SUM(s.total_buyer_payable), 0) - IFNULL(SUM(p.amount), 0) AS net_receivable,
     MAX(s.arrival_date) AS last_sale_date,
@@ -270,6 +271,7 @@ const GetAllBuyersWithRecivables = (req, res) => {
 
     const buyers = result
       .map((row) => ({
+        id: row.id,
         buyerName: row.buyer_name,
         netReceivable: parseFloat(row.net_receivable || 0),
         lastSaleDate: row.last_sale_date
