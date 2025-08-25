@@ -472,3 +472,13 @@ export const GetSalesList = async () => {
     throw error;
   }
 };
+
+export const GetAccountSummary = async () => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/accounts/summary`);
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};

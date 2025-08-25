@@ -1,8 +1,6 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Plus, Eye, Edit, Download, ArrowLeftRight, BookOpen, Landmark } from "lucide-react";
 import {
   Table,
@@ -18,48 +16,16 @@ import { CashbookModal } from "@/components/CashbookModal";
 import { BankbookModal } from "@/components/BankbookModal";
 import { AccountDetailModal } from "@/components/AccountDetailModal";
 import { DailyCashClosingModal } from "@/components/DailyCashClosingModal";
-
-// Mock data
-const mockAccounts = [
-  {
-    id: "cashbox",
-    type: "Cashbox",
-    title: "Cash on Hand",
-    number: "—",
-    branch: "—",
-    balance: 170000,
-    iban: "",
-    openingBalance: 200000,
-    openingDate: "2025-07-01",
-    notes: ""
-  },
-  {
-    id: "1",
-    type: "Bank",
-    title: "Meezan Current",
-    number: "0123-4567",
-    branch: "Saddar, LHR",
-    balance: 220000,
-    iban: "PK39MEZN00001234567",
-    openingBalance: 200000,
-    openingDate: "2025-07-01",
-    notes: ""
-  },
-  {
-    id: "2",
-    type: "Bank",
-    title: "HBL Savings",
-    number: "9999-2222",
-    branch: "Model Town, LHR",
-    balance: 200000,
-    iban: "PK88HBL99992222",
-    openingBalance: 180000,
-    openingDate: "2025-07-01",
-    notes: ""
-  }
-];
+import { GetAccountSummary } from "@/Api/Api";
 
 export function CashBankPage() {
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [summary, setSummary] = useState({
+    openingCash: 0,
+    totalCash: 0,
+    openingBank: 0,
+    totalBank: 0
+  });
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showAddTransfer, setShowAddTransfer] = useState(false);
   const [showCashbook, setShowCashbook] = useState(false);
@@ -69,10 +35,30 @@ export function CashBankPage() {
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [editingAccount, setEditingAccount] = useState<any>(null);
 
-  const totalCash = mockAccounts.find(acc => acc.type === "Cashbox")?.balance || 0;
-  const totalBank = mockAccounts.filter(acc => acc.type === "Bank").reduce((sum, acc) => sum + acc.balance, 0);
-  const openingCash = 200000;
-  const openingBank = 350000;
+  useEffect(() => {
+    GetAccountSummary()
+      .then((data) => {
+        const accountsData = data || [];
+        setAccounts(accountsData);
+
+        // Compute summary
+        const openingCash = accountsData
+          .filter(a => a.account_type === "Cash")
+          .reduce((sum, a) => sum + parseFloat(a.opening_balance), 0);
+        const totalCash = accountsData
+          .filter(a => a.account_type === "Cash")
+          .reduce((sum, a) => sum + parseFloat(a.current_balance), 0);
+        const openingBank = accountsData
+          .filter(a => a.account_type === "Bank")
+          .reduce((sum, a) => sum + parseFloat(a.opening_balance), 0);
+        const totalBank = accountsData
+          .filter(a => a.account_type === "Bank")
+          .reduce((sum, a) => sum + parseFloat(a.current_balance), 0);
+
+        setSummary({ openingCash, totalCash, openingBank, totalBank });
+      })
+      .catch(err => console.log(err));
+  }, []);
 
   const handleViewAccount = (account: any) => {
     setSelectedAccount(account);
@@ -86,6 +72,7 @@ export function CashBankPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Cash / Bank</h1>
@@ -100,7 +87,7 @@ export function CashBankPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Opening Balance (Cash)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">PKR {openingCash.toLocaleString()}</div>
+            <div className="text-2xl font-bold">PKR {summary.openingCash.toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -109,7 +96,7 @@ export function CashBankPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Current Cash on Hand</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">PKR {totalCash.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-600">PKR {summary.totalCash.toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -118,7 +105,7 @@ export function CashBankPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Opening Balance (Bank)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">PKR {openingBank.toLocaleString()}</div>
+            <div className="text-2xl font-bold">PKR {summary.openingBank.toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -127,7 +114,7 @@ export function CashBankPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Current Bank Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">PKR {totalBank.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-blue-600">PKR {summary.totalBank.toLocaleString()}</div>
           </CardContent>
         </Card>
       </div>
@@ -135,28 +122,22 @@ export function CashBankPage() {
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => setShowAddAccount(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Account
+          <Plus className="h-4 w-4 mr-2" /> Add Account
         </Button>
         <Button variant="outline" onClick={() => setShowAddTransfer(true)}>
-          <ArrowLeftRight className="h-4 w-4 mr-2" />
-          Add Transfer
+          <ArrowLeftRight className="h-4 w-4 mr-2" /> Add Transfer
         </Button>
         <Button variant="outline" onClick={() => setShowCashbook(true)}>
-          <BookOpen className="h-4 w-4 mr-2" />
-          View Cashbook
+          <BookOpen className="h-4 w-4 mr-2" /> View Cashbook
         </Button>
         <Button variant="outline" onClick={() => setShowBankbook(true)}>
-          <Landmark className="h-4 w-4 mr-2" />
-          View Bankbook
+          <Landmark className="h-4 w-4 mr-2" /> View Bankbook
         </Button>
         <Button variant="outline" onClick={() => setShowDailyClosing(true)}>
-          <Eye className="h-4 w-4 mr-2" />
-          Daily Closing
+          <Eye className="h-4 w-4 mr-2" /> Daily Closing
         </Button>
         <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Export
+          <Download className="h-4 w-4 mr-2" /> Export
         </Button>
       </div>
 
@@ -171,45 +152,35 @@ export function CashBankPage() {
               <TableRow>
                 <TableHead>Account Type</TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead>Number</TableHead>
-                <TableHead>Branch</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
+                <TableHead className="text-right">Opening Balance</TableHead>
+                <TableHead className="text-right">Inflow</TableHead>
+                <TableHead className="text-right">Outflow</TableHead>
+                <TableHead className="text-right">Current Balance</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockAccounts.map((account) => (
-                <TableRow key={account.id}>
+              {accounts.map((account) => (
+                <TableRow key={account.account_id}>
                   <TableCell>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      account.type === "Cashbox" 
-                        ? "bg-green-100 text-green-700" 
-                        : "bg-blue-100 text-blue-700"
+                      account.account_type === "Cash" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
                     }`}>
-                      {account.type}
+                      {account.account_type}
                     </span>
                   </TableCell>
-                  <TableCell className="font-medium">{account.title}</TableCell>
-                  <TableCell>{account.number}</TableCell>
-                  <TableCell>{account.branch}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    PKR {account.balance.toLocaleString()}
-                  </TableCell>
+                  <TableCell className="font-medium">{account.account_title}</TableCell>
+                  <TableCell className="text-right">PKR {parseFloat(account.opening_balance).toLocaleString()}</TableCell>
+                  <TableCell className="text-right">PKR {parseFloat(account.total_inflow).toLocaleString()}</TableCell>
+                  <TableCell className="text-right">PKR {parseFloat(account.total_outflow).toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-bold">PKR {parseFloat(account.current_balance).toLocaleString()}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewAccount(account)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleViewAccount(account)}>
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {account.type === "Bank" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"  
-                          onClick={() => handleEditAccount(account)}
-                        >
+                      {account.account_type === "Bank" && (
+                        <Button variant="ghost" size="sm" onClick={() => handleEditAccount(account)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                       )}
@@ -236,7 +207,7 @@ export function CashBankPage() {
       <AddTransferModal
         open={showAddTransfer}
         onOpenChange={setShowAddTransfer}
-        accounts={mockAccounts}
+        accounts={accounts.filter(acc => acc.account_type === "Bank")}
       />
 
       <CashbookModal
@@ -247,7 +218,7 @@ export function CashBankPage() {
       <BankbookModal
         open={showBankbook}
         onOpenChange={setShowBankbook}
-        accounts={mockAccounts.filter(acc => acc.type === "Bank")}
+        accounts={accounts.filter(acc => acc.account_type === "Bank")}
       />
 
       <AccountDetailModal
@@ -259,7 +230,7 @@ export function CashBankPage() {
       <DailyCashClosingModal
         open={showDailyClosing}
         onOpenChange={setShowDailyClosing}
-        systemClosing={totalCash}
+        systemClosing={summary.totalCash}
       />
     </div>
   );

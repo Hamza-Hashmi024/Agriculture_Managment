@@ -472,6 +472,18 @@ ORDER BY date ASC;
   })
 }
 
+const getAccountsSummary = (req , res) =>{
+  const query = `SELECT * FROM account_summary;`;
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching accounts summary:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    res.status(200).json(results);
+  });
+}
+
 
 
 module.exports = {
@@ -479,5 +491,6 @@ module.exports = {
   createTransfer,
   getAccountsWithBalance,
   getAllCashBoxTransaction,
-  GetAllBankAccountsTransaction
+  GetAllBankAccountsTransaction,
+  getAccountsSummary
 };
