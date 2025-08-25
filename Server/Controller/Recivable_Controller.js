@@ -54,7 +54,6 @@ const getBuyerReceivables = (req, res) => {
     ) ds ON ds.buyer_id = b.id
 
     GROUP BY b.id
-    HAVING remainingDue > 0
     ORDER BY b.id;
   `;
 
