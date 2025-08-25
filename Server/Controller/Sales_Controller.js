@@ -208,7 +208,42 @@ const normalizedCommission = parseFloat(commission_percentage || 0);
   });
 };
 
+const GetSalesList = (req, res) => {
+  const query = `
+    SELECT 
+      sales.id,
+      farmers.name AS farmer_name,
+      buyers.name AS buyer_name,
+      sales.crop,
+      sales.arrival_date,
+      sales.weight,
+      sales.rate,
+      sales.commission_percent,
+      sales.status,
+      sales.total_buyer_payable,
+      sales.created_at
+    FROM sales
+    INNER JOIN farmers ON sales.farmer_id = farmers.id
+    INNER JOIN buyers ON sales.buyer_id = buyers.id
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      return res.status(500).json({
+        error: "Failed to retrieve sales list",
+        details: err,
+      });
+    }
+    res.status(200).json({
+      message: "Sales list retrieved successfully",
+      data: results,
+    });
+  });
+};
+
+
 module.exports = {
+  GetSalesList,
   GetAllCrops,
   addSaleLot,
 };

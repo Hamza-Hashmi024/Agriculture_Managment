@@ -462,3 +462,13 @@ export const GetAdvanceList = async () => {
     console.log(error);
   }
 };
+
+export const GetSalesList = async () => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/sales/list`);
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};

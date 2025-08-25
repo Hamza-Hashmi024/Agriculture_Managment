@@ -1,60 +1,71 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Plus, Search, Download, Eye, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-const mockSalesLots = [
-  {
-    id: 1,
-    date: "12-Jul",
-    farmer: "Akbar Ali",
-    crop: "Wheat",
-    buyer: "Pak Foods",
-    weight: 120,
-    rate: 4200,
-    status: "Open",
-    totalAmount: 504000
-  },
-  {
-    id: 2,
-    date: "08-Jul",
-    farmer: "Rafiq Ahmad",
-    crop: "Rice",
-    buyer: "Noor Traders",
-    weight: 80,
-    rate: 4000,
-    status: "Settled",
-    totalAmount: 320000
-  },
-  {
-    id: 3,
-    date: "06-Jul",
-    farmer: "Akbar Ali",
-    crop: "Cotton",
-    buyer: "Safeer Bros.",
-    weight: 60,
-    rate: 5200,
-    status: "Partial",
-    totalAmount: 312000
-  }
-];
+import { GetSalesList } from "@/Api/Api";
 
 export function SalesLotsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBy, setFilterBy] = useState("all");
+  const [salesData, setSalesData] = useState([]);
+
+  useEffect(() => {
+    const fetchSalesData = async () => {
+      try {
+        const data = await GetSalesList();
+        setSalesData(data.data);
+      } catch (error) {
+        console.error("Error fetching sales data:", error);
+      }
+    };
+
+    fetchSalesData();
+  }, []);
+
+  const filteredSales = salesData.filter((sale) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      sale.farmer_name?.toLowerCase().includes(query) ||
+      sale.buyer_name?.toLowerCase().includes(query) ||
+      sale.crop?.toLowerCase().includes(query);
+
+    let matchesFilter = true;
+    if (filterBy === "buyer") matchesFilter = !!sale.buyer_name;
+    if (filterBy === "crop") matchesFilter = !!sale.crop;
+    if (filterBy === "status") matchesFilter = !!sale.status;
+    if (filterBy === "date") matchesFilter = !!sale.arrival_date;
+
+    return matchesSearch && matchesFilter;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Settled": return "default";
-      case "Open": return "destructive";
-      case "Partial": return "secondary";
-      default: return "outline";
+      case "Settled":
+        return "default";
+      case "Open":
+        return "destructive";
+      case "Partial":
+        return "secondary";
+      default:
+        return "outline";
     }
   };
 
@@ -63,7 +74,9 @@ export function SalesLotsPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Sales / Lots</h1>
-          <p className="text-muted-foreground">Manage crop sales and buyer transactions</p>
+          <p className="text-muted-foreground">
+            Manage crop sales and buyer transactions
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
@@ -109,7 +122,7 @@ export function SalesLotsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Sales / Lots List ({mockSalesLots.length})</CardTitle>
+          <CardTitle>Sales / Lots List ({salesData.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -126,15 +139,22 @@ export function SalesLotsPage() {
                 <TableHead>Statement</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
-              {mockSalesLots.map((sale) => (
+              {filteredSales.map((sale) => (
                 <TableRow key={sale.id}>
-                  <TableCell>{sale.date}</TableCell>
-                  <TableCell className="font-medium">{sale.farmer}</TableCell>
+                  <TableCell>
+                    {new Date(sale.arrival_date).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {sale.farmer_name}
+                  </TableCell>
                   <TableCell>{sale.crop}</TableCell>
-                  <TableCell>{sale.buyer}</TableCell>
+                  <TableCell>{sale.buyer_name ?? sale.buyer_id}</TableCell>
                   <TableCell>{sale.weight}</TableCell>
-                  <TableCell className="font-mono">{sale.rate.toLocaleString()}</TableCell>
+                  <TableCell className="font-mono">
+                    {Number(sale.rate).toLocaleString()}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={getStatusColor(sale.status)}>
                       {sale.status}
