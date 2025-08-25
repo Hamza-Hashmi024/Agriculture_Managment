@@ -676,7 +676,7 @@ export function AddSaleLot() {
                 </SelectTrigger>
                 <SelectContent>
                   {bankAccounts
-                    .filter((account) => account.type === "bank") // Only show bank accounts
+                  
                     .map((account) => (
                       <SelectItem
                         key={account.id}
