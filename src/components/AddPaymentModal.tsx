@@ -247,32 +247,27 @@ export function AddPaymentModal({
             </RadioGroup>
           </div>
 
-          {paymentMode === "bank" && (
-            <div>
-              <Label>Select Bank Account</Label>
-              <Select value={bankAccountId} onValueChange={setBankAccountId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select bank account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {bankAccounts.filter((a) => a.type === "bank").length ===
-                  0 ? (
-                    <SelectItem disabled>No bank accounts found</SelectItem>
-                  ) : (
-                    bankAccounts
-                      .filter((account) => account.type === "bank")
-                      .map((account) => (
-                        <SelectItem key={account.id} value={String(account.id)}>
-                          {account.title} - PKR{" "}
-                          {parseFloat(account.balance).toLocaleString()}
-                        </SelectItem>
-                      ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
+         {paymentMode === "bank" && (
+  <div>
+    <Label>Select Bank Account</Label>
+    <Select value={bankAccountId} onValueChange={setBankAccountId}>
+      <SelectTrigger>
+        <SelectValue placeholder="Select bank account" />
+      </SelectTrigger>
+      <SelectContent>
+        {bankAccounts.length === 0 ? (
+          <SelectItem disabled>No bank accounts found</SelectItem>
+        ) : (
+          bankAccounts.map((account) => (
+            <SelectItem key={account.id} value={String(account.id)}>
+              {account.title} - PKR {account.balance.toLocaleString()}
+            </SelectItem>
+          ))
+        )}
+      </SelectContent>
+    </Select>
+  </div>
+)}
           {/* Reference No. & Date */}
           <div className="grid grid-cols-2 gap-4">
             <div>

@@ -163,11 +163,32 @@ const createTransfer = (req, res) => {
   });
 };
 
+// const getAccountsWithBalance = (req, res) => {
+//   // const query = `
+//   //   SELECT id, title, type, opening_balance AS balance 
+//   //   FROM accounts 
+//   //   WHERE opening_balance > 0
+//   // `;
+
+//   const query = `
+//   Select account_id , account_title , current_balance
+//   from account_summary
+//   `
+
+//   db.query(query, (err, results) => {
+//     if (err) {
+//       console.error("Failed to fetch accounts:", err);
+//       return res.status(500).json({ message: "Database error" });
+//     }
+
+//     res.status(200).json(results);
+//   });
+// };
+
 const getAccountsWithBalance = (req, res) => {
   const query = `
-    SELECT id, title, type, opening_balance AS balance 
-    FROM accounts 
-    WHERE opening_balance > 0
+    SELECT account_id, account_title, current_balance
+    FROM account_summary
   `;
 
   db.query(query, (err, results) => {
@@ -176,10 +197,16 @@ const getAccountsWithBalance = (req, res) => {
       return res.status(500).json({ message: "Database error" });
     }
 
-    res.status(200).json(results);
+    // Map the results to frontend-friendly keys
+    const mappedResults = results.map(acc => ({
+      id: acc.account_id,
+      title: acc.account_title,
+      balance: parseFloat(acc.current_balance)
+    }));
+
+    res.status(200).json(mappedResults);
   });
 };
-
 
 const getAllCashBoxTransaction = (req, res) => {
   // 1. Get opening balance
