@@ -21,9 +21,8 @@ import {
   AddExpense,
   GetBankAccountsWithBalance,
   GetAllVendor,
-  EditExpense
+  EditExpense,
 } from "@/Api/Api";
-
 
 type BankAccount = {
   id: string;
@@ -58,70 +57,71 @@ export function AddEditExpenseModal({
   const [bankAccounts, setBankAccounts] = useState<
     { id: string; name: string; balance: number }[]
   >([]);
- const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
+  const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
 
- useEffect(() => {
-  if (!open) return;
+  useEffect(() => {
+    if (!open) return;
 
-  // Fetch banks and vendors
-  const fetchData = async () => {
-    try {
-      const [banksData, vendorsData] = await Promise.all([
-        GetBankAccountsWithBalance(),
-        GetAllVendor(),
-      ]);
+    // Fetch banks and vendors
+    const fetchData = async () => {
+      try {
+        const [banksData, vendorsData] = await Promise.all([
+          GetBankAccountsWithBalance(),
+          GetAllVendor(),
+        ]);
 
-      if (Array.isArray(banksData)) setBankAccounts(banksData);
-      if (Array.isArray(vendorsData)) setVendors(vendorsData);
-    } catch (err) {
-      console.error("Error fetching banks/vendors:", err);
+        if (Array.isArray(banksData)) setBankAccounts(banksData);
+        if (Array.isArray(vendorsData)) setVendors(vendorsData);
+      } catch (err) {
+        console.error("Error fetching banks/vendors:", err);
+      }
+    };
+
+    fetchData();
+
+    // Pre-fill form if editing
+    if (expense) {
+      setFormData({
+        category: expense.category || "",
+        vendor: expense.vendor || "Expense",
+        amount: expense.amount?.toString() || "",
+        description: expense.description || "",
+        paymentMode:
+          expense.status?.toLowerCase() === "credit"
+            ? "credit"
+            : expense.status?.toLowerCase() === "partial"
+            ? "partial"
+            : "paid-full",
+        fundingSource:
+          expense.paymentMode === "cashbox"
+            ? "Cash Box"
+            : expense.paymentMode === "bank"
+            ? banksData?.find((b) => b.id === expense.bank_account_id)?.title ||
+              ""
+            : "",
+        bankAccount: expense.bank_account_id || "",
+        referenceNo: expense.reference_no || "",
+        paidNow:
+          expense.status?.toLowerCase() === "partial"
+            ? expense.paid_now?.toString() || ""
+            : "",
+        file: null,
+      });
+    } else {
+      setFormData({
+        category: "",
+        vendor: "Expense",
+        amount: "",
+        description: "",
+        paymentMode: "paid-full",
+        fundingSource: "",
+        bankAccount: "",
+        referenceNo: "",
+        paidNow: "",
+        file: null,
+      });
     }
-  };
-
-  fetchData();
-
-  // Pre-fill form if editing
-  if (expense) {
-    setFormData({
-      category: expense.category || "",
-      vendor: expense.vendor || "Expense",
-      amount: expense.amount?.toString() || "",
-      description: expense.description || "",
-      paymentMode:
-        expense.status?.toLowerCase() === "credit"
-          ? "credit"
-          : expense.status?.toLowerCase() === "partial"
-          ? "partial"
-          : "paid-full",
-      fundingSource:
-        expense.paymentMode === "cashbox"
-          ? "Cash Box"
-          : expense.paymentMode === "bank"
-          ? banksData?.find((b) => b.id === expense.bank_account_id)?.title || ""
-          : "",
-      bankAccount: expense.bank_account_id || "",
-      referenceNo: expense.reference_no || "",
-      paidNow:
-        expense.status?.toLowerCase() === "partial"
-          ? expense.paid_now?.toString() || ""
-          : "",
-      file: null,
-    });
-  } else {
-    setFormData({
-      category: "",
-      vendor: "Expense",
-      amount: "",
-      description: "",
-      paymentMode: "paid-full",
-      fundingSource: "",
-      bankAccount: "",
-      referenceNo: "",
-      paidNow: "",
-      file: null,
-    });
-  }
-}, [open, expense]);
+  }, [open, expense]);
 
   // Fetch bank accounts once when modal opens
   useEffect(() => {
@@ -152,74 +152,85 @@ export function AddEditExpenseModal({
     }
   }, [open]);
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  try {
-    // Find vendor ID
-    const vendorId =
-      formData.vendor !== "Expense"
-        ? vendors.find((v) => v.name === formData.vendor)?.id || null
-        : null;
+    try {
+      // Find vendor ID
+      const vendorId =
+        formData.vendor !== "Expense"
+          ? vendors.find((v) => v.name === formData.vendor)?.id || null
+          : null;
 
-    // Map payment_mode
-    let payment_mode: string | null = null;
-    if (formData.paymentMode !== "credit") {
-      payment_mode =
-        formData.fundingSource === "Cash Box" ? "cashbox" : "bank";
+      // Map payment_mode
+      let payment_mode: string | null = null;
+      if (formData.paymentMode !== "credit") {
+        payment_mode =
+          formData.fundingSource === "Cash Box" ? "cashbox" : "bank";
+      }
+
+      // Map paid_status + paid_now
+      let paid_status = "credit";
+      let paid_now = 0;
+      if (formData.paymentMode === "paid-full") {
+        paid_status = "paid";
+        paid_now = parseFloat(formData.amount || "0");
+      } else if (formData.paymentMode === "partial") {
+        paid_status = "partial";
+        paid_now = parseFloat(formData.paidNow || "0");
+      }
+
+      const payload = {
+        category: formData.category,
+        vendor_id: vendorId,
+        description: formData.description,
+        amount: parseFloat(formData.amount || "0"),
+        paid_status,
+        payment_mode,
+        paid_now,
+        bank_account_id:
+          payment_mode === "bank" ? formData.bankAccount || null : null,
+        reference_no: formData.referenceNo || null,
+        invoice_file_url: null, // handle file upload separately
+      };
+
+      console.log("Submitting expense payload:", payload);
+
+      let res;
+      if (expense) {
+        res = await EditExpense(expense.id, payload);
+      } else {
+        res = await AddExpense(payload);
+      }
+
+      if (res.status === 200) {
+        console.log("Expense saved successfully:", res.data);
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error("Error saving expense:", error);
     }
-
-    // Map paid_status + paid_now
-    let paid_status = "credit";
-    let paid_now = 0;
-    if (formData.paymentMode === "paid-full") {
-      paid_status = "paid";
-      paid_now = parseFloat(formData.amount || "0");
-    } else if (formData.paymentMode === "partial") {
-      paid_status = "partial";
-      paid_now = parseFloat(formData.paidNow || "0");
-    }
-
-    const payload = {
-      category: formData.category,
-      vendor_id: vendorId,
-      description: formData.description,
-      amount: parseFloat(formData.amount || "0"),
-      paid_status,
-      payment_mode,
-      paid_now,
-      bank_account_id:
-        payment_mode === "bank" ? formData.bankAccount || null : null,
-      reference_no: formData.referenceNo || null,
-      invoice_file_url: null, // handle file upload separately
-    };
-
-    console.log("Submitting expense payload:", payload);
-
-    let res;
-    if (expense) {
-      res = await EditExpense(expense.id, payload);
-    } else {
-      res = await AddExpense(payload);
-    }
-
-    if (res.status === 200) {
-      console.log("Expense saved successfully:", res.data);
-      onOpenChange(false);
-    }
-  } catch (error) {
-    console.error("Error saving expense:", error);
-  }
-};
+  };
   const categories = [
-    "Rent",
-    "Salary",
-    "Utilities",
-    "Food",
-    "Diesel",
-    "Fertilizer",
-    "Seeds",
-    "Others",
+   "Rent",
+  "Salary",
+  "Utilities",
+  "Food",
+  "Diesel",
+  "Fertilizer",
+  "Seeds",
+  "Electricity",
+  "Water",
+  "Gas",
+  "Internet",
+  "Transport",
+  "Maintenance",
+  "Office Supplies",
+  "Healthcare",
+  "Entertainment",
+  "Travel",
+  "Insurance",
+  "Others",
   ];
 
   const fundingSources = [
@@ -277,13 +288,13 @@ export function AddEditExpenseModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                <SelectContent>
-  {vendors.map((vendor) => (
-    <SelectItem key={vendor.id} value={vendor.name}>
-      {vendor.name}
-    </SelectItem>
-  ))}
-</SelectContent>
+                  <SelectContent>
+                    {vendors.map((vendor) => (
+                      <SelectItem key={vendor.id} value={vendor.name}>
+                        {vendor.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </SelectContent>
               </Select>
             </div>
@@ -400,7 +411,7 @@ export function AddEditExpenseModal({
                     </SelectTrigger>
                     <SelectContent>
                       {bankAccounts
-                        .filter((acc) => acc.type === "bank") // only show bank accounts
+                        .filter((acc) => acc.type === "bank")
                         .map((bank) => (
                           <SelectItem key={bank.id} value={String(bank.id)}>
                             {bank.title} — Balance:{" "}
