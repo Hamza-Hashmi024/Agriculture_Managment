@@ -24,6 +24,7 @@ import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { CashBankPage } from "@/pages/CashBankPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { AddBuyerForm } from "@/pages/AddBuyerForm";
+import  ChequePage  from "@/pages/CheckList";
 
 export function MainContent() {
   return (
@@ -39,6 +40,7 @@ export function MainContent() {
         <Route path="/advances/add/:farmerId" element={<AddAdvance />} />
         <Route path="/sales" element={<SalesLotsPage />} />
         <Route path="/sales/add" element={<AddSaleLot />} />
+        <Route path="/check-list" element={<ChequePage />} />
         <Route path="/sales/invoice/:id" element={<BuyerInvoice />} />
         <Route path="/sales/statement/:id" element={<FarmerStatement />} />
         <Route path="/buyers" element={<BuyersPage />} />

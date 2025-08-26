@@ -32,6 +32,7 @@ const navigationItems = [
   { title: "Farmers", url: "/farmers", icon: Users },
   { title: "Advances", url: "/advances", icon: CreditCard },
   { title: "Sales/Lots", url: "/sales", icon: Wheat },
+  { title: "Check List", url: "/check-list", icon: Receipt },
   { title: "Buyers", url: "/buyers", icon: ShoppingCart },
   { title: "Receivables", url: "/receivables", icon: Receipt },
   { title: "Vendors", url: "/vendors", icon: Building2 },
