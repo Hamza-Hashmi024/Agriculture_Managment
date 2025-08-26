@@ -55,9 +55,8 @@ export function AddSaleLot() {
   const [selectedBankAccount, setSelectedBankAccount] = useState("");
   const [buyers, setBuyers] = useState([]);
   const [chequeNo, setChequeNo] = useState("");
-const [chequeDate, setChequeDate] = useState("");
-const [bankName, setBankName] = useState("");
-
+  const [chequeDate, setChequeDate] = useState("");
+  const [bankName, setBankName] = useState("");
 
   // Lot Details
 
@@ -257,144 +256,113 @@ const [bankName, setBankName] = useState("");
     setInstallments(installments.filter((inst) => inst.id !== id));
   };
 
-
-  // const handleSaveAndGenerate = async () => {
-  //   const enrichedInstallments = installments.map((inst) => {
-  //     const dueDate =
-  //       inst.dueWithinDays && inst.dueWithinDays > 0
-  //         ? new Date(
-  //             new Date(arrivalDate).getTime() +
-  //               inst.dueWithinDays * 24 * 60 * 60 * 1000
-  //           )
-  //             .toISOString()
-  //             .split("T")[0] // Format: YYYY-MM-DD
-  //         : "";
-
-  //     return {
-  //       ...inst,
-  //       dueDate,
-  //     };
-  //   });
-
-  //   const payload = {
-  //     farmer_id: farmer?.id,
-  //     buyer_id: buyer?.id,
-  //     crop,
-  //     arrival_date: arrivalDate,
-  //     weight,
-  //     rate,
-  //     commission_percentage: commission,
-  //     upfront_payment: upfrontPayment,
-  //     payment_mode: paymentMode,
-  //     selected_bank_account: selectedBankAccount,
-  //     installments: enrichedInstallments,
-  //     farmer_expenses: farmerExpenses,
-  //     buyer_expenses: buyerExpenses,
-  //     total_buyer_payable: calculateTotalBuyerPayable(),
-  //   };
-
-  //   try {
-  //     const response = await AddSaleLots(payload);
-  //     console.log("Response from backend:", response.data);
-  //   } catch (error) {
-  //     console.error("Error sending data to backend:", error);
-  //   }
-  // };
-
-const handleSaveAndGenerate = async () => {
-  // Basic form-level validation (step 1 fields)
-  if (!farmer || !buyer) {
-    alert("Please select farmer and buyer.");
-    return;
-  }
-  if (!crop || !arrivalDate || !weight || !rate) {
-    alert("Please fill required lot details.");
-    return;
-  }
-
-  // Payment-mode specific validation
-  if (paymentMode === "bank" && !selectedBankAccount) {
-    alert("Please select a bank account for bank payments.");
-    return;
-  }
-  if (paymentMode === "check") {
-    if (!chequeNo || !chequeDate || !bankName || !selectedBankAccount) {
-      alert("Please fill Cheque No, Cheque Date, Bank Name and select deposit bank.");
+  const handleSaveAndGenerate = async () => {
+    // Basic form-level validation (step 1 fields)
+    if (!farmer || !buyer) {
+      alert("Please select farmer and buyer.");
       return;
     }
-  }
+    if (!crop || !arrivalDate || !weight || !rate) {
+      alert("Please fill required lot details.");
+      return;
+    }
 
-  // Build enriched installments (calculate dueDate from arrivalDate + dueWithinDays)
-  const enrichedInstallments = installments.map((inst) => {
-    const dueDate =
-      inst.dueWithinDays && inst.dueWithinDays > 0 && arrivalDate
-        ? new Date(
-            new Date(arrivalDate).getTime() +
-              inst.dueWithinDays * 24 * 60 * 60 * 1000
-          )
-            .toISOString()
-            .split("T")[0]
-        : inst.dueDate || "";
-    return {
-      id: inst.id,
-      percentage: Number(inst.percentage) || 0,
-      amount: Number(inst.amount) || 0,
-      dueWithinDays: Number(inst.dueWithinDays) || 0,
-      dueDate,
+    // Payment-mode specific validation
+    if (paymentMode === "bank" && !selectedBankAccount) {
+      alert("Please select a bank account for bank payments.");
+      return;
+    }
+    if (paymentMode === "check") {
+      if (!chequeNo || !chequeDate || !bankName || !selectedBankAccount) {
+        alert(
+          "Please fill Cheque No, Cheque Date, Bank Name and select deposit bank."
+        );
+        return;
+      }
+    }
+
+    // Build enriched installments (calculate dueDate from arrivalDate + dueWithinDays)
+    const enrichedInstallments = installments.map((inst) => {
+      const dueDate =
+        inst.dueWithinDays && inst.dueWithinDays > 0 && arrivalDate
+          ? new Date(
+              new Date(arrivalDate).getTime() +
+                inst.dueWithinDays * 24 * 60 * 60 * 1000
+            )
+              .toISOString()
+              .split("T")[0]
+          : inst.dueDate || "";
+      return {
+        id: inst.id,
+        percentage: Number(inst.percentage) || 0,
+        amount: Number(inst.amount) || 0,
+        dueWithinDays: Number(inst.dueWithinDays) || 0,
+        dueDate,
+      };
+    });
+
+    // Normalize expenses — ensure numeric amounts and description text
+    const normalizedFarmerExpenses = farmerExpenses.map((exp) => ({
+      description:
+        exp.description === "other"
+          ? exp.customDescription || "other"
+          : exp.description,
+      amount: Number(exp.amount) || 0,
+      source: exp.source || "cashbox",
+      bankAccount: exp.source === "bank" ? exp.bankAccount : null,
+      refNo: exp.refNo || null,
+    }));
+
+    const normalizedBuyerExpenses = buyerExpenses.map((exp) => ({
+      description:
+        exp.description === "other"
+          ? exp.customDescription || "other"
+          : exp.description,
+      amount: Number(exp.amount) || 0,
+      source: exp.source || "cashbox",
+      bankAccount: exp.source === "bank" ? exp.bankAccount : null,
+      refNo: exp.refNo || null,
+    }));
+
+    // Build final payload expected by your backend
+    const payload = {
+      farmer_id:
+        typeof farmer === "object"
+          ? Number((farmer as any).id)
+          : Number(farmer),
+      buyer_id:
+        typeof buyer === "object" ? Number((buyer as any).id) : Number(buyer),
+      crop,
+      arrival_date: arrivalDate, // YYYY-MM-DD
+      weight: Number(weight) || 0,
+      rate: Number(rate) || 0,
+      commission_percentage: Number(commission) || 0,
+      farmer_expenses: normalizedFarmerExpenses,
+      buyer_expenses: normalizedBuyerExpenses,
+      installments: enrichedInstallments,
+      upfront_payment: Number(upfrontPayment) || 0,
+      payment_mode: paymentMode || "cash", // cash | bank | check
+      selected_bank_account: selectedBankAccount
+        ? Number(selectedBankAccount)
+        : null,
+      total_buyer_payable: calculateTotalBuyerPayable(),
+      // check-specific fields (only meaningful if payment_mode === 'check')
+      cheque_no: paymentMode === "check" ? chequeNo : null,
+      cheque_date: paymentMode === "check" ? chequeDate : null,
+      bank_name: paymentMode === "check" ? bankName : null,
     };
-  });
 
-  // Normalize expenses — ensure numeric amounts and description text
-  const normalizedFarmerExpenses = farmerExpenses.map((exp) => ({
-    description: exp.description === "other" ? exp.customDescription || "other" : exp.description,
-    amount: Number(exp.amount) || 0,
-    source: exp.source || "cashbox",
-    bankAccount: exp.source === "bank" ? exp.bankAccount : null,
-    refNo: exp.refNo || null,
-  }));
-
-  const normalizedBuyerExpenses = buyerExpenses.map((exp) => ({
-    description: exp.description === "other" ? exp.customDescription || "other" : exp.description,
-    amount: Number(exp.amount) || 0,
-    source: exp.source || "cashbox",
-    bankAccount: exp.source === "bank" ? exp.bankAccount : null,
-    refNo: exp.refNo || null,
-  }));
-
-  // Build final payload expected by your backend
-  const payload = {
-    farmer_id: typeof farmer === "object" ? Number((farmer as any).id) : Number(farmer),
-    buyer_id: typeof buyer === "object" ? Number((buyer as any).id) : Number(buyer),
-    crop,
-    arrival_date: arrivalDate, // YYYY-MM-DD
-    weight: Number(weight) || 0,
-    rate: Number(rate) || 0,
-    commission_percentage: Number(commission) || 0,
-    farmer_expenses: normalizedFarmerExpenses,
-    buyer_expenses: normalizedBuyerExpenses,
-    installments: enrichedInstallments,
-    upfront_payment: Number(upfrontPayment) || 0,
-    payment_mode: paymentMode || "cash", // cash | bank | check
-    selected_bank_account: selectedBankAccount ? Number(selectedBankAccount) : null,
-    total_buyer_payable: calculateTotalBuyerPayable(),
-    // check-specific fields (only meaningful if payment_mode === 'check')
-    cheque_no: paymentMode === "check" ? chequeNo : null,
-    cheque_date: paymentMode === "check" ? chequeDate : null,
-    bank_name: paymentMode === "check" ? bankName : null,
+    try {
+      const response = await AddSaleLots(payload);
+      // handle success: redirect or show toast
+      console.log("Sale created:", response.data);
+      // navigate to sales or show success message
+      navigate("/sales");
+    } catch (err: any) {
+      console.error("API error:", err);
+      alert(err?.response?.data?.error || "Failed to create sale lot");
+    }
   };
-
-  try {
-    const response = await AddSaleLots(payload);
-    // handle success: redirect or show toast
-    console.log("Sale created:", response.data);
-    // navigate to sales or show success message
-    navigate("/sales");
-  } catch (err: any) {
-    console.error("API error:", err);
-    alert(err?.response?.data?.error || "Failed to create sale lot");
-  }
-};
-
 
   const renderStep1 = () => (
     <Card>
@@ -750,46 +718,62 @@ const handleSaveAndGenerate = async () => {
                   <SelectValue placeholder="Select bank" />
                 </SelectTrigger>
                 <SelectContent>
-                  {bankAccounts
-                  
-                    .map((account) => (
-                      <SelectItem
-                        key={account.id}
-                        value={account.id.toString()}
-                      >
-                        {account.title} - Rs.{" "}
-                        {Number(account.balance).toLocaleString()}
-                      </SelectItem>
-                    ))}
+                  {bankAccounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id.toString()}>
+                      {account.title} - Rs.{" "}
+                      {Number(account.balance).toLocaleString()}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           )}
         </div>
-{paymentMode === "check" && (
-  <div>
-    <input 
-      type="text" 
-      placeholder="Cheque No" 
-      value={chequeNo} 
-      onChange={(e) => setChequeNo(e.target.value)} 
-    />
 
-    <input 
-      type="date" 
-      value={chequeDate} 
-      onChange={(e) => setChequeDate(e.target.value)} 
-    />
+        {paymentMode === "check" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-2xl shadow-sm border border-gray-200 mt-4">
+            {/* Cheque No */}
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-600 mb-1">
+                Cheque No
+              </label>
+              <input
+                type="text"
+                placeholder="Enter Cheque No"
+                value={chequeNo}
+                onChange={(e) => setChequeNo(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              />
+            </div>
 
-    <input 
-      type="text" 
-      placeholder="Bank Name" 
-      value={bankName} 
-      onChange={(e) => setBankName(e.target.value)} 
-    />
-  </div>
-)}
+            {/* Cheque Date */}
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-600 mb-1">
+                Cheque Date
+              </label>
+              <input
+                type="date"
+                value={chequeDate}
+                onChange={(e) => setChequeDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              />
+            </div>
 
+            {/* Bank Name */}
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-600 mb-1">
+                Bank Name
+              </label>
+              <input
+                type="text"
+                placeholder="Enter Bank Name"
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
 
         <div>
           <div className="flex justify-between items-center mb-4">

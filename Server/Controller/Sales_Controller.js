@@ -11,7 +11,6 @@ const GetAllCrops = (req, res) => {
   });
 };
 
-
 const addSaleLot = (req, res) => {
   const {
     farmer_id,
@@ -28,16 +27,18 @@ const addSaleLot = (req, res) => {
     payment_mode, // cash | bank | check
     selected_bank_account,
     total_buyer_payable,
-   cheque_no: chequeNo,
-  cheque_date: chequeDate,
-  bank_name: bankName,
+    cheque_no: chequeNo,
+    cheque_date: chequeDate,
+    bank_name: bankName,
   } = req.body;
 
   const normalizedCommission = parseFloat(commission_percentage || 0);
 
   db.beginTransaction((err) => {
     if (err) {
-      return res.status(500).json({ error: "Transaction start failed", details: err });
+      return res
+        .status(500)
+        .json({ error: "Transaction start failed", details: err });
     }
 
     // -------------------------------
@@ -127,7 +128,9 @@ const addSaleLot = (req, res) => {
         db.query(farmerExpenseQuery, [farmerExpenseValues], (err) => {
           if (err) {
             return db.rollback(() => {
-              res.status(500).json({ error: "Farmer expenses insert failed", details: err });
+              res
+                .status(500)
+                .json({ error: "Farmer expenses insert failed", details: err });
             });
           }
           cb();
@@ -139,7 +142,9 @@ const addSaleLot = (req, res) => {
         db.query(buyerExpenseQuery, [buyerExpenseValues], (err) => {
           if (err) {
             return db.rollback(() => {
-              res.status(500).json({ error: "Buyer expenses insert failed", details: err });
+              res
+                .status(500)
+                .json({ error: "Buyer expenses insert failed", details: err });
             });
           }
           cb();
@@ -151,7 +156,12 @@ const addSaleLot = (req, res) => {
         db.query(buyerInstallmentsQuery, [buyerInstallmentsValues], (err) => {
           if (err) {
             return db.rollback(() => {
-              res.status(500).json({ error: "Buyer installments insert failed", details: err });
+              res
+                .status(500)
+                .json({
+                  error: "Buyer installments insert failed",
+                  details: err,
+                });
             });
           }
           cb();
@@ -187,13 +197,15 @@ const addSaleLot = (req, res) => {
         db.query(upfrontPaymentQuery, upfrontValues, (err, result) => {
           if (err) {
             return db.rollback(() => {
-              res.status(500).json({ error: "Upfront payment insert failed", details: err });
+              res
+                .status(500)
+                .json({ error: "Upfront payment insert failed", details: err });
             });
           }
 
           const buyerPaymentId = result.insertId;
 
-          // ✅ Only if payment mode is check
+          //  Only if payment mode is check
           if (payment_mode === "check") {
             const checkQuery = `
               INSERT INTO buyer_payment_checks 
@@ -201,14 +213,19 @@ const addSaleLot = (req, res) => {
               VALUES (?, 'upfront', ?, ?, ?)
             `;
 
-           const checkValues = [buyerPaymentId, chequeNo, chequeDate, bankName];
-           
+            const checkValues = [
+              buyerPaymentId,
+              chequeNo,
+              chequeDate,
+              bankName,
+            ];
 
             db.query(checkQuery, checkValues, (err) => {
               if (err) {
                 return db.rollback(() => {
-                  res.status(500).json({ error: "Check insert failed", details: err });
-
+                  res
+                    .status(500)
+                    .json({ error: "Check insert failed", details: err });
                 });
               }
               cb();
@@ -229,7 +246,9 @@ const addSaleLot = (req, res) => {
               db.commit((err) => {
                 if (err) {
                   return db.rollback(() => {
-                    res.status(500).json({ error: "Commit failed", details: err });
+                    res
+                      .status(500)
+                      .json({ error: "Commit failed", details: err });
                   });
                 }
                 res.status(200).json({
@@ -244,8 +263,6 @@ const addSaleLot = (req, res) => {
     });
   });
 };
-
-
 
 const GetSalesList = (req, res) => {
   const query = `
@@ -279,7 +296,6 @@ const GetSalesList = (req, res) => {
     });
   });
 };
-
 
 module.exports = {
   GetSalesList,
