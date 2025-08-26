@@ -11,6 +11,7 @@ const GetAllCrops = (req, res) => {
   });
 };
 
+
 const addSaleLot = (req, res) => {
   const {
     farmer_id,
@@ -19,27 +20,33 @@ const addSaleLot = (req, res) => {
     arrival_date,
     weight,
     rate,
-      commission_percentage, 
+    commission_percentage,
     farmer_expenses = [],
     buyer_expenses = [],
     installments = [],
     upfront_payment,
-    payment_mode,
+    payment_mode, // cash | bank | check
     selected_bank_account,
     total_buyer_payable,
+   cheque_no: chequeNo,
+  cheque_date: chequeDate,
+  bank_name: bankName,
   } = req.body;
 
-const normalizedCommission = parseFloat(commission_percentage || 0);
+  const normalizedCommission = parseFloat(commission_percentage || 0);
 
   db.beginTransaction((err) => {
-    if (err)
-      return res
-        .status(500)
-        .json({ error: "Transaction start failed", details: err });
+    if (err) {
+      return res.status(500).json({ error: "Transaction start failed", details: err });
+    }
 
+    // -------------------------------
+    // Insert Sale
+    // -------------------------------
     const saleQuery = `
-      INSERT INTO sales (farmer_id, buyer_id, crop, arrival_date, weight, rate, commission_percent ,  total_buyer_payable)
-      VALUES (?, ?, ?, ?, ?, ?, ?  , ?)
+      INSERT INTO sales 
+      (farmer_id, buyer_id, crop, arrival_date, weight, rate, commission_percent, total_buyer_payable)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const saleData = [
       farmer_id,
@@ -48,7 +55,7 @@ const normalizedCommission = parseFloat(commission_percentage || 0);
       arrival_date,
       weight,
       rate,
-     normalizedCommission,
+      normalizedCommission,
       total_buyer_payable,
     ];
 
@@ -61,13 +68,14 @@ const normalizedCommission = parseFloat(commission_percentage || 0);
 
       const sale_id = saleResult.insertId;
 
-      // Prepare farmer expenses
+      // -------------------------------
+      // Farmer Expenses
+      // -------------------------------
       const farmerExpenseQuery = `
         INSERT INTO sale_farmer_expenses 
         (sale_id, farmer_id, buyer_id, description, amount, source_type, bank_account_id, reference_no, commission_percent) 
         VALUES ?
       `;
-
       const farmerExpenseValues = farmer_expenses.map((exp) => [
         sale_id,
         farmer_id,
@@ -77,11 +85,12 @@ const normalizedCommission = parseFloat(commission_percentage || 0);
         exp.source,
         exp.source === "bank" ? exp.bankAccount : null,
         exp.refNo || null,
-        normalizedCommission
+        normalizedCommission,
       ]);
 
-
-      // Prepare buyer expenses
+      // -------------------------------
+      // Buyer Expenses
+      // -------------------------------
       const buyerExpenseQuery = `
         INSERT INTO sale_buyer_expenses 
         (sale_id, description, amount, source_type, bank_account_id, reference_no) 
@@ -96,27 +105,29 @@ const normalizedCommission = parseFloat(commission_percentage || 0);
         exp.refNo || null,
       ]);
 
-      // Prepare buyer installments
+      // -------------------------------
+      // Buyer Installments
+      // -------------------------------
       const buyerInstallmentsQuery = `
         INSERT INTO buyer_installments (sale_id, amount, due_date, status)
         VALUES ?
       `;
-    const buyerInstallmentsValues = installments.map((inst) => [
-  sale_id,
-  inst.amount,
-  inst.dueDate, 
-  "pending",
-]);
+      const buyerInstallmentsValues = installments.map((inst) => [
+        sale_id,
+        inst.amount,
+        inst.dueDate,
+        "pending",
+      ]);
 
-      // Insert helpers
+      // -------------------------------
+      // Insert Helpers
+      // -------------------------------
       const insertFarmerExpenses = (cb) => {
         if (farmerExpenseValues.length === 0) return cb();
         db.query(farmerExpenseQuery, [farmerExpenseValues], (err) => {
           if (err) {
             return db.rollback(() => {
-              res
-                .status(500)
-                .json({ error: "Farmer expenses insert failed", details: err });
+              res.status(500).json({ error: "Farmer expenses insert failed", details: err });
             });
           }
           cb();
@@ -128,9 +139,7 @@ const normalizedCommission = parseFloat(commission_percentage || 0);
         db.query(buyerExpenseQuery, [buyerExpenseValues], (err) => {
           if (err) {
             return db.rollback(() => {
-              res
-                .status(500)
-                .json({ error: "Buyer expenses insert failed", details: err });
+              res.status(500).json({ error: "Buyer expenses insert failed", details: err });
             });
           }
           cb();
@@ -142,47 +151,77 @@ const normalizedCommission = parseFloat(commission_percentage || 0);
         db.query(buyerInstallmentsQuery, [buyerInstallmentsValues], (err) => {
           if (err) {
             return db.rollback(() => {
-              res.status(500).json({
-                error: "Buyer installments insert failed",
-                details: err,
-              });
+              res.status(500).json({ error: "Buyer installments insert failed", details: err });
             });
           }
           cb();
         });
       };
 
+      // -------------------------------
+      // Upfront Payment + Check Details
+      // -------------------------------
       const insertUpfrontPayment = (cb) => {
         if (!upfront_payment || upfront_payment <= 0) return cb();
 
         const upfrontPaymentQuery = `
-    INSERT INTO buyer_payments (
-      buyer_id,
-      amount,
-      date,
-      payment_mode,
-      payment_type,
-      reference_no,
-      notes
-    ) VALUES (?, ?, CURDATE(), 'cash', 'upfront', NULL, 'Auto-recorded upfront payment')
-  `;
+          INSERT INTO buyer_payments (
+            buyer_id,
+            amount,
+            date,
+            payment_mode,
+            payment_type,
+            bank_account_id,
+            reference_no,
+            notes
+          ) VALUES (?, ?, CURDATE(), ?, 'upfront', ?, NULL, 'Auto upfront payment')
+        `;
 
-        const upfrontValues = [buyer_id, upfront_payment];
+        const upfrontValues = [
+          buyer_id,
+          upfront_payment,
+          payment_mode, // cash | bank | check
+          selected_bank_account || null,
+        ];
 
-        db.query(upfrontPaymentQuery, upfrontValues, (err) => {
+        db.query(upfrontPaymentQuery, upfrontValues, (err, result) => {
           if (err) {
             return db.rollback(() => {
-              res.status(500).json({
-                error: "Upfront payment insert failed",
-                details: err,
-              });
+              res.status(500).json({ error: "Upfront payment insert failed", details: err });
             });
           }
-          cb();
+
+          const buyerPaymentId = result.insertId;
+
+          // ✅ Only if payment mode is check
+          if (payment_mode === "check") {
+            const checkQuery = `
+              INSERT INTO buyer_payment_checks 
+              (buyer_payment_id, payment_type, cheque_no, cheque_date, bank_name)
+              VALUES (?, 'upfront', ?, ?, ?)
+            `;
+
+           const checkValues = [buyerPaymentId, chequeNo, chequeDate, bankName];
+           
+
+            db.query(checkQuery, checkValues, (err) => {
+              if (err) {
+                return db.rollback(() => {
+                  res.status(500).json({ error: "Check insert failed", details: err });
+
+                });
+              }
+              cb();
+            });
+          } else {
+            cb();
+          }
         });
       };
 
-      // Run inserts in sequence
+      // -------------------------------
+      // Run Inserts in Sequence
+      // -------------------------------
       insertFarmerExpenses(() => {
         insertBuyerExpenses(() => {
           insertBuyerInstallments(() => {
@@ -190,9 +229,7 @@ const normalizedCommission = parseFloat(commission_percentage || 0);
               db.commit((err) => {
                 if (err) {
                   return db.rollback(() => {
-                    res
-                      .status(500)
-                      .json({ error: "Commit failed", details: err });
+                    res.status(500).json({ error: "Commit failed", details: err });
                   });
                 }
                 res.status(200).json({
@@ -207,6 +244,8 @@ const normalizedCommission = parseFloat(commission_percentage || 0);
     });
   });
 };
+
+
 
 const GetSalesList = (req, res) => {
   const query = `

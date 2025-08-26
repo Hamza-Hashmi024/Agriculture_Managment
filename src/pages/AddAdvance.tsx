@@ -516,7 +516,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                               key={source.id}
                               value={source.id.toString()}
                             >
-                              {source.title} ({source.type.toUpperCase()}) - Rs.{" "}
+                              {source.title} - Rs.{" "}
                               {source.balance}
                             </SelectItem>
                           ))}
@@ -755,8 +755,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                                         key={source.id}
                                         value={source.id.toString()}
                                       >
-                                        {source.title} (
-                                        {source.type.toUpperCase()}) - Rs.{" "}
+                                        {source.title} 
+                                        - Rs.{" "}
                                         {source.balance}
                                       </SelectItem>
                                     ))}
