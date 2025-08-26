@@ -10,8 +10,9 @@ const AdvanceRouter = require("./Routes/Advance_Routes");
 const SalesRoutes = require("./Routes/Sales_Routes");
 const ReciveAbleRoutes = require("./Routes/ReciveAble_Routes");
 const ExpensesRouter = require("./Routes/Expenses_Route");
-const ReportsRourer = require("./Routes/Reports_Router");
+const ReportsRouter = require("./Routes/Reports_Router");
 const DashboardRouter = require("./Routes/DashBoared");
+const CheckListRouter = require("./Routes/CheckList_Routes");
 dotenv.config();
 
 const app = express();
@@ -28,7 +29,8 @@ app.use("/api/advance", AdvanceRouter);
 app.use("/api/sales", SalesRoutes);
 app.use("/api/receivables", ReciveAbleRoutes);
 app.use("/api/expenses", ExpensesRouter);
-app.use("/api/reports", ReportsRourer);
+app.use("/api/reports", ReportsRouter);
+app.use("/api/checklist", CheckListRouter);
 app.use("/api/v1", DashboardRouter);
 
 app.get("/", (req, res) => {
