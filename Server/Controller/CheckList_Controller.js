@@ -1,35 +1,38 @@
 const db = require("../config/db")
 
-const GetAllCheques = (req , res )=>{
+const GetAllCheques = (req, res) => {
     const query = `
-   
-SELECT 
-    bpc.id,
-    bpc.buyer_payment_id,
-    b.name AS buyer_name,
-    s.arrival_date AS sale_date,
-    bpc.payment_type,
-    bpc.cheque_no,
-    bpc.cheque_date,
-    bpc.bank_name,
-    bp.amount,              -- ADD THIS
-    bpc.created_at,
-    bpc.status
-FROM buyer_payment_checks bpc
-JOIN buyer_payments bp 
-    ON bpc.buyer_payment_id = bp.id
-JOIN buyers b 
-    ON bp.buyer_id = b.id
-JOIN sales s 
-    ON b.id = s.buyer_id
-    ` ;
-    db.query(query , (err , result ) =>{
-        if (err){
+        SELECT 
+            bpc.id,
+            bpc.buyer_payment_id,
+            b.name AS buyer_name,
+            MAX(s.arrival_date) AS sale_date,  -- latest sale date le li
+            bpc.payment_type,
+            bpc.cheque_no,
+            bpc.cheque_date,
+            bpc.bank_name,
+            bp.amount,              
+            bpc.status
+        FROM buyer_payment_checks bpc
+        JOIN buyer_payments bp 
+            ON bpc.buyer_payment_id = bp.id
+        JOIN buyers b 
+            ON bp.buyer_id = b.id
+        LEFT JOIN sales s 
+            ON b.id = s.buyer_id
+        GROUP BY 
+            bpc.id, bpc.buyer_payment_id, b.name, 
+            bpc.payment_type, bpc.cheque_no, bpc.cheque_date, 
+            bpc.bank_name, bp.amount, bpc.status
+    `;
+
+    db.query(query, (err, result) => {
+        if (err) {
             return res.status(500).json({ error: "Database query failed" });
         }
         res.status(200).json(result);
-    })
-}
+    });
+};
 
 
 const UpdateChequeStatus = (req, res) => {
