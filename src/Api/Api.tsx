@@ -482,3 +482,24 @@ export const GetAccountSummary = async () => {
     throw error;
   }
 };
+
+export const GetAllCheques = async() => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/checklist/cheques`)
+    return response.data;
+  }
+  catch(error){
+    console.log("Error While Fetching Cheques :-> ", error);
+    throw error;
+  }
+}
+
+export const UpdateChequeStatus = async(chequeId: number, status: string) => {
+  try {
+    const response = await axios.put(`${Base_Url}/api/checklist/cheques/status`, { chequeId, status });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Updating Cheque Status :-> ", error);
+    throw error;
+  }
+}
