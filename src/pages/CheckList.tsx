@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast"
+import { Pencil } from "lucide-react"; 
 import {
   Select,
   SelectContent,
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GetAllCheques  ,  UpdateChequeStatus } from "@/Api/Api";
+import { GetAllCheques  ,  UpdateChequeStatus , GetBankAccountsWithBalance } from "@/Api/Api";
 
 interface Cheque {
   id: number;
@@ -41,6 +42,7 @@ interface Cheque {
 
 const ChequePage: React.FC = () => {
   const [cheques, setCheques] = useState<Cheque[]>([]);
+  const [Banks ,  setBanks] = useState<any[]>([]);
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState<string>("");
   const [dateFrom, setDateFrom] = useState<string>("");
@@ -59,7 +61,19 @@ const ChequePage: React.FC = () => {
         console.error("Error fetching cheques:", err);
       }
     };
+
+    const fetchBanks =  async() => {
+      try {
+        const response = await GetBankAccountsWithBalance();
+        setBanks(response);
+      } catch (err) {
+        console.error("Error fetching banks:", err);
+      }
+    };
+
     fetchCheques();
+    fetchBanks();
+
   }, []);
 
   // Filter logic
@@ -76,6 +90,7 @@ const ChequePage: React.FC = () => {
     return matchesStatus && matchesSearch && matchesDate;
   });
 
+  
 
 const handleStatusUpdate = async (
   chequeId: number,
@@ -238,7 +253,8 @@ const handleStatusUpdate = async (
                           setOpen(true);
                         }}
                       >
-                        View
+                        <Pencil className="w-4 h-4" />
+                        Edit
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -257,38 +273,131 @@ const handleStatusUpdate = async (
       </Card>
 
       {/* Cheque Detail Modal */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Cheque Details</DialogTitle>
-          </DialogHeader>
-          {selectedCheque && (
-            <div className="space-y-3">
-              <p><strong>Cheque No:</strong> {selectedCheque.cheque_no}</p>
-              <p><strong>Date:</strong> {selectedCheque.cheque_date}</p>
-              <p><strong>Bank:</strong> {selectedCheque.bank_name}</p>
-              <p><strong>Amount:</strong> Rs. {selectedCheque.amount?.toLocaleString()}</p>
-              <p><strong>Status:</strong> {selectedCheque.status}</p>
-              <p><strong>Buyer:</strong> {selectedCheque.buyer_name}</p>
-              <p><strong>Sale Date:</strong> {new Date(selectedCheque.sale_date).toLocaleDateString()}</p>
-             <div className="flex gap-3 mt-4">
-  <Button variant="outline" onClick={() => handleStatusUpdate(selectedCheque.id, "cleared")}>
-    Mark as Cleared
-  </Button>
-  <Button variant="destructive" onClick={() => handleStatusUpdate(selectedCheque.id, "bounced")}>
-    Mark as Bounced
-  </Button>
-  <Button onClick={() => handleStatusUpdate(selectedCheque.id, "outstanding")}>
-    Mark as Outstanding
-</Button>
-  <Button onClick={() => handleStatusUpdate(selectedCheque.id, "pending")}>
-    Mark as Pending
-  </Button>
-</div>
+    <Dialog open={open} onOpenChange={setOpen}>
+  <DialogContent className="max-w-md rounded-2xl shadow-lg p-6">
+    <DialogHeader className="border-b pb-3 mb-4">
+      <DialogTitle className="text-2xl font-semibold tracking-tight text-gray-800">
+        Cheque Details
+      </DialogTitle>
+    </DialogHeader>
+
+    {selectedCheque && (
+      <div className="space-y-4">
+        {/* Cheque Info in Grid */}
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-gray-500 font-medium">Cheque No</p>
+            <p className="font-semibold">{selectedCheque.cheque_no}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 font-medium">Date</p>
+            <p className="font-semibold">
+              {new Date(selectedCheque.cheque_date).toLocaleDateString()}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 font-medium">Bank</p>
+            <p className="font-semibold">{selectedCheque.bank_name}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 font-medium">Amount</p>
+            <p className="font-semibold text-green-600">
+              Rs. {selectedCheque.amount?.toLocaleString()}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 font-medium">Buyer</p>
+            <p className="font-semibold">{selectedCheque.buyer_name}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 font-medium">Sale Date</p>
+            <p className="font-semibold">
+              {new Date(selectedCheque.sale_date).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="col-span-2">
+            <p className="text-gray-500 font-medium">Status</p>
+            <span
+              className={`px-3 py-1 inline-block rounded-full text-xs font-semibold ${
+                selectedCheque.status === "cleared"
+                  ? "bg-green-100 text-green-700"
+                  : selectedCheque.status === "bounced"
+                  ? "bg-red-100 text-red-700"
+                  : selectedCheque.status === "pending"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {selectedCheque.status.toUpperCase()}
+            </span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-wrap gap-3 pt-4 border-t">
+          <Button
+            variant="default"
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => setSelectedCheque({ ...selectedCheque, status: "cleared" })}
+          >
+            Mark as Cleared
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => handleStatusUpdate(selectedCheque.id, "bounced")}
+          >
+            Mark as Bounced
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleStatusUpdate(selectedCheque.id, "outstanding")}
+          >
+            Mark as Outstanding
+          </Button>
+          <Button
+            variant="outline"
+            className="border-yellow-500 text-yellow-600 hover:bg-yellow-50"
+            onClick={() => handleStatusUpdate(selectedCheque.id, "pending")}
+          >
+            Mark as Pending
+          </Button>
+        </div>
+
+        {/* EXTRA FORM when status = cleared */}
+        {selectedCheque.status === "cleared" && (
+          <div className="space-y-3 border-t pt-4">
+            <h3 className="text-lg font-semibold">Deposit Options</h3>
+            <div className="space-y-2">
+              <Label>Select Bank Account</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose Bank Account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Banks.map((bank) => (
+                    <SelectItem key={bank.id} value={bank.id.toString()}>
+                      {bank.title} (Balance: Rs. {bank.balance.toLocaleString()})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
+            <Button
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => handleStatusUpdate(selectedCheque.id, "cleared")}
+            >
+              Confirm Deposit
+            </Button>
+          </div>
+        )}
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
+
+
+
     </div>
   );
 };
