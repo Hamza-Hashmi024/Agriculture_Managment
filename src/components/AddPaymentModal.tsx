@@ -49,6 +49,9 @@ export function AddPaymentModal({
   const [paymentDate, setPaymentDate] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const [chequeNo, setChequeNo] = useState("");
+const [chequeDate, setChequeDate] = useState(new Date().toISOString().split("T")[0]);
+const [chequeBankName, setChequeBankName] = useState("");
   const [notes, setNotes] = useState("");
   const [buyerName, setBuyerName] = useState("Loading...");
   const [installments, setInstallments] = useState<any[]>([]);
@@ -62,31 +65,69 @@ export function AddPaymentModal({
     );
   };
 
-  const handleSavePayment = async () => {
-    try {
-      const payload = {
-        buyerId: parseInt(buyerId),
-        amount: parseFloat(amount),
-        paymentDate,
-        paymentMode,
-        bankAccountId: paymentMode === "bank" ? parseInt(bankAccountId) : null,
-        referenceNo: refNo || null,
-        proofFileUrl: null,
-        notes: notes || null,
-        installments: selectedInstallments.map((id) => parseInt(id)),
+  // const handleSavePayment = async () => {
+  //   try {
+  //     const payload = {
+  //       buyerId: parseInt(buyerId),
+  //       amount: parseFloat(amount),
+  //       paymentDate,
+  //       paymentMode,
+  //       bankAccountId: paymentMode === "bank" ? parseInt(bankAccountId) : null,
+  //       referenceNo: refNo || null,
+  //       proofFileUrl: null,
+  //       notes: notes || null,
+  //       installments: selectedInstallments.map((id) => parseInt(id)),
+  //     };
+  //     const response = await AddPayment(payload);
+  //     if (response.success) {
+  //       alert("Payment saved successfully!");
+  //       onClose();
+  //     } else {
+  //       alert("Failed to save payment.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Payment error:", err);
+  //     alert("An error occurred while saving the payment.");
+  //   }
+  // };
+
+
+const handleSavePayment = async () => {
+  try {
+    const payload: any = {
+      buyerId: parseInt(buyerId),
+      amount: parseFloat(amount),
+      paymentDate,
+      paymentMode,
+      bankAccountId: paymentMode === "bank" ? parseInt(bankAccountId) : null,
+      referenceNo: refNo || null,
+      proofFileUrl: null,
+      notes: notes || null,
+      installments: selectedInstallments.map((id) => parseInt(id)),
+    };
+
+    if (paymentMode === "cheque") {
+      payload.chequeDetails = {
+        chequeNo,
+        chequeDate,
+        bankName: chequeBankName,
+        paymentType: "later", // default, until cleared
       };
-      const response = await AddPayment(payload);
-      if (response.success) {
-        alert("Payment saved successfully!");
-        onClose();
-      } else {
-        alert("Failed to save payment.");
-      }
-    } catch (err) {
-      console.error("Payment error:", err);
-      alert("An error occurred while saving the payment.");
     }
-  };
+
+    const response = await AddPayment(payload);
+   if (response && response.payment_id) {
+  alert(response.message || "Payment saved successfully!");
+  onClose();
+} else {
+  alert("Failed to save payment.");
+}
+  } catch (err) {
+    console.error("Payment error:", err);
+    alert("An error occurred while saving the payment.");
+  }
+};
+
 
   const getStatusBadgeColor = (status: string) => {
     const normalized = status.toLowerCase();
@@ -244,6 +285,10 @@ export function AddPaymentModal({
                 <RadioGroupItem value="bank" id="bank" />
                 <Label htmlFor="bank">Bank</Label>
               </div>
+              <div className="flex items-center space-x-2">
+  <RadioGroupItem value="cheque" id="cheque" />
+  <Label htmlFor="cheque">Cheque</Label>
+</div>
             </RadioGroup>
           </div>
 
@@ -268,6 +313,40 @@ export function AddPaymentModal({
     </Select>
   </div>
 )}
+
+ {paymentMode === "cheque" && (
+  <div className="grid grid-cols-3 gap-4">
+    <div>
+      <Label htmlFor="cheque-no">Cheque No</Label>
+      <Input
+        id="cheque-no"
+        value={chequeNo}
+        onChange={(e) => setChequeNo(e.target.value)}
+        placeholder="Enter cheque number"
+      />
+    </div>
+    <div>
+      <Label htmlFor="cheque-date">Cheque Date</Label>
+      <Input
+        id="cheque-date"
+        type="date"
+        value={chequeDate}
+        onChange={(e) => setChequeDate(e.target.value)}
+      />
+    </div>
+    <div>
+      <Label htmlFor="cheque-bank">Bank Name</Label>
+      <Input
+        id="cheque-bank"
+        value={chequeBankName}
+        onChange={(e) => setChequeBankName(e.target.value)}
+        placeholder="Enter bank name"
+      />
+    </div>
+  </div>
+)}
+
+
           {/* Reference No. & Date */}
           <div className="grid grid-cols-2 gap-4">
             <div>

@@ -1,5 +1,6 @@
 const db = require("../config/db");
 const moment = require("moment");
+const distributeInstallments = require("../Helper/distributeInstallments");
 
 const getBuyerReceivables = (req, res) => {
   const query = `
@@ -79,178 +80,261 @@ const getBuyerReceivables = (req, res) => {
   });
 };
 
+// const AddPayment = (req, res) => {
+//   let {
+//     buyerId,
+//     amount,
+//     paymentDate,
+//     installments = [],
+//     paymentMode,
+//     bankAccountId,
+//     referenceNo,
+//     proofFileUrl,
+//     notes,
+//   } = req.body;
+
+//   if (!buyerId || !amount || !paymentDate || !paymentMode) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Missing required fields",
+//     });
+//   }
+
+//   installments = installments.map((i) => {
+//     if (typeof i === "number") {
+//       return { id: i, amount: null };
+//     } else if (typeof i === "object" && i !== null && i.id !== undefined) {
+//       return {
+//         id: parseInt(i.id),
+//         amount: i.amount ?? null,
+//       };
+//     } else {
+//       return null;
+//     }
+//   }).filter(Boolean);
+
+//   const sanitize = (values) => {
+//     return values.map(v => v === undefined ? null : v);
+//   };
+
+//   const insertPaymentSql = `
+//     INSERT INTO buyer_payments (
+//       buyer_id, amount, date, payment_mode,
+//       bank_account_id, reference_no, proof_file_url, notes
+//     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+//   `;
+
+//   const insertValues = sanitize([
+//     buyerId,
+//     amount,
+//     paymentDate,
+//     paymentMode,
+//     bankAccountId,
+//     referenceNo,
+//     proofFileUrl,
+//     notes,
+//   ]);
+
+//   db.execute(insertPaymentSql, insertValues, (err, result) => {
+//     if (err) {
+//       return res.status(500).json({ success: false, message: "Failed to add payment" });
+//     }
+
+//     const paymentId = result.insertId;
+//     let remainingAmount = amount;
+
+//     const fetchInstallmentsIfNeeded = (callback) => {
+//       if (installments.length > 0) {
+//         return callback(installments);
+//       }
+
+//       const fetchPendingSql = `
+//         SELECT bi.id, bi.amount 
+//         FROM buyer_installments AS bi
+//         JOIN sales AS s ON bi.sale_id = s.id
+//         WHERE s.buyer_id = ? AND bi.status != 'paid'
+//         ORDER BY bi.due_date ASC
+//       `;
+
+//       db.execute(fetchPendingSql, [buyerId], (fetchErr, rows) => {
+//         if (fetchErr) {
+//           return res.status(500).json({
+//             success: false,
+//             message: "Failed to fetch installments for auto-distribution",
+//           });
+//         }
+
+//         const pendingInstallments = rows.map((row) => ({
+//           id: row.id,
+//           amount: parseFloat(row.amount),
+//         }));
+
+//         callback(pendingInstallments);
+//       });
+//     };
+
+//     fetchInstallmentsIfNeeded((list) => {
+//       const processInstallments = (index) => {
+//         if (index >= list.length || remainingAmount <= 0) {
+//           return res.status(201).json({
+//             success: true,
+//             message: "Payment added and distributed across installments",
+//             paymentId,
+//           });
+//         }
+
+//         const { id: installmentId, amount: knownAmount } = list[index];
+
+//         const getInstallmentAmount = (callback) => {
+//           if (knownAmount !== null) return callback(knownAmount);
+
+//           db.execute(
+//             "SELECT amount FROM buyer_installments WHERE id = ?",
+//             [installmentId],
+//             (err, [row]) => {
+//               if (err || !row) return callback(null);
+//               callback(parseFloat(row.amount));
+//             }
+//           );
+//         };
+
+//         getInstallmentAmount((installmentAmount) => {
+//           if (installmentAmount === null) {
+//             return processInstallments(index + 1);
+//           }
+
+//           db.execute(
+//             "SELECT SUM(amount) AS totalPaid FROM buyer_payment_installments WHERE buyer_installment_id = ?",
+//             [installmentId],
+//             (sumErr, [sumRow]) => {
+//               if (sumErr) {
+//                 return processInstallments(index + 1);
+//               }
+
+//               const totalPaid = parseFloat(sumRow.totalPaid || 0);
+//               const remainingInstallmentAmount = installmentAmount - totalPaid;
+
+//               if (remainingInstallmentAmount <= 0) {
+//                 return processInstallments(index + 1);
+//               }
+
+//               const appliedAmount = Math.min(remainingAmount, remainingInstallmentAmount);
+
+//               db.execute(
+//                 `INSERT INTO buyer_payment_installments (buyer_payment_id, buyer_installment_id, amount) VALUES (?, ?, ?)`,
+//                 [paymentId, installmentId, appliedAmount],
+//                 (linkErr) => {
+//                   if (linkErr) {
+//                     return processInstallments(index + 1);
+//                   }
+
+//                   const newTotalPaid = totalPaid + appliedAmount;
+//                   let newStatus = "pending";
+//                   if (newTotalPaid >= installmentAmount) newStatus = "paid";
+//                   else if (newTotalPaid > 0) newStatus = "partial";
+
+//                   db.execute(
+//                     `UPDATE buyer_installments SET status = ? WHERE id = ?`,
+//                     [newStatus, installmentId],
+//                     (updateErr) => {
+//                       remainingAmount -= appliedAmount;
+//                       processInstallments(index + 1);
+//                     }
+//                   );
+//                 }
+//               );
+//             }
+//           );
+//         });
+//       };
+
+//       processInstallments(0);
+//     });
+//   });
+// };
+
+
 const AddPayment = (req, res) => {
-  let {
-    buyerId,
+  const {
+    buyerId: buyer_id,
     amount,
-    paymentDate,
-    installments = [],
     paymentMode,
     bankAccountId,
     referenceNo,
-    proofFileUrl,
     notes,
+    chequeDetails,
   } = req.body;
 
-  if (!buyerId || !amount || !paymentDate || !paymentMode) {
+  if (!buyer_id || !amount || !paymentMode) {
     return res.status(400).json({
       success: false,
       message: "Missing required fields",
     });
   }
 
-  installments = installments.map((i) => {
-    if (typeof i === "number") {
-      return { id: i, amount: null };
-    } else if (typeof i === "object" && i !== null && i.id !== undefined) {
-      return {
-        id: parseInt(i.id),
-        amount: i.amount ?? null,
-      };
-    } else {
-      return null;
-    }
-  }).filter(Boolean);
-
-  const sanitize = (values) => {
-    return values.map(v => v === undefined ? null : v);
-  };
+  // Frontend 'cheque' → DB expects 'check'
+  const dbPaymentMode = paymentMode === "cheque" ? "check" : paymentMode;
 
   const insertPaymentSql = `
-    INSERT INTO buyer_payments (
-      buyer_id, amount, date, payment_mode,
-      bank_account_id, reference_no, proof_file_url, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO buyer_payments 
+    (buyer_id, amount, date, payment_mode, payment_type, bank_account_id, reference_no, notes)
+    VALUES (?, ?, CURDATE(), ?, 'later', ?, ?, ?)
   `;
 
-  const insertValues = sanitize([
-    buyerId,
-    amount,
-    paymentDate,
-    paymentMode,
-    bankAccountId,
-    referenceNo,
-    proofFileUrl,
-    notes,
-  ]);
-
-  db.execute(insertPaymentSql, insertValues, (err, result) => {
-    if (err) {
-      return res.status(500).json({ success: false, message: "Failed to add payment" });
-    }
-
-    const paymentId = result.insertId;
-    let remainingAmount = amount;
-
-    const fetchInstallmentsIfNeeded = (callback) => {
-      if (installments.length > 0) {
-        return callback(installments);
+  db.query(
+    insertPaymentSql,
+    [buyer_id, amount, dbPaymentMode, bankAccountId || null, referenceNo || null, notes || "Manual payment"],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: "Payment insert failed", details: err });
       }
 
-      const fetchPendingSql = `
-        SELECT bi.id, bi.amount 
-        FROM buyer_installments AS bi
-        JOIN sales AS s ON bi.sale_id = s.id
-        WHERE s.buyer_id = ? AND bi.status != 'paid'
-        ORDER BY bi.due_date ASC
-      `;
+      const paymentId = result.insertId;
 
-      db.execute(fetchPendingSql, [buyerId], (fetchErr, rows) => {
-        if (fetchErr) {
-          return res.status(500).json({
-            success: false,
-            message: "Failed to fetch installments for auto-distribution",
-          });
-        }
-
-        const pendingInstallments = rows.map((row) => ({
-          id: row.id,
-          amount: parseFloat(row.amount),
-        }));
-
-        callback(pendingInstallments);
-      });
-    };
-
-    fetchInstallmentsIfNeeded((list) => {
-      const processInstallments = (index) => {
-        if (index >= list.length || remainingAmount <= 0) {
-          return res.status(201).json({
-            success: true,
-            message: "Payment added and distributed across installments",
+      // Cheque flow → no installments distribution
+      if (dbPaymentMode === "check" && chequeDetails) {
+        const chequeSql = `
+          INSERT INTO buyer_payment_checks
+          (buyer_payment_id, cheque_no, cheque_date, bank_name, payment_type, status)
+          VALUES (?, ?, ?, ?, ?, 'outstanding')
+        `;
+        db.query(
+          chequeSql,
+          [
             paymentId,
-          });
-        }
-
-        const { id: installmentId, amount: knownAmount } = list[index];
-
-        const getInstallmentAmount = (callback) => {
-          if (knownAmount !== null) return callback(knownAmount);
-
-          db.execute(
-            "SELECT amount FROM buyer_installments WHERE id = ?",
-            [installmentId],
-            (err, [row]) => {
-              if (err || !row) return callback(null);
-              callback(parseFloat(row.amount));
+            chequeDetails.chequeNo,
+            chequeDetails.chequeDate,
+            chequeDetails.bankName,
+            chequeDetails.paymentType || "later",
+          ],
+          (chequeErr) => {
+            if (chequeErr) {
+              return res.status(500).json({ error: "Cheque insert failed", details: chequeErr });
             }
-          );
-        };
-
-        getInstallmentAmount((installmentAmount) => {
-          if (installmentAmount === null) {
-            return processInstallments(index + 1);
+            return res.status(200).json({
+              message: "Cheque payment added successfully (no installments distributed yet).",
+              payment_id: paymentId,
+            });
           }
-
-          db.execute(
-            "SELECT SUM(amount) AS totalPaid FROM buyer_payment_installments WHERE buyer_installment_id = ?",
-            [installmentId],
-            (sumErr, [sumRow]) => {
-              if (sumErr) {
-                return processInstallments(index + 1);
-              }
-
-              const totalPaid = parseFloat(sumRow.totalPaid || 0);
-              const remainingInstallmentAmount = installmentAmount - totalPaid;
-
-              if (remainingInstallmentAmount <= 0) {
-                return processInstallments(index + 1);
-              }
-
-              const appliedAmount = Math.min(remainingAmount, remainingInstallmentAmount);
-
-              db.execute(
-                `INSERT INTO buyer_payment_installments (buyer_payment_id, buyer_installment_id, amount) VALUES (?, ?, ?)`,
-                [paymentId, installmentId, appliedAmount],
-                (linkErr) => {
-                  if (linkErr) {
-                    return processInstallments(index + 1);
-                  }
-
-                  const newTotalPaid = totalPaid + appliedAmount;
-                  let newStatus = "pending";
-                  if (newTotalPaid >= installmentAmount) newStatus = "paid";
-                  else if (newTotalPaid > 0) newStatus = "partial";
-
-                  db.execute(
-                    `UPDATE buyer_installments SET status = ? WHERE id = ?`,
-                    [newStatus, installmentId],
-                    (updateErr) => {
-                      remainingAmount -= appliedAmount;
-                      processInstallments(index + 1);
-                    }
-                  );
-                }
-              );
-            }
-          );
+        );
+      } else {
+        // Cash / Bank → distribute installments
+        distributeInstallments(paymentId, buyer_id, (distErr, result) => {
+          if (distErr) {
+            return res.status(500).json({ error: "Installment distribution failed", details: distErr });
+          }
+          return res.status(200).json({
+            message: "Payment added successfully. Installments distributed.",
+            payment_id: paymentId,
+            distributedAmount: result.distributed,
+          });
         });
-      };
-
-      processInstallments(0);
-    });
-  });
+      }
+    }
+  );
 };
+
+
 
 const getBuyerReceivableCard = (req, res) => {
   console.log("FULL REQUEST PARAMS:", req.params);

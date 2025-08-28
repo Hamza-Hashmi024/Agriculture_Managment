@@ -1,4 +1,5 @@
 const db = require("../config/db")
+const distributeInstallments = require("../Helper/distributeInstallments");
 
 const GetAllCheques = (req, res) => {
     const query = `
@@ -36,92 +37,46 @@ const GetAllCheques = (req, res) => {
 
 
 const UpdateChequeStatus = (req, res) => {
-  const { chequeId, status, bank_account_id } = req.body;
-
-  const validStatuses = ["outstanding", "pending", "cleared", "bounced"];
-  if (!validStatuses.includes(status)) {
-    return res.status(400).json({ error: "Invalid status" });
-  }
+  const { chequeId, status } = req.body;
 
   // 1️⃣ Update cheque status
-  const updateChequeQuery = `
-    UPDATE buyer_payment_checks
-    SET status = ?
-    WHERE id = ?
-  `;
-
-  db.query(updateChequeQuery, [status, chequeId], (err, result) => {
+  const updateQuery = `UPDATE buyer_payment_checks SET status = ? WHERE id = ?`;
+  db.query(updateQuery, [status, chequeId], (err) => {
     if (err) {
-      return res.status(500).json({ error: "Failed to update cheque status", details: err });
+      return res.status(500).json({ error: "Cheque status update failed", details: err });
     }
 
-    // 2️⃣ If status = cleared → Insert payment + Update bank balance
     if (status === "cleared") {
-      const chequeDetailsQuery = `
+      // 2️⃣ Fetch cheque details
+      const chequeQuery = `
         SELECT bpc.*, bp.buyer_id, bp.amount
         FROM buyer_payment_checks bpc
         JOIN buyer_payments bp ON bpc.buyer_payment_id = bp.id
         WHERE bpc.id = ?
       `;
 
-      db.query(chequeDetailsQuery, [chequeId], (err, rows) => {
-        if (err || rows.length === 0) {
-          return res.status(500).json({ error: "Cheque details fetch failed" });
+      db.query(chequeQuery, [chequeId], (err, chequeRows) => {
+        if (err || chequeRows.length === 0) {
+          return res.status(500).json({ error: "Cheque fetch failed", details: err });
         }
 
-        const cheque = rows[0];
+        const cheque = chequeRows[0];
 
-        // 2.1 Check if payment already exists
-        const checkPaymentExistsQuery = `
-          SELECT * FROM buyer_payments 
-          WHERE reference_no = ? AND payment_mode = 'check'
-        `;
-
-        db.query(checkPaymentExistsQuery, [cheque.cheque_no], (err, paymentRows) => {
-          if (err) return res.status(500).json({ error: "Payment check failed", details: err });
-
-          if (paymentRows.length > 0) {
-            return res.status(200).json({ message: "Cheque cleared. Payment already exists." });
+        // 3️⃣ Installments distribution
+        distributeInstallments(cheque.buyer_payment_id, cheque.buyer_id, (err, result) => {
+          if (err) {
+            return res.status(500).json({ error: "Installment distribution failed", details: err });
           }
 
-          // 2.2 Insert buyer payment
-          const insertPaymentQuery = `
-            INSERT INTO buyer_payments 
-            (buyer_id, amount, date, payment_mode, payment_type, bank_account_id, reference_no, notes)
-            VALUES (?, ?, CURDATE(), 'check', ?, ?, ?, 'Auto payment for cleared cheque')
-          `;
-
-          db.query(
-            insertPaymentQuery,
-            [cheque.buyer_id, cheque.amount, cheque.payment_type, bank_account_id, cheque.cheque_no],
-            (err, insertResult) => {
-              if (err) {
-                return res.status(500).json({ error: "Failed to create buyer payment", details: err });
-              }
-
-              // 2.3 Update bank account balance
-              const updateBalanceQuery = `
-                UPDATE accounts 
-                SET opening_balance = opening_balance + ? 
-                WHERE id = ?
-              `;
-
-              db.query(updateBalanceQuery, [cheque.amount, bank_account_id], (err) => {
-                if (err) {
-                  return res.status(500).json({ error: "Failed to update bank balance", details: err });
-                }
-
-                return res.status(200).json({ 
-                  message: "Cheque cleared, buyer payment recorded, and bank balance updated." 
-                });
-              });
-            }
-          );
+          res.status(200).json({
+            message: "Cheque cleared successfully. Installments updated.",
+            distributedAmount: result.distributed,
+          });
         });
       });
     } else {
-      // 3️⃣ For bounced / outstanding / pending
-      return res.status(200).json({ message: `Cheque status updated to ${status}` });
+      // Pending / Bounced
+      res.status(200).json({ message: `Cheque status updated to ${status}` });
     }
   });
 };

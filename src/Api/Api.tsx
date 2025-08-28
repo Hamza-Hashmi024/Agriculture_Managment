@@ -503,3 +503,4 @@ export const UpdateChequeStatus = async(chequeId: number, status: string) => {
     throw error;
   }
 }
+
