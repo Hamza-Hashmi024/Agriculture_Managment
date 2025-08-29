@@ -1,6 +1,7 @@
 const db = require("../config/db");
 
 
+
 const addBankAccount = (req, res) => {
   const {
     type,
@@ -29,23 +30,27 @@ const addBankAccount = (req, res) => {
   const sql = `
     INSERT INTO accounts (
       type,
+      bank,
       title,
       account_number,
       branch,
       iban,
       opening_balance,
-      opening_date
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      opening_date,
+      notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
     type,
+    type === "bank" ? bank : null,
     title,
     account_number,
     branch || null,
     iban || null,
     parseFloat(opening_balance),
     opening_date,
+    notes || null,
   ];
 
   db.query(sql, values, (err, result) => {
@@ -55,13 +60,73 @@ const addBankAccount = (req, res) => {
     }
 
     return res.status(201).json({
-      message: `${
-        type === "bank" ? "Bank" : "Cashbox"
-      } account added successfully`,
+      message: `${type === "bank" ? "Bank" : "Cashbox"} account added successfully`,
       accountId: result.insertId,
     });
   });
 };
+
+// const addBankAccount = (req, res) => {
+//   const {
+//     type,
+//     bank,
+//     title,
+//     account_number,
+//     branch,
+//     iban,
+//     opening_balance,
+//     opening_date,
+//     notes,
+//   } = req.body;
+
+//   // Validation
+//   if (
+//     !type ||
+//     !title ||
+//     !account_number ||
+//     !opening_balance ||
+//     !opening_date ||
+//     (type === "bank" && !bank)
+//   ) {
+//     return res.status(400).json({ message: "Required fields are missing." });
+//   }
+
+//   const sql = `
+//     INSERT INTO accounts (
+//       type,
+//       title,
+//       account_number,
+//       branch,
+//       iban,
+//       opening_balance,
+//       opening_date
+//     ) VALUES (?, ?, ?, ?, ?, ?, ?)
+//   `;
+
+//   const values = [
+//     type,
+//     title,
+//     account_number,
+//     branch || null,
+//     iban || null,
+//     parseFloat(opening_balance),
+//     opening_date,
+//   ];
+
+//   db.query(sql, values, (err, result) => {
+//     if (err) {
+//       console.error("Error inserting account:", err);
+//       return res.status(500).json({ message: "Database error", error: err });
+//     }
+
+//     return res.status(201).json({
+//       message: `${
+//         type === "bank" ? "Bank" : "Cashbox"
+//       } account added successfully`,
+//       accountId: result.insertId,
+//     });
+//   });
+// };
 
 const createTransfer = (req, res) => {
   const { fromAccount, toAccount, amount, date, referenceNo, notes } = req.body;
