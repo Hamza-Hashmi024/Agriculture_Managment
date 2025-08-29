@@ -1,0 +1,24 @@
+const bankLogos: Record<string, string> = {
+  "Meezan Bank": "/logos/meezan.png",
+  "HBL (Habib Bank Limited)": "/logos/hbl.png",
+  "UBL (United Bank Limited)": "/logos/ubl.png",
+  "MCB (Muslim Commercial Bank)": "/logos/mcb.png",
+  "NBP (National Bank of Pakistan)": "/logos/nbp.png",
+  "Allied Bank": "/logos/allied.png",
+  "Bank Alfalah": "/logos/alfalah.png",
+  "Standard Chartered": "/logos/standard-chartered.png",
+  "Faysal Bank": "/logos/faysal.png",
+  "JS Bank": "/logos/js.png",
+  "Askari Bank": "/logos/askari.png",
+  "Bank Al Habib": "/logos/alhabib.png",
+  "Soneri Bank": "/logos/soneri.png",
+  "Summit Bank": "/logos/summit.png",
+  "Silk Bank": "/logos/silk.png",
+};
+
+
+export function getBankLogo(bankName: string): string {
+  return bankLogos[bankName] || "/logos/download.png"; // fallback logo
+}
+
+export default bankLogos;

@@ -504,3 +504,44 @@ export const UpdateChequeStatus = async(chequeId: number, status: string) => {
   }
 }
 
+// 1. Get today's pending buyers (receivables summary)
+export const GetReceivablesDueToday = async (date?: string, includePartial: boolean = true) => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/receivables/due-today`, {
+      params: { date, includePartial }
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Fetching Today's Receivables :-> ", error);
+    throw error;
+  }
+};
+
+export const GetReceivablesByBuyer = async (buyerId: number, date?: string) => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/receivables/due-today/${buyerId}`, {
+      params: { date }
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Fetching Receivables By Buyer :-> ", error);
+    throw error;
+  }
+};
+
+//  3. Extend installment due date
+export const ExtendInstallmentDueDate = async (installmentId: number, newDueDate: string, userId?: number) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/receivables/extend-due-date/${installmentId}`, {
+      newDueDate,
+      userId
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Extending Installment Due Date :-> ", error);
+    throw error;
+  }
+};
+
+
+
