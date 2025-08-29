@@ -334,8 +334,6 @@ const AddPayment = (req, res) => {
   );
 };
 
-
-
 const getBuyerReceivableCard = (req, res) => {
   console.log("FULL REQUEST PARAMS:", req.params);
   const buyerId = req.params.buyerId;
@@ -462,8 +460,188 @@ const getBuyerReceivableCard = (req, res) => {
 };
 
 
+const getReceivablesDueOn = (req, res) => {
+  const { date, includePartial } = req.query;
+  // includePartial default true (you can change)
+  const includePartialBool = includePartial === undefined ? true : includePartial === "true";
+
+  // status filter
+  const statuses = includePartialBool ? "('pending','partial')" : "('pending')";
+
+  // SQL: we compute paid per installment and then pick installments due on target date
+  const sql = `
+    WITH paid AS (
+      SELECT buyer_installment_id, SUM(amount) AS paid
+      FROM buyer_payment_installments
+      GROUP BY buyer_installment_id
+    )
+    SELECT 
+      b.id AS buyerId,
+      b.name AS buyerName,
+      COUNT(*) AS installmentsCount,
+      SUM(GREATEST(0, bi.amount - COALESCE(paid.paid, 0))) AS dueTodayAmount
+    FROM buyer_installments bi
+    JOIN sales s ON s.id = bi.sale_id
+    JOIN buyers b ON b.id = s.buyer_id
+    LEFT JOIN paid ON paid.buyer_installment_id = bi.id
+    WHERE bi.due_date = COALESCE(?, CURDATE())
+      AND bi.status IN ${statuses}
+      AND (bi.amount - COALESCE(paid.paid,0)) > 0
+    GROUP BY b.id, b.name
+    ORDER BY dueTodayAmount DESC, b.name ASC;
+  `;
+
+  db.query(sql, [date || null], (err, rows) => {
+    if (err) {
+      console.error("Error fetching due-today:", err);
+      return res.status(500).json({ error: "DB error", details: err.message || err });
+    }
+    // ensure numeric values are numbers
+    const result = rows.map(r => ({
+      buyerId: r.buyerId,
+      buyerName: r.buyerName,
+      installmentsCount: Number(r.installmentsCount || 0),
+      dueTodayAmount: Number(r.dueTodayAmount || 0)
+    }));
+    res.json(result);
+  });
+};
+
+/**
+ * GET /api/receivables/due-today/:buyerId
+ * Returns installment-level rows for that buyer on the date
+ * Query params:
+ *  - date (optional) default CURDATE()
+ */
+const getReceivablesDueOnByBuyer = (req, res) => {
+  const { buyerId } = req.params;
+  const { date } = req.query;
+
+  if (!buyerId) return res.status(400).json({ error: "buyerId required" });
+
+  const sql = `
+    WITH paid AS (
+      SELECT buyer_installment_id, SUM(amount) AS paid
+      FROM buyer_payment_installments
+      GROUP BY buyer_installment_id
+    )
+    SELECT
+      bi.id AS installmentId,
+      s.id AS invoiceNo,
+      bi.amount,
+      COALESCE(paid.paid, 0) AS paidAmount,
+      (bi.amount - COALESCE(paid.paid, 0)) AS remaining,
+      DATE_FORMAT(bi.due_date, '%Y-%m-%d') AS dueDate,
+      bi.status
+    FROM buyer_installments bi
+    JOIN sales s ON s.id = bi.sale_id
+    LEFT JOIN paid ON paid.buyer_installment_id = bi.id
+    WHERE s.buyer_id = ?
+      AND bi.due_date = COALESCE(?, CURDATE())
+      AND bi.status IN ('pending','partial')
+      AND (bi.amount - COALESCE(paid.paid,0)) > 0
+    ORDER BY bi.due_date ASC, bi.id ASC;
+  `;
+
+  db.query(sql, [buyerId, date || null], (err, rows) => {
+    if (err) {
+      console.error("Error fetching due-today by buyer:", err);
+      return res.status(500).json({ error: "DB error", details: err.message || err });
+    }
+
+    const result = rows.map(r => ({
+      installmentId: r.installmentId,
+      invoiceNo: r.invoiceNo,
+      amount: Number(r.amount),
+      paidAmount: Number(r.paidAmount),
+      remaining: Number(r.remaining),
+      dueDate: r.dueDate,
+      status: r.status
+    }));
+    res.json(result);
+  });
+};
+
+
+const extendInstallmentDueDate = (req, res) => {
+  const { installmentId } = req.params;
+  const { newDueDate, userId } = req.body;
+
+  if (!installmentId || !newDueDate) {
+    return res.status(400).json({ error: "installmentId and newDueDate required" });
+  }
+
+  db.beginTransaction(err => {
+    if (err) {
+      console.error("Transaction start error:", err);
+      return res.status(500).json({ error: "DB transaction error" });
+    }
+
+    // Step 1: Get current due_date
+    const selectSql = "SELECT due_date FROM buyer_installments WHERE id = ?";
+    db.query(selectSql, [installmentId], (err, rows) => {
+      if (err || rows.length === 0) {
+        return db.rollback(() => {
+          console.error("Select error:", err);
+          res.status(404).json({ error: "Installment not found" });
+        });
+      }
+
+      const oldDueDate = rows[0].due_date;
+
+      // Step 2: Insert into history
+      const insertHistorySql = `
+        INSERT INTO buyer_installment_due_date_history 
+        (buyer_installment_id, old_due_date, new_due_date, changed_by)
+        VALUES (?, ?, ?, ?)
+      `;
+      db.query(insertHistorySql, [installmentId, oldDueDate, newDueDate, userId || null], (err) => {
+        if (err) {
+          return db.rollback(() => {
+            console.error("History insert error:", err);
+            res.status(500).json({ error: "Failed to save history" });
+          });
+        }
+
+        // Step 3: Update installment due_date
+        const updateSql = `UPDATE buyer_installments 
+SET due_date = ? 
+WHERE id = ? AND status IN ('pending','partial')`;
+        db.query(updateSql, [newDueDate, installmentId], (err) => {
+          if (err) {
+            return db.rollback(() => {
+              console.error("Update error:", err);
+              res.status(500).json({ error: "Failed to update due_date" });
+            });
+          }
+
+          // Step 4: Commit
+          db.commit(err => {
+            if (err) {
+              return db.rollback(() => {
+                console.error("Commit error:", err);
+                res.status(500).json({ error: "Transaction commit failed" });
+              });
+            }
+            res.json({
+              success: true,
+              installmentId,
+              oldDueDate,
+              newDueDate
+            });
+          });
+        });
+      });
+    });
+  });
+};
+
+
 module.exports = {
   getBuyerReceivables,
   AddPayment,
- getBuyerReceivableCard
+  getReceivablesDueOn,
+  getReceivablesDueOnByBuyer,
+ getBuyerReceivableCard,
+ extendInstallmentDueDate
 };
