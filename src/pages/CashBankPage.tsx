@@ -17,6 +17,7 @@ import { BankbookModal } from "@/components/BankbookModal";
 import { AccountDetailModal } from "@/components/AccountDetailModal";
 import { DailyCashClosingModal } from "@/components/DailyCashClosingModal";
 import { GetAccountSummary } from "@/Api/Api";
+import { bankLogos } from "@/Globle/bankLogos";
 
 export function CashBankPage() {
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -141,57 +142,100 @@ export function CashBankPage() {
         </Button>
       </div>
 
-      {/* Accounts Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Accounts</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Account Type</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead className="text-right">Opening Balance</TableHead>
-                <TableHead className="text-right">Inflow</TableHead>
-                <TableHead className="text-right">Outflow</TableHead>
-                <TableHead className="text-right">Current Balance</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {accounts.map((account) => (
-                <TableRow key={account.account_id}>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      account.account_type === "Cash" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
-                    }`}>
-                      {account.account_type}
-                    </span>
-                  </TableCell>
-                  <TableCell className="font-medium">{account.account_title}</TableCell>
-                  <TableCell className="text-right">PKR {parseFloat(account.opening_balance).toLocaleString()}</TableCell>
-                  <TableCell className="text-right">PKR {parseFloat(account.total_inflow).toLocaleString()}</TableCell>
-                  <TableCell className="text-right">PKR {parseFloat(account.total_outflow).toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-bold">PKR {parseFloat(account.current_balance).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleViewAccount(account)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {account.account_type === "Bank" && (
-                        <Button variant="ghost" size="sm" onClick={() => handleEditAccount(account)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+   {/* Accounts Table */}
+<Card>
+  <CardHeader>
+    <CardTitle>Accounts</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Logo</TableHead>
+          <TableHead>Account Type</TableHead>
+          <TableHead>Title</TableHead>
+          <TableHead>Bank Name</TableHead> {/* 👈 New Column */}
+          <TableHead className="text-right">Opening Balance</TableHead>
+          <TableHead className="text-right">Inflow</TableHead>
+          <TableHead className="text-right">Outflow</TableHead>
+          <TableHead className="text-right">Current Balance</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {accounts.map((account) => (
+          <TableRow key={account.account_id}>
+          <TableCell>
+  {account.account_type === "Bank" && bankLogos[account.bank] ? (
+    <img
+      src={bankLogos[account.bank]}
+      alt={account.bank}
+      style={{ width: 32, height: 32, objectFit: "contain" }}
+    />
+  ) : (
+    <span className="text-xs text-muted-foreground">N/A</span>
+  )}
+</TableCell>
+
+            <TableCell>
+              <span
+                className={`px-2 py-1 rounded text-xs font-medium ${
+                  account.account_type === "Cash"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-blue-100 text-blue-700"
+                }`}
+              >
+                {account.account_type}
+              </span>
+            </TableCell>
+
+            <TableCell className="font-medium">
+              {account.account_title}
+            </TableCell>
+
+            {/* 👇 New Bank Name Column */}
+            <TableCell>
+              {account.bank ? account.bank : "-"}
+            </TableCell>
+
+            <TableCell className="text-right">
+              PKR {parseFloat(account.opening_balance).toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right">
+              PKR {parseFloat(account.total_inflow).toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right">
+              PKR {parseFloat(account.total_outflow).toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right font-bold">
+              PKR {parseFloat(account.current_balance).toLocaleString()}
+            </TableCell>
+            <TableCell>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleViewAccount(account)}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+                {account.account_type === "Bank" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditAccount(account)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </CardContent>
+</Card>
 
       {/* Modals */}
       <AddBankAccountModal

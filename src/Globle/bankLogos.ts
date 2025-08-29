@@ -1,4 +1,4 @@
-const bankLogos: Record<string, string> = {
+export const bankLogos: Record<string, string> = {
   "Meezan Bank": "/logos/meezan.png",
   "HBL (Habib Bank Limited)": "/logos/hbl.png",
   "UBL (United Bank Limited)": "/logos/ubl.png",
@@ -15,10 +15,3 @@ const bankLogos: Record<string, string> = {
   "Summit Bank": "/logos/summit.png",
   "Silk Bank": "/logos/silk.png",
 };
-
-
-export function getBankLogo(bankName: string): string {
-  return bankLogos[bankName] || "/logos/download.png"; // fallback logo
-}
-
-export default bankLogos;
