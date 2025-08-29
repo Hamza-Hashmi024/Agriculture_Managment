@@ -48,6 +48,8 @@ const reportsItems = [
 
 const settingsItems = [
   { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Theme Settings", url: "/theme-settings", icon: Settings },
+
 ];
 
 export function AppSidebar() {

@@ -25,6 +25,7 @@ import { CashBankPage } from "@/pages/CashBankPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { AddBuyerForm } from "@/pages/AddBuyerForm";
 import  ChequePage  from "@/pages/CheckList";
+import ThemeSettings from "@/pages/ThemeSettings";
 
 export function MainContent() {
   return (
@@ -58,6 +59,7 @@ export function MainContent() {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/missing-docs" element={<PlaceholderPage title="Missing Docs" />} />
         <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
+        <Route path="/theme-settings" element={<ThemeSettings />} />
       </Routes>
     </main>
   );

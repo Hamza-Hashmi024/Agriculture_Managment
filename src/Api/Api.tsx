@@ -543,5 +543,14 @@ export const ExtendInstallmentDueDate = async (installmentId: number, newDueDate
   }
 };
 
+export const FetchTheme = async (userId) => {
+  const res = await axios.get(`${Base_Url}/api/theme/${userId}`);
+  return res.data;
+};
+
+export const SaveTheme = async (userId, theme) => {
+  const res = await axios.put(`${Base_Url}/api/theme/${userId}`, theme);
+  return res.data;
+};
 
 
