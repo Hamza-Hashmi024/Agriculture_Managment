@@ -543,14 +543,26 @@ export const ExtendInstallmentDueDate = async (installmentId: number, newDueDate
   }
 };
 
-export const FetchTheme = async (userId) => {
+
+
+export const FetchTheme = async (userId: number) => {
   const res = await axios.get(`${Base_Url}/api/theme/${userId}`);
   return res.data;
 };
 
-export const SaveTheme = async (userId, theme) => {
-  const res = await axios.put(`${Base_Url}/api/theme/${userId}`, theme);
+// Save Theme (PUT)
+export const SaveTheme = async (
+  userId: number,
+  theme: { primary: string; background: string; foreground: string }
+) => {
+  // Map frontend keys → backend keys
+  const payload = {
+    primaryColor: theme.primary,
+    backgroundColor: theme.background,
+    foregroundColor: theme.foreground,
+  };
+
+  const res = await axios.put(`${Base_Url}/api/theme/${userId}`, payload);
   return res.data;
 };
-
 

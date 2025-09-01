@@ -19,7 +19,13 @@ useEffect(() => {
   async function loadTheme() {
     try {
       const userTheme = await FetchTheme(userId);
-      setTheme(userTheme);
+
+      // ✅ Backend keys ko frontend keys me map karo
+      setTheme({
+        primary: userTheme.primary || userTheme.primaryColor || "210 73% 42%",
+        background: userTheme.background || userTheme.backgroundColor || "210 20% 98%",
+        foreground: userTheme.foreground || userTheme.foregroundColor || "222 84% 4.9%",
+      });
     } catch {
       // Agar theme nahi mili to default save karwao
       const defaultTheme = {
@@ -28,12 +34,16 @@ useEffect(() => {
         foreground: "222 84% 4.9%",
       };
       const saved = await SaveTheme(userId, defaultTheme);
-      setTheme(saved);
+
+      setTheme({
+        primary: saved.primary || saved.primaryColor || defaultTheme.primary,
+        background: saved.background || saved.backgroundColor || defaultTheme.background,
+        foreground: saved.foreground || saved.foregroundColor || defaultTheme.foreground,
+      });
     }
   }
   loadTheme();
 }, [userId]);
-
 // Ye hook laga do
 useDynamicTheme(theme || {});
   return (
