@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
 import { SaveTheme, FetchTheme } from "@/Api/Api";
 import { useDynamicTheme } from "@/hooks/useDynamicTheme";
+import { Palette, Droplet, Type, Save, RotateCcw } from "lucide-react"; // ✅ Lucide Icons
 
 const ThemeSettings = () => {
-  const userId = 1; // simulate logged-in user
-
-  // ✅ Start with null to avoid default flash
+  const userId = 1;
   const [theme, setTheme] = useState<any | null>(null);
 
-  // ✅ Apply theme only when loaded
   useDynamicTheme(theme || {});
 
-  // Default theme (yahan se hi reset karenge)
   const defaultTheme = {
     primary: "210 73% 42%",
     background: "210 20% 98%",
@@ -55,7 +52,7 @@ const ThemeSettings = () => {
     return `${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
   }
 
-  // ✅ Load theme from backend
+  // ✅ Load theme
   useEffect(() => {
     async function loadTheme() {
       try {
@@ -65,115 +62,118 @@ const ThemeSettings = () => {
           background: data.background || data.backgroundColor || defaultTheme.background,
           foreground: data.foreground || data.foregroundColor || defaultTheme.foreground,
         });
-      } catch (err) {
-        console.log("No theme found, using default");
+      } catch {
         setTheme(defaultTheme);
       }
     }
     loadTheme();
   }, [userId]);
 
-  // ✅ Handle color change
+  // ✅ Change handler
   const handleChange = (key: string, value: string) => {
     setTheme((prev: any) => ({ ...prev, [key]: value }));
   };
 
-  // ✅ Save theme to DB
+  // ✅ Save
   const handleSave = async () => {
     try {
-      console.log("🔹 Saving theme payload:", theme);
       const saved = await SaveTheme(userId, theme);
-
       setTheme({
         primary: saved.primary || saved.primaryColor || theme.primary,
         background: saved.background || saved.backgroundColor || theme.background,
         foreground: saved.foreground || saved.foregroundColor || theme.foreground,
       });
-
       alert("Theme saved successfully ✅");
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Error saving theme ❌");
     }
   };
 
-  // ✅ Reset to Default Theme
-const handleReset = async () => {
-  const confirmReset = window.confirm("⚠️ Are you sure you want to reset theme to default?");
-  if (!confirmReset) return; // ❌ agar user cancel kare to kuch na ho
+  // ✅ Reset
+  const handleReset = async () => {
+    const confirmReset = window.confirm("⚠️ Are you sure you want to reset theme to default?");
+    if (!confirmReset) return;
+    try {
+      setTheme(defaultTheme);
+      await SaveTheme(userId, defaultTheme);
+      alert("Theme reset to default ✅");
+    } catch {
+      alert("Error resetting theme ❌");
+    }
+  };
 
-  try {
-    setTheme(defaultTheme);
-    const saved = await SaveTheme(userId, defaultTheme);
-    setTheme({
-      primary: saved.primary || saved.primaryColor || defaultTheme.primary,
-      background: saved.background || saved.backgroundColor || defaultTheme.background,
-      foreground: saved.foreground || saved.foregroundColor || defaultTheme.foreground,
-    });
-    alert("Theme reset to default ✅");
-  } catch (err) {
-    console.error(err);
-    alert("Error resetting theme ❌");
-  }
-};
-
-  // ✅ Show loader until theme is ready
-  if (!theme) {
-    return <div className="text-center p-6">Loading theme...</div>;
-  }
+  if (!theme) return <div className="text-center p-6">Loading theme...</div>;
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-card rounded-2xl shadow-md space-y-6">
-      <h2 className="text-2xl font-semibold">Theme Settings</h2>
+    <div className=" p-8 bg-white dark:bg-neutral-900 shadow-md rounded-2xl border border-gray-200 dark:border-neutral-800 space-y-8 h-screen">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b pb-4">
+        <Palette className="w-6 h-6 text-indigo-500" />
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+          Theme Settings
+        </h2>
+      </div>
 
-      <div className="space-y-4">
-        {/* Primary Color */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Primary</label>
+      {/* Explanation */}
+      <div className="p-4 bg-gray-50 dark:bg-neutral-800 rounded-xl text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+        <p className="font-medium text-gray-800 dark:text-gray-200 mb-2">💡 How it works:</p>
+        <ul className="grid sm:grid-cols-3 gap-2">
+          <li><span className="font-semibold">Primary:</span> Buttons, links & highlights.</li>
+          <li><span className="font-semibold">Background:</span> Main app background.</li>
+          <li><span className="font-semibold">Foreground:</span> Text & icons color.</li>
+        </ul>
+      </div>
+
+      {/* Pickers */}
+      <div className="grid sm:grid-cols-3 gap-6">
+        {/* Primary */}
+        <div className="flex flex-col items-center gap-2 p-4 bg-gray-50 dark:bg-neutral-800 rounded-xl">
+          <Droplet className="w-5 h-5 text-indigo-500" />
+          <label className="text-sm font-medium">Primary</label>
           <input
             type="color"
             value={hslToHex(theme.primary)}
             onChange={(e) => handleChange("primary", hexToHsl(e.target.value))}
-            className="w-16 h-10 rounded cursor-pointer border"
+            className="w-14 h-14 rounded-full border cursor-pointer shadow-inner"
           />
         </div>
-
-        {/* Background Color */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Background</label>
+        {/* Background */}
+        <div className="flex flex-col items-center gap-2 p-4 bg-gray-50 dark:bg-neutral-800 rounded-xl">
+          <Droplet className="w-5 h-5 text-green-500" />
+          <label className="text-sm font-medium">Background</label>
           <input
             type="color"
             value={hslToHex(theme.background)}
             onChange={(e) => handleChange("background", hexToHsl(e.target.value))}
-            className="w-16 h-10 rounded cursor-pointer border"
+            className="w-14 h-14 rounded-full border cursor-pointer shadow-inner"
           />
         </div>
-
-        {/* Foreground Color */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Foreground</label>
+        {/* Foreground */}
+        <div className="flex flex-col items-center gap-2 p-4 bg-gray-50 dark:bg-neutral-800 rounded-xl">
+          <Type className="w-5 h-5 text-gray-600 dark:text-gray-200" />
+          <label className="text-sm font-medium">Foreground</label>
           <input
             type="color"
             value={hslToHex(theme.foreground)}
             onChange={(e) => handleChange("foreground", hexToHsl(e.target.value))}
-            className="w-16 h-10 rounded cursor-pointer border"
+            className="w-14 h-14 rounded-full border cursor-pointer shadow-inner"
           />
         </div>
       </div>
 
-      <div className="flex gap-4">
+      {/* Actions */}
+      <div className="flex justify-end gap-4">
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg shadow hover:bg-primary/80"
+          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
         >
-          Save Theme
+          <Save className="w-4 h-4" /> Save Theme
         </button>
-
         <button
           onClick={handleReset}
-          className="px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600"
+          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition"
         >
-          Reset Default
+          <RotateCcw className="w-4 h-4" /> Reset Default
         </button>
       </div>
     </div>
@@ -181,3 +181,4 @@ const handleReset = async () => {
 };
 
 export default ThemeSettings;
+
