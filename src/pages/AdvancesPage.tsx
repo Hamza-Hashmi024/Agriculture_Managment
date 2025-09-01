@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Download } from "lucide-react";
 import { GetAdvanceList } from "@/Api/Api";
+import { exportData } from "@/Globle/exportUtils";
 
 
 
@@ -32,6 +33,29 @@ export function AdvancesPage() {
     FetchAdvanceList();
   }, []);
 
+
+   const handleExport = () => {
+    if (!advances.length) return;
+
+    const headers = ["ID", "Date", "Type", "Amount", "Source", "Reference", "Received By"];
+    const rows = advances.map((a) => [
+      a.id,
+      new Date(a.date).toLocaleDateString(),
+      a.type,
+      `PKR ${parseFloat(a.amount).toLocaleString()}`,
+      a.source_type ?? "—",
+      a.reference_no ?? "—",
+      a.received_by ?? "—",
+    ]);
+
+    exportData({
+      fileType: "csv",
+      fileName: "Advances_List",
+      headers,
+      rows,
+    });
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -40,7 +64,7 @@ export function AdvancesPage() {
           <p className="text-muted-foreground">Manage farmer advances and payments</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>

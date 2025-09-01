@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Printer, Download, User, MapPin, Phone } from "lucide-react";
 import { AddPaymentModal } from "@/components/AddPaymentModal";
 import { GetBuyerReceivableCard } from "@/Api/Api";
-
+import { exportData } from "@/Globle/exportUtils";
 
 
 type Installment = {
@@ -78,7 +78,45 @@ export function BuyerReceivableCard() {
 
 
 
+const exportBuyerReceivableCSV = (buyer: any) => {
+  if (!buyer) return;
 
+  // 1️⃣ Unpaid Installments
+  const installmentsHeaders = ["Invoice #", "Crop", "Amount", "Due Date", "Status"];
+  const installmentsRows = buyer.unpaidInstallments.map((inst: any) => [
+    inst.invoice_no,
+    inst.crop,
+    inst.amount,
+    inst.dueDate,
+    inst.status,
+  ]);
+
+  exportData({
+    fileType: "csv",
+    fileName: `${buyer.name}_Unpaid_Installments`,
+    headers: installmentsHeaders,
+    rows: installmentsRows,
+  });
+
+  // 2️⃣ Payments
+  const paymentsHeaders = ["Date", "Amount", "Mode", "Bank", "Ref", "Invoice #", "Notes"];
+  const paymentsRows = buyer.payments.map((p: any) => [
+    p.date,
+    p.amount,
+    p.mode,
+    p.bank || "-",
+    p.refNo || "-",
+    p.invoice_no || "-",
+    p.notes || "-",
+  ]);
+
+  exportData({
+    fileType: "csv",
+    fileName: `${buyer.name}_Payments`,
+    headers: paymentsHeaders,
+    rows: paymentsRows,
+  });
+}
 
 
   const handleAddPayment = (installmentId?: string) => {
@@ -122,7 +160,7 @@ export function BuyerReceivableCard() {
             <Printer className="h-4 w-4 mr-2" />
             Print Statement
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => exportBuyerReceivableCSV(buyer)}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>

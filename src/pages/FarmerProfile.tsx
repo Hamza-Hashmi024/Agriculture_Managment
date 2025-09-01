@@ -32,6 +32,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Edit, Plus, Printer, Download, User } from "lucide-react";
 import { GetAllFarmersFull } from "@/Api/Api";
+import { exportData } from "@/Globle/exportUtils";
 
 export function FarmerProfile() {
   const { id } = useParams();
@@ -93,6 +94,41 @@ export function FarmerProfile() {
       notes: "",
     });
   };
+
+
+  const handleExport = (fileType: "csv" | "pdf", type: "advances" | "settlements") => {
+  let headers: string[] = [];
+  let rows: any[][] = [];
+
+  if (type === "advances") {
+    headers = ["Date", "Type", "Amount", "Balance", "Source", "Vendor", "Reference"];
+    rows = farmer.advances.map((a) => [
+      a.date,
+      a.type,
+      `PKR ${a.amount.toLocaleString()}`,
+      `PKR ${a.balance.toLocaleString()}`,
+      a.source,
+      a.vendor,
+      a.reference,
+    ]);
+  } else if (type === "settlements") {
+    headers = ["Date", "Description", "Debit", "Credit", "Balance"];
+    rows = farmer.settlements.map((s) => [
+      s.date,
+      s.description,
+      s.debit > 0 ? `PKR ${s.debit.toLocaleString()}` : "",
+      s.credit > 0 ? `PKR ${s.credit.toLocaleString()}` : "",
+      `PKR ${s.balance.toLocaleString()}`,
+    ]);
+  }
+
+  exportData({
+    fileType,
+    fileName: `${farmer.name}_${type}`,
+    headers,
+    rows,
+  });
+};
 
   return (
     <div className="p-6">
@@ -232,7 +268,7 @@ export function FarmerProfile() {
                   <Printer className="h-4 w-4 mr-2" />
                   Print Ledger
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => handleExport("pdf", "advances")}>
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>

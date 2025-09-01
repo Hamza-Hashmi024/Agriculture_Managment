@@ -21,6 +21,7 @@ import {
 import { Plus, Search, Download, Eye, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GetSalesList } from "@/Api/Api";
+import { exportData } from "@/Globle/exportUtils";
 
 export function SalesLotsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,6 +70,35 @@ export function SalesLotsPage() {
     }
   };
 
+  const handleExportCSV = () => {
+    const headers = [
+      "Date",
+      "Farmer",
+      "Crop",
+      "Buyer",
+      "Weight (manns)",
+      "Rate",
+      "Status",
+    ];
+
+    const rows = filteredSales.map((sale) => [
+      new Date(sale.arrival_date).toLocaleDateString(),
+      sale.farmer_name,
+      sale.crop,
+      sale.buyer_name ?? sale.buyer_id,
+      sale.weight,
+      Number(sale.rate).toLocaleString(),
+      sale.status,
+    ]);
+
+    exportData({
+      fileType: "csv",
+      fileName: "Sales_Lots",
+      headers,
+      rows,
+    });
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -79,7 +109,7 @@ export function SalesLotsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>

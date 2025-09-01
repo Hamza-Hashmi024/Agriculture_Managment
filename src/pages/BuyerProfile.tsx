@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CreditCard, Edit, Download, Eye } from "lucide-react";
 import { AddPaymentModal } from "@/components/AddPaymentModal";
 import {GetBuyerDeatilById} from "@/Api/Api"
+import { exportData } from "@/Globle/exportUtils";
 
 
 interface Buyer {
@@ -279,10 +280,56 @@ if (!buyer) {
               </DialogContent>
             </Dialog>
 
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export Ledger
-            </Button>
+                       
+                       <Button
+  variant="outline"
+  onClick={() => {
+    // Buyer ka Ledger data prepare
+    const headers = ["Date", "Type", "Details", "Amount"];
+    const rows: (string | number)[][] = [];
+
+    // Invoices add karo
+    buyer.invoices.forEach((inv) => {
+      rows.push([
+        inv.date,
+        "Invoice",
+        `${inv.crop} (Invoice #${inv.invoiceNo})`,
+        inv.amount
+      ]);
+    });
+
+    // Installments add karo
+    buyer.installments.forEach((ins) => {
+      rows.push([
+        ins.dueDate,
+        "Installment",
+        `Invoice #${ins.invoiceNo} (${ins.status})`,
+        ins.amount
+      ]);
+    });
+
+    // Payments add karo
+    buyer.payments.forEach((pay) => {
+      rows.push([
+        pay.date,
+        "Payment",
+        `${pay.mode} - ${pay.bank} (Ref: ${pay.refNo || "—"})`,
+        pay.amount
+      ]);
+    });
+
+    // ✅ Ab exportData call (sirf CSV ke liye)
+    exportData({
+      fileType: "csv", // <-- yahan sirf csv rakho
+      fileName: `${buyer.name}_Ledger`,
+      headers,
+      rows,
+    });
+  }}
+>
+  <Download className="h-4 w-4 mr-2" />
+  Export Ledger (CSV)
+</Button>
           </div>
 
           <Tabs defaultValue="invoices" className="w-full">

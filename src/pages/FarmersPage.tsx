@@ -45,6 +45,39 @@ export function FarmersPage() {
     fetchFarmers();
   }, []);
 
+    const handleExport = () => {
+    if (farmers.length === 0) {
+      alert("No farmers available to export.");
+      return;
+    }
+
+    const headers = ["Farmer Name", "CNIC", "Village", "Contacts", "Status", "Total Advances"];
+    const rows = farmers.map((farmer) => [
+      farmer.name,
+      farmer.cnic,
+      farmer.village,
+      (farmer.contacts || []).join(", "),
+      farmer.status,
+      farmer.totalAdvances,
+    ]);
+
+    const csvContent = [
+      headers.join(","), // header row
+      ...rows.map((row) => row.map((value) => `"${value}"`).join(",")), // data rows
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "farmers.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -55,7 +88,7 @@ export function FarmersPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>

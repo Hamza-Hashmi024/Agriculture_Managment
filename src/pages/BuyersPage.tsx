@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Plus, Download, Eye, CreditCard } from "lucide-react";
 import { AddPaymentModal } from "@/components/AddPaymentModal";
 import { GetAllBuyersWithReceivables } from "@/Api/Api";
-
+import { exportData } from "@/Globle/exportUtils";
 import { useNavigate } from "react-router-dom";
 
 
@@ -75,6 +75,22 @@ useEffect(() => {
   fetchBuyers();
 }, []);
 
+  const handleExport = () => {
+    const headers = ["Buyer Name", "Net Receivable", "Last Sale", "Last Payment"];
+    const rows = filteredBuyers.map(buyer => [
+      buyer.name,
+      buyer.netReceivable,
+      buyer.lastSale || "—",
+      buyer.lastPayment || "—",
+    ]);
+
+    exportData({
+      fileType: "csv", // 👉 yahan "pdf" bhi kar sakte ho
+      fileName: "buyers_list",
+      headers,
+      rows,
+    });
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -110,7 +126,7 @@ useEffect(() => {
                 </Button>
             
 
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
