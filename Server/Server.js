@@ -14,6 +14,9 @@ const ReportsRouter = require("./Routes/Reports_Router");
 const DashboardRouter = require("./Routes/DashBoared");
 const CheckListRouter = require("./Routes/CheckList_Routes");
 const ThemeRoutes = require("./Routes/ThemeRoutes");
+const authRoutes = require("./Routes/auth");
+const userRoutes = require("./Routes/users");
+
 dotenv.config();
 
 const app = express();
@@ -34,6 +37,8 @@ app.use("/api/reports", ReportsRouter);
 app.use("/api/checklist", CheckListRouter);
 app.use("/api/v1", DashboardRouter);
 app.use("/api/theme", ThemeRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("Server is running");
