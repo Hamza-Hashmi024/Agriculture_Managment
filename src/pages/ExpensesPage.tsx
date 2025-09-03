@@ -23,7 +23,7 @@ import {
 import { AddEditExpenseModal } from "@/components/AddEditExpenseModal";
 import { ExpenseDetailModal } from "@/components/ExpenseDetailModal";
 import { GetAllExpenses } from "@/Api/Api";
-
+import { exportData } from "@/Globle/exportUtils";
 
 
 
@@ -109,10 +109,40 @@ export function ExpensesPage() {
             <Plus className="h-4 w-4 mr-2" />
             Add Expense
           </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+         
+        <Button
+  variant="outline"
+  onClick={() =>
+    exportData({
+      fileType: "csv",
+      fileName: `Expenses_Report.csv`,
+      headers: [
+        "Date",
+        "Category",
+        "Description",
+        "Amount",
+        "Payment Mode",
+        "Paid/Credit",
+        "Vendor/Expense",
+        "Doc"
+      ],
+      rows: filteredExpenses.map((expense) => [
+        expense.date,
+        expense.category,
+        expense.description,
+        expense.amount,
+        expense.paymentMode,
+        expense.status,
+        expense.vendor,
+        expense.hasDoc ? "Yes" : "No",
+      ]),
+    })
+  }
+>
+  <Download className="h-4 w-4 mr-2" />
+  Export
+</Button>
+
         </div>
       </div>
 

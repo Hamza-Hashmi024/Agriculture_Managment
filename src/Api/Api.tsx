@@ -78,10 +78,10 @@ export const RecordAdvance = async (formData: FormData) => {
   } catch (error: any) {
     console.error("Record Advance API error", error);
 
-   
     return {
       success: false,
-      message: error.response?.data?.message || "Network error while creating advance",
+      message:
+        error.response?.data?.message || "Network error while creating advance",
     };
   }
 };
@@ -357,10 +357,16 @@ export const GetAllBankAccountsTransaction = async () => {
   }
 };
 
-export const GetFarmerLedgerReport = async (id) => {
+export const GetFarmerLedgerReport = async (
+  id: string,
+  from?: string,
+  to?: string
+) => {
   try {
+    // Build query string only if from/to exist
+    const query = from && to ? `?from=${from}&to=${to}` : "";
     const response = await axios.get(
-      `${Base_Url}/api/reports/reports/farmer/${id}`
+      `${Base_Url}/api/reports/reports/farmer/${id}${query}`
     );
     return response.data;
   } catch (error) {
@@ -369,18 +375,16 @@ export const GetFarmerLedgerReport = async (id) => {
   }
 };
 
-export const GetBuyersledger = async (id) => {
+export const GetBuyersledger = async (id: string, from: string, to: string) => {
   try {
-    const response = await axios.get(
-      `${Base_Url}/api/reports/buyer/report/${id}`
-    );
-    return response.data;
+    const url = `${Base_Url}/api/reports/buyer/report/${encodeURIComponent(id)}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    const response = await axios.get(url);
+    return response.data; // array of transactions
   } catch (error) {
     console.error("Error While Fetching Ledger Report :-> ", error);
     throw error;
   }
 };
-
 export const RecivableAging = async () => {
   try {
     const response = await axios.get(
@@ -483,32 +487,37 @@ export const GetAccountSummary = async () => {
   }
 };
 
-export const GetAllCheques = async() => {
+export const GetAllCheques = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/checklist/cheques`)
+    const response = await axios.get(`${Base_Url}/api/checklist/cheques`);
     return response.data;
-  }
-  catch(error){
+  } catch (error) {
     console.log("Error While Fetching Cheques :-> ", error);
     throw error;
   }
-}
+};
 
-export const UpdateChequeStatus = async(chequeId: number, status: string) => {
+export const UpdateChequeStatus = async (chequeId: number, status: string) => {
   try {
-    const response = await axios.put(`${Base_Url}/api/checklist/cheques/status`, { chequeId, status });
+    const response = await axios.put(
+      `${Base_Url}/api/checklist/cheques/status`,
+      { chequeId, status }
+    );
     return response.data;
   } catch (error) {
     console.log("Error While Updating Cheque Status :-> ", error);
     throw error;
   }
-}
+};
 
 // 1. Get today's pending buyers (receivables summary)
-export const GetReceivablesDueToday = async (date?: string, includePartial: boolean = true) => {
+export const GetReceivablesDueToday = async (
+  date?: string,
+  includePartial: boolean = true
+) => {
   try {
     const response = await axios.get(`${Base_Url}/api/receivables/due-today`, {
-      params: { date, includePartial }
+      params: { date, includePartial },
     });
     return response.data;
   } catch (error) {
@@ -519,9 +528,12 @@ export const GetReceivablesDueToday = async (date?: string, includePartial: bool
 
 export const GetReceivablesByBuyer = async (buyerId: number, date?: string) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/receivables/due-today/${buyerId}`, {
-      params: { date }
-    });
+    const response = await axios.get(
+      `${Base_Url}/api/receivables/due-today/${buyerId}`,
+      {
+        params: { date },
+      }
+    );
     return response.data;
   } catch (error) {
     console.log("Error While Fetching Receivables By Buyer :-> ", error);
@@ -530,20 +542,25 @@ export const GetReceivablesByBuyer = async (buyerId: number, date?: string) => {
 };
 
 //  3. Extend installment due date
-export const ExtendInstallmentDueDate = async (installmentId: number, newDueDate: string, userId?: number) => {
+export const ExtendInstallmentDueDate = async (
+  installmentId: number,
+  newDueDate: string,
+  userId?: number
+) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/receivables/extend-due-date/${installmentId}`, {
-      newDueDate,
-      userId
-    });
+    const response = await axios.post(
+      `${Base_Url}/api/receivables/extend-due-date/${installmentId}`,
+      {
+        newDueDate,
+        userId,
+      }
+    );
     return response.data;
   } catch (error) {
     console.log("Error While Extending Installment Due Date :-> ", error);
     throw error;
   }
 };
-
-
 
 export const FetchTheme = async (userId: number) => {
   const res = await axios.get(`${Base_Url}/api/theme/${userId}`);
@@ -565,4 +582,3 @@ export const SaveTheme = async (
   const res = await axios.put(`${Base_Url}/api/theme/${userId}`, payload);
   return res.data;
 };
-

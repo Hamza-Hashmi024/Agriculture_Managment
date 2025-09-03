@@ -30,6 +30,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Printer, Download, FileText } from "lucide-react";
 import { GetFarmerPayableSummary } from "@/Api/Api";
+import {exportData} from "@/Globle/exportUtils";
 
 type FarmerData = {
   name: string;
@@ -181,10 +182,40 @@ export function FarmerPayableCard() {
               <Printer className="h-4 w-4 mr-2" />
               Print Statement
             </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
+     <Button
+  variant="outline"
+  size="sm"
+  onClick={() =>
+    exportData({
+      fileType: "csv",
+      fileName: `${farmer.name}_Payable_Report.csv`,
+      headers: ["Type", "Date", "Crop/Payment", "Amount", "Commission/Mode", "Bank/Ref", "Notes"],
+      rows: [
+        ...farmer.sales.map((s) => [
+          "Sale",
+          s.date,
+          s.crop,
+          s.amount,
+          s.commission,
+          "-",
+          "-"
+        ]),
+        ...farmer.payments.map((p) => [
+          "Payment",
+          p.date,
+          "-",
+          p.amount,
+          p.mode,
+          p.bank || p.ref,
+          p.notes || "-"
+        ]),
+      ]
+    })
+  }
+>
+  <Download className="h-4 w-4 mr-2" />
+  Export
+</Button>
           </div>
         </CardContent>
       </Card>

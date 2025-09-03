@@ -18,6 +18,7 @@ import { AccountDetailModal } from "@/components/AccountDetailModal";
 import { DailyCashClosingModal } from "@/components/DailyCashClosingModal";
 import { GetAccountSummary } from "@/Api/Api";
 import { bankLogos } from "@/Globle/bankLogos";
+import { exportData } from "@/Globle/exportUtils";
 
 export function CashBankPage() {
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -137,9 +138,35 @@ export function CashBankPage() {
         <Button variant="outline" onClick={() => setShowDailyClosing(true)}>
           <Eye className="h-4 w-4 mr-2" /> Daily Closing
         </Button>
-        <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" /> Export
-        </Button>
+       <Button
+  variant="outline"
+  onClick={() =>
+    exportData({
+      fileType: "csv",
+      fileName: `CashBank_Accounts_Report.csv`,
+      headers: [
+        "Account Type",
+        "Title",
+        "Bank Name",
+        "Opening Balance",
+        "Inflow",
+        "Outflow",
+        "Current Balance"
+      ],
+      rows: accounts.map((account) => [
+        account.account_type,
+        account.account_title,
+        account.bank || "-",
+        parseFloat(account.opening_balance),
+        parseFloat(account.total_inflow),
+        parseFloat(account.total_outflow),
+        parseFloat(account.current_balance),
+      ]),
+    })
+  }
+>
+  <Download className="h-4 w-4 mr-2" /> Export
+</Button>
       </div>
 
    {/* Accounts Table */}

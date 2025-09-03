@@ -35,6 +35,7 @@ import {
   GetBankAccountsWithBalance,
   AddPaymentFarmer,
 } from "@/Api/Api";
+import { exportData } from "@/Globle/exportUtils";
 
 
 const mockVendorsPayables = [
@@ -146,6 +147,54 @@ export function PayablesPage() {
     });
     setPaymentDialog(true);
   };
+
+const exportPayablesCSV = (farmers: any[], vendors: any[]) => {
+  const headers = [
+    "Type", // Farmer / Vendor
+    "Name",
+    "Net Payable",
+    "Last Sale / Purchase",
+    "Last Payment",
+  ];
+
+  const farmerRows = farmers.map((f) => [
+    "Farmer",
+    f.farmer_name || f.name,
+    f.net_payable,
+    f.last_sale_date?.split("T")[0] || "-",
+    f.last_payment_date?.split("T")[0] || "-",
+  ]);
+
+  const vendorRows = vendors.map((v) => [
+    "Vendor",
+    v.name,
+    v.netPayable,
+    v.lastPurchase || "-",
+    v.lastPayment || "-",
+  ]);
+
+  const rows = [...farmerRows, ...vendorRows];
+
+  const csvContent =
+    "data:text/csv;charset=utf-8," +
+    [headers, ...rows]
+      .map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+      )
+      .join("\n");
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Payables_List.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+
+
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -155,7 +204,7 @@ export function PayablesPage() {
             Manage payments to farmers and vendors
           </p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" onClick={() => exportPayablesCSV(NetFarmer, mockVendorsPayables)}>
           <Download className="h-4 w-4 mr-2" />
           Export
         </Button>

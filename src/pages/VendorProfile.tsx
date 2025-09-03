@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Plus, Edit, Download, FileText, Building2, Phone, CreditCard, Wallet } from "lucide-react";
 import { GetVendorProfile , AddVendorPayment} from "@/Api/Api"
+import { exportData } from "@/Globle/exportUtils";
 
 
 
@@ -74,22 +75,7 @@ useEffect(() => {
     );
   }
 
-  // const handlePaymentSubmit = () => {
-  //   console.log("Payment submitted:", paymentForm);
-  //   setPaymentDialog(false);
-  //   // Reset form
-  //   setPaymentForm({
-  //     amount: "",
-  //     paymentMode: "cash",
-  //     bankAccount: "",
-  //     refNo: "",
-  //     date: new Date().toISOString().split('T')[0],
-  //     uploadProof: "",
-  //     notes: ""
-  //   });
-  // };
-
-
+ 
   const handlePaymentSubmit = async () => {
   try {
    const paymentData = {
@@ -153,6 +139,63 @@ useEffect(() => {
     setEditDialog(false);
   };
 
+  // utils/exportVendorLedgerCSV.ts
+const exportVendorLedgerCSV = (vendor: any) => {
+  if (!vendor) return;
+
+  // Headers
+  const headers = [
+    "Type", // Purchase / Payment
+    "Date",
+    "Description / Mode",
+    "Amount",
+    "Paid / Bank",
+    "Balance / Ref",
+    "Notes / Invoice"
+  ];
+
+  // Purchases
+  const purchaseRows = vendor.purchases.map((p) => [
+    "Purchase",
+    p.date,
+    p.description,
+    p.amount,
+    p.paid,
+    p.balance,
+    p.invoice || "-"
+  ]);
+
+  // Payments
+  const paymentRows = vendor.payments.map((p) => [
+    "Payment",
+    p.date,
+    p.mode,
+    p.amount,
+    p.bank || "-",
+    p.ref || "-",
+    p.notes || "-"
+  ]);
+
+  const rows = [...purchaseRows, ...paymentRows];
+
+  const csvContent =
+    "data:text/csv;charset=utf-8," +
+    [headers, ...rows]
+      .map((row) =>
+        row
+          .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+          .join(",")
+      )
+      .join("\n");
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `${vendor.name}_Ledger.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
  
 
   return (
@@ -241,7 +284,7 @@ useEffect(() => {
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Vendor
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => exportVendorLedgerCSV(vendor)}>
                 <Download className="h-4 w-4 mr-2" />
                 Export Ledger
               </Button>
