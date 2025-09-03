@@ -7,8 +7,23 @@ interface SalesReportProps {
   dateRange: { from: string; to: string };
 }
 
+interface SalesReportRow {
+  sale_id: string;
+  date: string;
+  farmer: string;
+  buyer: string;
+  crop: string;
+  weight: number;
+  rate: number;
+  gross_amount: number;
+  commission_percent: number;
+  commission_amount: number;
+  total_buyer_payable: number;
+  net_amount: number;
+}
+
 export function SalesReport({ dateRange }: SalesReportProps) {
-  const [report, setReport] = useState<any[]>([]);
+  const [report, setReport] = useState<SalesReportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
 
