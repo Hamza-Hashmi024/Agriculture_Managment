@@ -13,8 +13,11 @@ import {
   BarChart3,
   FolderMinus,
   Settings,
+  LogOut,
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { AuthContext } from "@/Context/AuthContext";
+import { useContext } from "react";
+import { NavLink, useLocation , useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -54,11 +57,18 @@ const settingsItems = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const { logout } = useContext(AuthContext);
+  const navigate = useNavigate();
   
   const isActive = (path: string) => {
     if (path === "/" && location.pathname === "/") return true;
     if (path !== "/" && location.pathname.startsWith(path)) return true;
     return false;
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
   };
 
   const getNavClassName = (path: string) => {
@@ -133,6 +143,18 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+  <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 px-3 py-2 rounded-md text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

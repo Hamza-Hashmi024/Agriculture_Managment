@@ -582,3 +582,116 @@ export const SaveTheme = async (
   const res = await axios.put(`${Base_Url}/api/theme/${userId}`, payload);
   return res.data;
 };
+
+export const Login = async (email: string, password: string) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/auth/login`, {
+      email,
+      password,
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Logging In :-> ", error);
+    throw error;
+  }
+}
+
+export const GetProfile = async () => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/users/me`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Fetching User Profile :-> ", error);
+    throw error;
+  }
+};
+
+export const RefreshToken = async (refreshToken: string) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/auth/refresh-token`, {
+      refreshToken,
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Refreshing Token :-> ", error);
+    throw error;
+  }
+};
+
+export const Logout = async (refreshToken: string) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/auth/logout`, {
+      refreshToken,
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Logging Out :-> ", error);
+    throw error;
+  }
+};
+
+export const LogoutAll = async (userId: number) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/auth/logout-all`, {
+      userId,
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Logging Out All :-> ", error);
+    throw error;
+  }
+};
+ 
+export const ForgotPassword = async (email: string) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/auth/forgot-password`, {
+      email,
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Requesting Password Reset :-> ", error);
+    throw error;
+  }
+};
+
+
+export const ResetPassword = async (token: string, newPassword: string) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/auth/reset-password`, {
+      token,
+      newPassword,
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Resetting Password :-> ", error);
+    throw error;
+  }
+};
+
+export const GetAllUsers = async () => {
+  try {
+    const response = await axios.get(`${Base_Url}/api/auth/users`);
+    return response.data;
+  } catch (error) {
+    console.log("Error While Fetching All Users :-> ", error);
+    throw error;
+  }
+};
+
+
+export const AssignRoleToUser = async (userId: number, role: string) => {
+  try {
+    const response = await axios.post(`${Base_Url}/api/auth/assign-role`, {
+      userId,
+      role,
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error While Assigning Role to User :-> ", error);
+    throw error;
+  }
+};

@@ -42,4 +42,17 @@ const getMyProfile = (req, res) => {
   });
 };
 
-module.exports = { createUser, getAllUsers, getMyProfile };
+
+
+const assignUserRole = (req, res) => {
+  const { userId, role } = req.body;
+  if (!userId || !role) return res.status(400).json({ error: "userId & role required" });
+
+  assignRole(userId, role, (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: `Role '${role}' assigned to user ${userId}` });
+  });
+};
+
+
+module.exports = { createUser, getAllUsers, getMyProfile , assignUserRole };
