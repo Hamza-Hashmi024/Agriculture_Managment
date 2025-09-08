@@ -7,9 +7,8 @@ import Index from "./pages/Index";
 import { useDynamicTheme } from "./hooks/useDynamicTheme";
 import { useEffect, useState } from "react";
 import { FetchTheme, SaveTheme } from "@/Api/Api";
-
-// ✅ Auth Context
 import { AuthProvider } from "./Context/AuthContext";
+
 
 const queryClient = new QueryClient();
 

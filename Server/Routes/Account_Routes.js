@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const asyncHandler = require("../MiddleWare/ErrorBoundry");
+const { verifyToken, requireRole } = require("../MiddleWare/auth");
+
 const {
   getAccountsSummary,
   addBankAccount,
@@ -10,11 +12,22 @@ const {
   GetAllBankAccountsTransaction
 } = require("../Controller/Account_Controller");
 
-router.post("/create", asyncHandler(addBankAccount));
-router.post("/transfer", asyncHandler(createTransfer));
-router.get("/banks-with-balance", asyncHandler(getAccountsWithBalance));
-router.get('/cash/transaction' ,  asyncHandler(getAllCashBoxTransaction));
-router.get('/GetAllBankAccountsTransaction' , asyncHandler(GetAllBankAccountsTransaction));
-router.get('/summary', asyncHandler(getAccountsSummary));
+// Bank account create → only Admin
+router.post("/create", verifyToken, requireRole("admin"), asyncHandler(addBankAccount));
+
+//  Transfer → only Admin
+router.post("/transfer", verifyToken, requireRole("admin"), asyncHandler(createTransfer));
+
+//  Accounts with balance → Admin + Manager + User (sab dekh sakte hain)
+router.get("/banks-with-balance", verifyToken, requireRole("admin", "manager", "user"), asyncHandler(getAccountsWithBalance));
+
+//  Cashbox transactions → Admin + Manager (accountant ka kaam bhi hai)
+router.get("/cash/transaction", verifyToken, requireRole("admin", "manager"), asyncHandler(getAllCashBoxTransaction));
+
+//  Bank transactions → Admin + Manager
+router.get("/GetAllBankAccountsTransaction", verifyToken, requireRole("admin", "manager"), asyncHandler(GetAllBankAccountsTransaction));
+
+//  Summary → Admin + Manager + User (sabko summary dikh sakti hai)
+router.get("/summary", verifyToken, requireRole("admin", "manager", "user"), asyncHandler(getAccountsSummary));
 
 module.exports = router;
