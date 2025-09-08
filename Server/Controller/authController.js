@@ -9,7 +9,19 @@ const {
   findToken,
   markTokenUsed
 } = require("../Utility/passwordResetToken");
+const nodemailer = require("nodemailer");
 
+
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com", // Gmail SMTP server
+  port: 465,              // or 587
+  secure: true,           // true for 465, false for 587
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 //  LOGIN 
 const login = (req, res) => {
@@ -112,25 +124,51 @@ const forgotPassword = (req, res) => {
 
   db.query("SELECT id FROM users WHERE email = ?", [email], (err, results) => {
     if (err) return res.status(500).json({ error: "DB error" });
-    if (!results || results.length === 0) return res.status(404).json({ error: "User not found" });
+    if (!results || results.length === 0)
+      return res.status(404).json({ error: "User not found" });
 
     const userId = results[0].id;
     const token = generateResetToken();
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min expiry
 
-    saveResetToken(userId, token, expiresAt, (saveErr) => {
-      if (saveErr) return res.status(500).json({ error: "Failed to generate reset token" });
+    saveResetToken(userId, token, expiresAt, async (saveErr) => {
+      if (saveErr)
+        return res.status(500).json({ error: "Failed to generate reset token" });
 
-      // TODO: send token via email (for dev, return in response)
-      res.json({ message: "Password reset token generated", resetToken: token });
+
+      const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+      console.log("FRONTEND_URL =>", process.env.FRONTEND_URL);
+
+
+      try {
+        await transporter.sendMail({
+          from: `"Support" <${process.env.EMAIL_USER}>`,
+          to: email,
+          subject: "Password Reset Request",
+          html: `
+            <h2>Password Reset</h2>
+            <p>Click the link below to reset your password:</p>
+            <a href="${resetUrl}" target="_blank">${resetUrl}</a>
+            <p>This link will expire in 30 minutes.</p>
+          `,
+        });
+
+        res.json({ message: "Password reset link sent to your email" });
+      } catch (emailErr) {
+        console.error("Email send error:", emailErr);
+        res.status(500).json({ error: "Failed to send email" });
+      }
     });
   });
 };
 
-//RESET / CHANGE PASSWORD
+
 const resetPassword = (req, res) => {
   const { token, newPassword } = req.body;
-  if (!token || !newPassword) return res.status(400).json({ error: "Token and new password required" });
+  if (!token || !newPassword) 
+    return res
+      .status(400)
+      .json({ error: "Token and new password required" });
 
   findToken(token, (err, row) => {
     if (err) return res.status(500).json({ error: "DB error" });
@@ -138,23 +176,32 @@ const resetPassword = (req, res) => {
     if (row.used) return res.status(403).json({ error: "Token already used" });
 
     const now = new Date();
-    if (new Date(row.expires_at) <= now) return res.status(403).json({ error: "Token expired" });
+    if (new Date(row.expires_at) <= now)
+      return res.status(403).json({ error: "Token expired" });
 
     // Hash new password
     bcrypt.hash(newPassword, 10, (hashErr, hashedPassword) => {
-      if (hashErr) return res.status(500).json({ error: "Error hashing password" });
+      if (hashErr)
+        return res.status(500).json({ error: "Error hashing password" });
 
       // Update user password
-      db.query("UPDATE users SET password = ? WHERE id = ?", [hashedPassword, row.user_id], (updateErr) => {
-        if (updateErr) return res.status(500).json({ error: "Failed to update password" });
+      db.query(
+        "UPDATE users SET password = ? WHERE id = ?",
+        [hashedPassword, row.user_id],
+        (updateErr) => {
+          if (updateErr)
+            return res
+              .status(500)
+              .json({ error: "Failed to update password" });
 
-        // Mark token used
-        markTokenUsed(token, (markErr) => {
-          if (markErr) console.error("Warning: failed to mark token used", markErr);
-
-          res.json({ message: "Password changed successfully" });
-        });
-      });
+          // Mark token as used
+          markTokenUsed(token, (markErr) => {
+            if (markErr)
+              console.error("Warning: failed to mark token used", markErr);
+            res.json({ message: "Password changed successfully" });
+          });
+        }
+      );
     });
   });
 };

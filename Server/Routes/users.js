@@ -3,24 +3,27 @@ const {
   createUser, 
   getAllUsers, 
   getMyProfile, 
-  assignUserRole 
+  assignUserRole,
+  getAllRoles
 } = require("../Controller/userController");
 
-const { verifyToken, requireAdmin } = require("../MiddleWare/auth");
-const { requirePermission } = require("../MiddleWare/permission");
+const { verifyToken, requireRole } = require("../MiddleWare/auth");
 
 const router = express.Router();
 
-//  Admin creates a new user (requires create_user permission)
-router.post("/", verifyToken, requirePermission("create_user"), createUser);
+// ✅ Only Admin can create new user
+router.post("/", verifyToken, requireRole("admin"), createUser);
 
-// Admin gets all users (requires view_reports permission)
-router.get("/", verifyToken, requirePermission("view_reports"), getAllUsers);
+// ✅ Only Admin can get all users
+router.get("/", verifyToken, requireRole("admin"), getAllUsers);
 
-// Any logged-in user gets own profile
+// ✅ Any logged-in user can get their own profile
 router.get("/me", verifyToken, getMyProfile);
 
-// Admin assigns role to a user
-router.post("/assign-role", verifyToken, requireAdmin, assignUserRole);
+// ✅ Only Admin can assign roles
+router.post("/assign-role", verifyToken, requireRole("admin"), assignUserRole);
+
+// ✅ Only Admin can see all roles
+router.get("/roles", verifyToken, requireRole("admin"), getAllRoles);
 
 module.exports = router;

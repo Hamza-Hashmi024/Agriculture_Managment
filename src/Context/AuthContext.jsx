@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from "react";
-import { Login, GetProfile, RefreshToken, Logout } from "../Api/Api";
+import { Login, GetProfile, Logout } from "../Api/Api";
 import { setTokens } from "../Api/http"; 
 
 export const AuthContext = createContext();
@@ -11,11 +11,12 @@ export const AuthProvider = ({ children }) => {
     return userData ? JSON.parse(userData) : null;
   });
 
-  // Auto load profile if token exists
+  // ✅ Auto load profile if token exists
   useEffect(() => {
     if (accessToken && !user) {
       GetProfile()
         .then((profile) => {
+          console.log("Profile loaded:", profile);
           setUser(profile);
           localStorage.setItem("user", JSON.stringify(profile));
         })
@@ -23,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [accessToken]);
 
-  // Keep user in localStorage
+  // ✅ Sync user in localStorage
   useEffect(() => {
     if (user) {
       localStorage.setItem("user", JSON.stringify(user));
@@ -37,12 +38,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await Login(email, password);
 
-      // Tokens
+      // Save tokens properly
+      setTokens(data.accessToken, data.refreshToken);
       setAccessToken(data.accessToken);
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
 
-      // Profile
+      // Profile load
       const profile = await GetProfile();
       setUser(profile);
       localStorage.setItem("user", JSON.stringify(profile));
@@ -51,25 +51,6 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Login failed:", error);
       return false;
-    }
-  };
-
-  // ✅ Refresh Token
-  const handleRefresh = async () => {
-    try {
-      const rToken = localStorage.getItem("refreshToken");
-      if (!rToken) return logout();
-
-      const data = await RefreshToken(rToken);
-
-      setAccessToken(data.accessToken);
-      localStorage.setItem("accessToken", data.accessToken , data.refreshToken);
-
-      return data.accessToken; // return new token
-    } catch (error) {
-      console.error("Token refresh failed:", error);
-      logout();
-      return null;
     }
   };
 
@@ -82,10 +63,9 @@ export const AuthProvider = ({ children }) => {
       console.warn("Logout API failed:", err);
     }
 
+    setTokens(null, null);
     setAccessToken(null);
     setUser(null);
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
   };
 
@@ -96,7 +76,6 @@ export const AuthProvider = ({ children }) => {
         user,
         login,
         logout,
-        handleRefresh,
         setUser,
       }}
     >

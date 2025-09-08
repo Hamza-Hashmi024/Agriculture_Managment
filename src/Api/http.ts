@@ -13,13 +13,19 @@ const api = axios.create({
   baseURL: `${Base_Url}/api`,
 });
 
+// ✅ Helper: Save tokens everywhere
 export const setTokens = (at: string | null, rt: string | null) => {
   accessToken = at;
   refreshToken = rt;
-  if (at) localStorage.setItem("accessToken", at); else localStorage.removeItem("accessToken");
-  if (rt) localStorage.setItem("refreshToken", rt); else localStorage.removeItem("refreshToken");
+
+  if (at) localStorage.setItem("accessToken", at);
+  else localStorage.removeItem("accessToken");
+
+  if (rt) localStorage.setItem("refreshToken", rt);
+  else localStorage.removeItem("refreshToken");
 };
 
+// ✅ Request Interceptor → Always attach access token
 api.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers = config.headers || {};
@@ -28,6 +34,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// ✅ Queue Handler (for multiple requests during refresh)
 const processQueue = (error: any, token: string | null = null) => {
   pendingQueue.forEach((p) => {
     if (error) p.reject(error);
@@ -36,20 +43,20 @@ const processQueue = (error: any, token: string | null = null) => {
   pendingQueue = [];
 };
 
+// ✅ Response Interceptor → Auto Refresh
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
 
-    // if unauthorized & not already retried
-    if (err.response?.status === 401 && !original._retry) {
+    if ((err.response?.status === 401 || err.response?.status === 403) && !original._retry) {
       if (!refreshToken) {
         processQueue(err, null);
         return Promise.reject(err);
       }
 
       if (isRefreshing) {
-        // wait for ongoing refresh
+        // Wait for refresh if already in progress
         return new Promise((resolve, reject) => {
           pendingQueue.push({
             resolve: (token) => {
@@ -67,13 +74,14 @@ api.interceptors.response.use(
       try {
         const { data } = await axios.post(`${Base_Url}/api/auth/refresh`, { refreshToken });
         setTokens(data.accessToken, data.refreshToken);
+
         processQueue(null, data.accessToken);
+
         original.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(original);
       } catch (e) {
         processQueue(e, null);
         setTokens(null, null);
-        // let caller handle (AuthContext will logout)
         return Promise.reject(e);
       } finally {
         isRefreshing = false;

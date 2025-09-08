@@ -41,18 +41,36 @@ const getMyProfile = (req, res) => {
     res.json(results[0]);
   });
 };
-
-
+const getAllRoles = (req, res) => {
+  const query = "SELECT id, name, description FROM roles";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("DB Error:", err);
+      return res.status(500).json({ error: "DB error" });
+    }
+    res.json(results);
+  });
+};
 
 const assignUserRole = (req, res) => {
-  const { userId, role } = req.body;
-  if (!userId || !role) return res.status(400).json({ error: "userId & role required" });
+  const { userId, roleId } = req.body;
+  if (!userId || !roleId) return res.status(400).json({ error: "userId & roleId required" });
 
-  assignRole(userId, role, (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: `Role '${role}' assigned to user ${userId}` });
+  // Update role_id only
+  const query = "UPDATE users SET role_id = ? WHERE id = ?";
+  db.query(query, [roleId, userId], (err, result) => {
+    if (err) {
+      console.error("DB Error:", err);
+      return res.status(500).json({ error: "DB error" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ message: `Role ID '${roleId}' assigned to user ${userId}` });
   });
 };
 
 
-module.exports = { createUser, getAllUsers, getMyProfile , assignUserRole };
+module.exports = { createUser, getAllUsers, getMyProfile , assignUserRole, getAllRoles };

@@ -8,11 +8,17 @@ const {
   VendorProfile,
   AddPaymentVendor
 } = require("../Controller/Vendor_Controller");
+const { verifyToken, requireRole } = require("../MiddleWare/auth");
 
-router.post("/register", asyncHandler(RegisterVendor));
-router.get("/", asyncHandler(getVendor));
-router.get("/details" , asyncHandler(GetVendorList));
-router.get("/profile/:id" , asyncHandler(VendorProfile));
-router.post("/addpayment" ,  AddPaymentVendor)
+// Admin + Manager can register vendor
+router.post("/register", verifyToken, requireRole("admin", "manager"), asyncHandler(RegisterVendor));
+
+//  Admin + Manager + User → Can view vendors
+router.get("/", verifyToken, requireRole("admin", "manager", "user"), asyncHandler(getVendor));
+router.get("/details", verifyToken, requireRole("admin", "manager", "user"), asyncHandler(GetVendorList));
+router.get("/profile/:id", verifyToken, requireRole("admin", "manager", "user"), asyncHandler(VendorProfile));
+
+//  Admin + Manager can add vendor payments
+router.post("/addpayment", verifyToken, requireRole("admin", "manager"), asyncHandler(AddPaymentVendor));
 
 module.exports = router;
