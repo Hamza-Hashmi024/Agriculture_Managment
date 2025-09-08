@@ -7,14 +7,27 @@ const {
   getBuyerReceivableCard,
   getReceivablesDueOn,
   getReceivablesDueOnByBuyer,
-  extendInstallmentDueDate
+  extendInstallmentDueDate,
 } = require("../Controller/Recivable_Controller");
 
-router.get("/get", asyncHandler(getBuyerReceivables));
-router.post("/addPayment", asyncHandler(AddPayment));
-router.get("/getCard/:buyerId", asyncHandler(getBuyerReceivableCard));
-router.get("/due-today", getReceivablesDueOn);
-router.get("/due-today/:buyerId", getReceivablesDueOnByBuyer);
-router.post("/extend-due-date/:installmentId", extendInstallmentDueDate);
+const { verifyToken, requireRole } = require("../MiddleWare/auth");
+
+// ✅ Receivables list (Admin + Manager)
+router.get("/get", verifyToken, requireRole("admin", "manager"), asyncHandler(getBuyerReceivables));
+
+// ✅ Add payment (Admin + Manager)
+router.post("/addPayment", verifyToken, requireRole("admin", "manager"), asyncHandler(AddPayment));
+
+// ✅ Buyer receivable card (Admin + Manager)
+router.get("/getCard/:buyerId", verifyToken, requireRole("admin", "manager"), asyncHandler(getBuyerReceivableCard));
+
+// ✅ Receivables due today (Admin + Manager)
+router.get("/due-today", verifyToken, requireRole("admin", "manager"), asyncHandler(getReceivablesDueOn));
+
+// ✅ Receivables due today for a specific buyer (Admin + Manager)
+router.get("/due-today/:buyerId", verifyToken, requireRole("admin", "manager"), asyncHandler(getReceivablesDueOnByBuyer));
+
+// ✅ Extend installment due date (Admin only)
+router.post("/extend-due-date/:installmentId", verifyToken, requireRole("admin"), asyncHandler(extendInstallmentDueDate));
 
 module.exports = router;

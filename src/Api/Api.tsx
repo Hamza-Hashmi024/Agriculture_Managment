@@ -1,9 +1,9 @@
 import { Base_Url } from "@/Globle/Base_URL";
-import axios from "axios";
+import api from "./http"; 
 
 export const RegisterFarmer = async (data) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/farmer/register`, data);
+    const response = await api.post(`${Base_Url}/api/farmer/register`, data);
     return response.data;
   } catch (error) {
     console.error("RegisterFarmer API error:", error);
@@ -13,7 +13,7 @@ export const RegisterFarmer = async (data) => {
 
 export const RegisterVendor = async (data) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/vendor/register`, data);
+    const response = await api.post(`${Base_Url}/api/vendor/register`, data);
     return response.data;
   } catch (error) {
     console.error("Register Vendor API error:", error);
@@ -23,7 +23,7 @@ export const RegisterVendor = async (data) => {
 
 export const RegisterBuyer = async (data) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/buyer/register`, data);
+    const response = await api.post(`${Base_Url}/api/buyer/register`, data);
     return response.data;
   } catch (error) {
     console.error("Register Buyer API error:", error);
@@ -33,7 +33,7 @@ export const RegisterBuyer = async (data) => {
 
 export const RecordAccount = async (data) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/accounts/create`, data);
+    const response = await api.post(`${Base_Url}/api/accounts/create`, data);
     return response.data;
   } catch (error) {
     console.error("Record Account API error:", error);
@@ -42,7 +42,7 @@ export const RecordAccount = async (data) => {
 
 export const CreateTransfer = async (data) => {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       `${Base_Url}/api/accounts/transfer`,
       data
     );
@@ -54,7 +54,7 @@ export const CreateTransfer = async (data) => {
 
 export const GetBankAccountsWithBalance = async () => {
   try {
-    const response = await axios.get(
+    const response = await api.get(
       `${Base_Url}/api/accounts/banks-with-balance`
     );
     return response.data;
@@ -62,9 +62,10 @@ export const GetBankAccountsWithBalance = async () => {
     console.error("Get Bank Accounts API error");
   }
 };
+
 export const RecordAdvance = async (formData: FormData) => {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       `${Base_Url}/api/advance/create`,
       formData,
       {
@@ -88,7 +89,7 @@ export const RecordAdvance = async (formData: FormData) => {
 
 export const GetAllFarmer = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/farmer/get`);
+    const response = await api.get(`${Base_Url}/api/farmer/get`);
     return response.data;
   } catch (error) {
     console.error("Get Farmer API error");
@@ -97,7 +98,7 @@ export const GetAllFarmer = async () => {
 
 export const GetAllVendor = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/vendor/`);
+    const response = await api.get(`${Base_Url}/api/vendor/`);
     return response.data;
   } catch (error) {
     console.error("Get Vendor API error");
@@ -106,7 +107,7 @@ export const GetAllVendor = async () => {
 
 export const GetAllCrops = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/sales/crops`);
+    const response = await api.get(`${Base_Url}/api/sales/crops`);
     console.log("Crops data:", response.data);
     return response.data;
   } catch (error) {
@@ -116,7 +117,7 @@ export const GetAllCrops = async () => {
 
 export const GetAllBuyers = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/buyer/get`);
+    const response = await api.get(`${Base_Url}/api/buyer/get`);
     return response.data;
   } catch (error) {
     console.error("Get Buyers API error");
@@ -125,7 +126,7 @@ export const GetAllBuyers = async () => {
 
 export const AddSaleLots = async (payload) => {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       `${Base_Url}/api/sales/addSaleLot`,
       payload
     );
@@ -138,7 +139,7 @@ export const AddSaleLots = async (payload) => {
 
 export const GetAllBuyersBanks = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/buyer/banks`);
+    const response = await api.get(`${Base_Url}/api/buyer/banks`);
     return response.data;
   } catch (eror) {
     console.error("Get Buyers Banks API error");
@@ -147,7 +148,7 @@ export const GetAllBuyersBanks = async () => {
 
 export const GetAllBuyerReceivables = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/receivables/get`);
+    const response = await api.get(`${Base_Url}/api/receivables/get`);
     return response.data;
   } catch (error) {
     console.error("Get Buyer Receivables API error");
@@ -156,7 +157,7 @@ export const GetAllBuyerReceivables = async () => {
 
 export const AddPayment = async (data) => {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       `${Base_Url}/api/receivables/addPayment`,
       data
     );
@@ -169,7 +170,7 @@ export const AddPayment = async (data) => {
 
 export const GetBuyerById = async (buyerId) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/buyer/${buyerId}`);
+    const response = await api.get(`${Base_Url}/api/buyer/${buyerId}`);
     return response.data;
   } catch (error) {
     console.error("Get Buyer By ID API error", error);
@@ -179,7 +180,7 @@ export const GetBuyerById = async (buyerId) => {
 
 export const GetBuyerInstallments = async (buyerId) => {
   try {
-    const response = await axios.get(
+    const response = await api.get(
       `${Base_Url}/api/buyer/installments/${buyerId}`
     );
     return response.data;
@@ -193,7 +194,7 @@ export const GetBuyerReceivableCard = async (
   buyerId: string
 ): Promise<Buyer> => {
   try {
-    const response = await axios.get(
+    const response = await api.get(
       `${Base_Url}/api/receivables/getCard/${buyerId}`
     );
     return response.data;
@@ -205,7 +206,7 @@ export const GetBuyerReceivableCard = async (
 
 export const GetAllBuyersWithReceivables = async () => {
   try {
-    const response = await axios.get(
+    const response = await api.get(
       `${Base_Url}/api/buyer/getBuyers/recivable`
     );
     return response.data;
@@ -217,7 +218,7 @@ export const GetAllBuyersWithReceivables = async () => {
 
 export const GetBuyerDeatilById = async (id) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/buyer/${id}/details`);
+    const response = await api.get(`${Base_Url}/api/buyer/${id}/details`);
     return response.data;
   } catch (error) {
     console.error("Get Buyer Detail By ID API error", error);
@@ -226,7 +227,7 @@ export const GetBuyerDeatilById = async (id) => {
 
 export const GetAllFarmersFull = async (id) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/farmer/full/${id}`);
+    const response = await api.get(`${Base_Url}/api/farmer/full/${id}`);
     return response.data;
   } catch (error) {
     console.error("Get All Farmers API error", error);
@@ -236,7 +237,7 @@ export const GetAllFarmersFull = async (id) => {
 
 export const GetAllNetFarmerPayable = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/farmer/netpayable`);
+    const response = await api.get(`${Base_Url}/api/farmer/netpayable`);
     return response.data;
   } catch (error) {
     console.error("Get All Net Farmer Payable API error");
@@ -246,7 +247,7 @@ export const GetAllNetFarmerPayable = async () => {
 
 export const AddPaymentFarmer = async (data) => {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       `${Base_Url}/api/farmer/addpayment`,
       data
     );
@@ -259,7 +260,7 @@ export const AddPaymentFarmer = async (data) => {
 
 export const GetFarmerPayableSummary = async (id) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/farmer/summary/${id}`);
+    const response = await api.get(`${Base_Url}/api/farmer/summary/${id}`);
     return response.data;
   } catch (error) {
     console.log(error, "Error get FarmerPayableSummary");
@@ -269,7 +270,7 @@ export const GetFarmerPayableSummary = async (id) => {
 
 export const GetVendorList = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/vendor/details`);
+    const response = await api.get(`${Base_Url}/api/vendor/details`);
     return response.data;
   } catch (error) {
     console.log("Api Response Error", error);
@@ -279,7 +280,7 @@ export const GetVendorList = async () => {
 
 export const GetVendorProfile = async (id) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/vendor/profile/${id}`);
+    const response = await api.get(`${Base_Url}/api/vendor/profile/${id}`);
     return response.data;
   } catch (error) {
     console.log("Error Vendor Profile", error);
@@ -289,7 +290,7 @@ export const GetVendorProfile = async (id) => {
 
 export const AddVendorPayment = async (data) => {
   try {
-    const response = axios.post(`${Base_Url}/api/vendor/addpayment`, data);
+    const response = api.post(`${Base_Url}/api/vendor/addpayment`, data);
     return response;
   } catch (error) {
     console.log("Error Add Vendor Payment", error);
@@ -299,7 +300,7 @@ export const AddVendorPayment = async (data) => {
 
 export const AddExpense = async (data) => {
   try {
-    const response = axios.post(
+    const response = api.post(
       `${Base_Url}/api/expenses/regiterexpense`,
       data
     );
@@ -312,7 +313,7 @@ export const AddExpense = async (data) => {
 
 export const GetAllExpenses = async (data) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/expenses/`);
+    const response = await api.get(`${Base_Url}/api/expenses/`);
     return response.data;
   } catch (err) {
     console.log("Error Get All Expenses", err);
@@ -322,7 +323,7 @@ export const GetAllExpenses = async (data) => {
 
 export const EditExpense = async (id: string, payload: any) => {
   try {
-    const response = await axios.put(
+    const response = await api.put(
       `${Base_Url}/api/expenses/editexpense/${id}`,
       payload
     );
@@ -335,7 +336,7 @@ export const EditExpense = async (id: string, payload: any) => {
 
 export const GetALLcashboxTransaction = async () => {
   try {
-    const response = await axios.get(
+    const response = await api.get(
       `${Base_Url}/api/accounts/cash/transaction`
     );
     return response.data;
@@ -347,7 +348,7 @@ export const GetALLcashboxTransaction = async () => {
 
 export const GetAllBankAccountsTransaction = async () => {
   try {
-    const response = await axios.get(
+    const response = await api.get(
       `${Base_Url}/api/accounts/GetAllBankAccountsTransaction`
     );
     return response.data;
@@ -365,7 +366,7 @@ export const GetFarmerLedgerReport = async (
   try {
     // Build query string only if from/to exist
     const query = from && to ? `?from=${from}&to=${to}` : "";
-    const response = await axios.get(
+    const response = await api.get(
       `${Base_Url}/api/reports/reports/farmer/${id}${query}`
     );
     return response.data;
@@ -378,16 +379,17 @@ export const GetFarmerLedgerReport = async (
 export const GetBuyersledger = async (id: string, from: string, to: string) => {
   try {
     const url = `${Base_Url}/api/reports/buyer/report/${encodeURIComponent(id)}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-    const response = await axios.get(url);
+    const response = await api.get(url);
     return response.data; // array of transactions
   } catch (error) {
     console.error("Error While Fetching Ledger Report :-> ", error);
     throw error;
   }
 };
+
 export const RecivableAging = async () => {
   try {
-    const response = await axios.get(
+    const response = await api.get(
       `${Base_Url}/api/reports/receivable-aging`
     );
     console.log(response.data);
@@ -400,7 +402,7 @@ export const RecivableAging = async () => {
 
 export const PayAbleAging = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/reports/payable-aging`);
+    const response = await api.get(`${Base_Url}/api/reports/payable-aging`);
     console.log(response.data);
     return response.data;
   } catch (error) {
@@ -411,7 +413,7 @@ export const PayAbleAging = async () => {
 
 export const GetCashbook = async (from: string, to: string) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/reports/cashbook`, {
+    const response = await api.get(`${Base_Url}/api/reports/cashbook`, {
       params: { from, to },
     });
     console.log("Cashbook Data:", response.data);
@@ -424,7 +426,7 @@ export const GetCashbook = async (from: string, to: string) => {
 
 export const GetBankBooks = async (from: string, to: string) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/reports/bankbook`, {
+    const response = await api.get(`${Base_Url}/api/reports/bankbook`, {
       params: { from, to },
     });
     console.log("Bankbook Data:", response.data);
@@ -437,7 +439,7 @@ export const GetBankBooks = async (from: string, to: string) => {
 
 export const GetSalesReport = async (startDate: string, endDate: string) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/reports/salesReport`, {
+    const response = await api.get(`${Base_Url}/api/reports/salesReport`, {
       params: { startDate, endDate },
     });
     console.log("Sales Report Data:", response.data);
@@ -450,7 +452,7 @@ export const GetSalesReport = async (startDate: string, endDate: string) => {
 
 export const GetDashboredData = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/v1/dashbored`);
+    const response = await api.get(`${Base_Url}/api/v1/dashboard`); 
     return response.data;
   } catch (error) {
     console.log(error);
@@ -460,7 +462,7 @@ export const GetDashboredData = async () => {
 
 export const GetAdvanceList = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/advance/`);
+    const response = await api.get(`${Base_Url}/api/advance/`);
     return response.data;
   } catch (error) {
     console.log(error);
@@ -469,7 +471,7 @@ export const GetAdvanceList = async () => {
 
 export const GetSalesList = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/sales/list`);
+    const response = await api.get(`${Base_Url}/api/sales/list`);
     return response.data;
   } catch (error) {
     console.log(error);
@@ -479,7 +481,7 @@ export const GetSalesList = async () => {
 
 export const GetAccountSummary = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/accounts/summary`);
+    const response = await api.get(`${Base_Url}/api/accounts/summary`);
     return response.data;
   } catch (error) {
     console.log(error);
@@ -489,7 +491,7 @@ export const GetAccountSummary = async () => {
 
 export const GetAllCheques = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/checklist/cheques`);
+    const response = await api.get(`${Base_Url}/api/checklist/cheques`);
     return response.data;
   } catch (error) {
     console.log("Error While Fetching Cheques :-> ", error);
@@ -499,7 +501,7 @@ export const GetAllCheques = async () => {
 
 export const UpdateChequeStatus = async (chequeId: number, status: string) => {
   try {
-    const response = await axios.put(
+    const response = await api.put(
       `${Base_Url}/api/checklist/cheques/status`,
       { chequeId, status }
     );
@@ -516,7 +518,7 @@ export const GetReceivablesDueToday = async (
   includePartial: boolean = true
 ) => {
   try {
-    const response = await axios.get(`${Base_Url}/api/receivables/due-today`, {
+    const response = await api.get(`${Base_Url}/api/receivables/due-today`, {
       params: { date, includePartial },
     });
     return response.data;
@@ -528,7 +530,7 @@ export const GetReceivablesDueToday = async (
 
 export const GetReceivablesByBuyer = async (buyerId: number, date?: string) => {
   try {
-    const response = await axios.get(
+    const response = await api.get(
       `${Base_Url}/api/receivables/due-today/${buyerId}`,
       {
         params: { date },
@@ -548,7 +550,7 @@ export const ExtendInstallmentDueDate = async (
   userId?: number
 ) => {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       `${Base_Url}/api/receivables/extend-due-date/${installmentId}`,
       {
         newDueDate,
@@ -563,7 +565,7 @@ export const ExtendInstallmentDueDate = async (
 };
 
 export const FetchTheme = async (userId: number) => {
-  const res = await axios.get(`${Base_Url}/api/theme/${userId}`);
+  const res = await api.get(`${Base_Url}/api/theme/${userId}`);
   return res.data;
 };
 
@@ -579,13 +581,13 @@ export const SaveTheme = async (
     foregroundColor: theme.foreground,
   };
 
-  const res = await axios.put(`${Base_Url}/api/theme/${userId}`, payload);
+  const res = await api.put(`${Base_Url}/api/theme/${userId}`, payload);
   return res.data;
 };
 
 export const Login = async (email: string, password: string) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/auth/login`, {
+    const response = await api.post(`${Base_Url}/api/auth/login`, {
       email,
       password,
     });
@@ -598,7 +600,7 @@ export const Login = async (email: string, password: string) => {
 
 export const GetProfile = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/users/me`, {
+    const response = await api.get(`${Base_Url}/api/users/me`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
       },
@@ -612,7 +614,7 @@ export const GetProfile = async () => {
 
 export const RefreshToken = async (refreshToken: string) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/auth/refresh-token`, {
+    const response = await api.post(`${Base_Url}/api/auth/refresh`, {
       refreshToken,
     });
     return response.data;
@@ -624,7 +626,7 @@ export const RefreshToken = async (refreshToken: string) => {
 
 export const Logout = async (refreshToken: string) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/auth/logout`, {
+    const response = await api.post(`${Base_Url}/api/auth/logout`, {
       refreshToken,
     });
     return response.data;
@@ -636,7 +638,7 @@ export const Logout = async (refreshToken: string) => {
 
 export const LogoutAll = async (userId: number) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/auth/logout-all`, {
+    const response = await api.post(`${Base_Url}/api/auth/logout_all`, {
       userId,
     });
     return response.data;
@@ -648,7 +650,7 @@ export const LogoutAll = async (userId: number) => {
  
 export const ForgotPassword = async (email: string) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/auth/forgot-password`, {
+    const response = await api.post(`${Base_Url}/api/auth/forgot`, {
       email,
     });
     return response.data;
@@ -661,7 +663,7 @@ export const ForgotPassword = async (email: string) => {
 
 export const ResetPassword = async (token: string, newPassword: string) => {
   try {
-    const response = await axios.post(`${Base_Url}/api/auth/reset-password`, {
+    const response = await api.post(`${Base_Url}/api/auth/reset`, {
       token,
       newPassword,
     });
@@ -672,26 +674,51 @@ export const ResetPassword = async (token: string, newPassword: string) => {
   }
 };
 
+
 export const GetAllUsers = async () => {
   try {
-    const response = await axios.get(`${Base_Url}/api/auth/users`);
-    return response.data;
-  } catch (error) {
-    console.log("Error While Fetching All Users :-> ", error);
-    throw error;
-  }
-};
-
-
-export const AssignRoleToUser = async (userId: number, role: string) => {
-  try {
-    const response = await axios.post(`${Base_Url}/api/auth/assign-role`, {
-      userId,
-      role,
+    const token = localStorage.getItem("accessToken");
+    const response = await api.get(`${Base_Url}/api/users/`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
-  } catch (error) {
-    console.log("Error While Assigning Role to User :-> ", error);
-    throw error;
+  } catch (error: any) {
+    console.log("Error While Fetching All Users :-> ", error);
+    throw error.response?.data || error;
   }
 };
+
+
+export const AssignRoleToUser = async (userId: number, roleId: number) => {
+  try {
+    const response = await api.post("/users/assign-role", { userId, roleId });
+    return response.data;
+  } catch (error: any) {
+    console.error("Assign role error:", error);
+    throw error.response?.data || error;
+  }
+};
+
+
+export const CreateUser = async (data) => {
+    try {
+      const response =  await api.post(`/users/`, data);
+      return response.data;
+    } catch (error: any) {
+      console.log("Error While Creating User :-> ", error);
+      throw error.response?.data || error;
+    }
+};
+
+
+export const GetAllRoles = async () => {
+  try {
+    const response = await api.get(`/users/roles`);
+    return response.data;
+  } catch (error: any) {
+    console.log("Error While Fetching Roles :-> ", error);
+    throw error.response?.data || error;
+  }
+};
+
+
