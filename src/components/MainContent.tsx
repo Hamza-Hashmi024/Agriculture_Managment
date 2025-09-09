@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useContext } from "react";
+import { useContext , useEffect} from "react";
 import { AuthContext } from "@/Context/AuthContext";
 
 // Pages
@@ -31,7 +31,7 @@ import ThemeSettings from "@/pages/ThemeSettings";
 import UsersPage from "@/pages/UsersPage";
 import Settings from "@/pages/Settings";
 import Unauthorized from "@/pages/unauthorized";
-
+import { useTheme } from "@/Context/ThemeContext";
 // Auth Components
 import LoginForm from "../components/Auth/LoginForm";
 import ResetPasswordForm from "../components/Auth/ResetPasswordForm";
@@ -41,9 +41,23 @@ import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 
 export function MainContent() {
   const { user } = useContext(AuthContext);
+  const { theme } = useTheme();
+
+  const backgroundColor = theme.mode === "dark" ? "#1e1e1e" : "#ffffff";
+  const color = theme.mode === "dark"
+    ? `hsl(${theme.foreground})` // dark mode → use theme foreground
+    : `hsl(${theme.foreground})`; // light mode → use theme foreground
+       useEffect(() => {
+    console.log("🎨 MainContent theme changed:", theme);
+    console.log("Applied backgroundColor:", backgroundColor);
+    console.log("Applied color:", color);
+  }, [theme, backgroundColor, color]);
 
   return (
-    <main className="flex-1 overflow-auto">
+      <main
+      className="flex-1 overflow-auto p-4 transition-colors duration-300"
+      style={{ backgroundColor, color }}
+    >
       <Routes>
         {/* Auth routes */}
         <Route path="/login" element={<LoginForm />} />
