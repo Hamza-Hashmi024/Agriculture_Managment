@@ -35,6 +35,7 @@ import { useTheme } from "@/Context/ThemeContext";
 // Auth Components
 import LoginForm from "../components/Auth/LoginForm";
 import ResetPasswordForm from "../components/Auth/ResetPasswordForm";
+import { EmployeePage } from "@/pages/EmployeePage";
 
 // ProtectedRoute Component
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
@@ -113,6 +114,7 @@ export function MainContent() {
 
         {/* Expenses */}
         <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
+        <Route path="/employees" element={< EmployeePage/>} />
 
         {/* Cash / Bank */}
         <Route path="/cash-bank" element={<ProtectedRoute><CashBankPage /></ProtectedRoute>} />

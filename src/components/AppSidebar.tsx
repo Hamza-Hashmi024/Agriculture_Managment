@@ -39,6 +39,7 @@ const navigationItems = [
   { title: "Vendors", url: "/vendors", icon: Building2, roles: ["admin"] },
   { title: "Payables", url: "/payables", icon: TrendingDown, roles: ["admin"] },
   { title: "Expenses", url: "/expenses", icon: Wallet, roles: ["admin", "user", "manager"] },
+  { title: "Employer", url: "/employees", icon: Users ,  roles: ["admin", "user", "manager"]},
   { title: "Cash/Bank", url: "/cash-bank", icon: Banknote, roles: ["admin"] },
 ];
 
