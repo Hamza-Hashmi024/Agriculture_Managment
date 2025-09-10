@@ -37,6 +37,7 @@ import LoginForm from "../components/Auth/LoginForm";
 import ResetPasswordForm from "../components/Auth/ResetPasswordForm";
 import { EmployeePage } from "@/pages/EmployeePage";
 import { AddEmployer } from "@/pages/AdddEmployer";
+import { EmployeeProfile } from "@/pages/EmployeeProfile";
 // ProtectedRoute Component
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 
@@ -116,6 +117,7 @@ export function MainContent() {
         <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
         <Route path="/employees" element={<ProtectedRoute><EmployeePage /></ProtectedRoute>} />
         <Route path="/employees/add" element={<ProtectedRoute><AddEmployer /></ProtectedRoute>} />
+        <Route path="/employees/:id" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
        
 
         {/* Cash / Bank */}
