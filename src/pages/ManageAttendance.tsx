@@ -18,12 +18,10 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Button } from "@/components/ui/button";
 
 export function ManageAttendance() {
-  // ✅ Dummy Employee Attendance Data
   const [attendanceRecords, setAttendanceRecords] = useState([
-    { id: 1, name: "Ali Khan", department: "IT", date: "2025-09-01", status: "Present" },
-    { id: 2, name: "Ali Khan", department: "IT", date: "2025-09-02", status: "Absent" },
-    { id: 3, name: "Sara Ahmed", department: "Finance", date: "2025-09-01", status: "Leave" },
-    { id: 4, name: "Sara Ahmed", department: "Finance", date: "2025-09-02", status: "Present" },
+    { id: 1, name: "Ali Khan", department: "IT", date: "2025-09-10", status: "Present", checkIn: "09:05 AM", checkOut: "05:15 PM" },
+    { id: 2, name: "Sara Ahmed", department: "Finance", date: "2025-09-10", status: "Present", checkIn: "09:20 AM", checkOut: "" },
+    { id: 3, name: "Ali Khan", department: "IT", date: "2025-09-09", status: "Absent", checkIn: "", checkOut: "" },
   ]);
 
   const [fromDate, setFromDate] = useState("");
@@ -45,6 +43,26 @@ export function ManageAttendance() {
     setAttendanceRecords((prev) =>
       prev.map((rec) =>
         rec.id === id ? { ...rec, status: newStatus } : rec
+      )
+    );
+  };
+
+  // ✅ Handle Check-In
+  const handleCheckIn = (id: number) => {
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    setAttendanceRecords((prev) =>
+      prev.map((rec) =>
+        rec.id === id ? { ...rec, checkIn: now, status: "Present" } : rec
+      )
+    );
+  };
+
+  // ✅ Handle Check-Out
+  const handleCheckOut = (id: number) => {
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    setAttendanceRecords((prev) =>
+      prev.map((rec) =>
+        rec.id === id ? { ...rec, checkOut: now } : rec
       )
     );
   };
@@ -86,6 +104,9 @@ export function ManageAttendance() {
                 <TableHead>Department</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Check-In</TableHead>
+                <TableHead>Check-Out</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -108,6 +129,16 @@ export function ManageAttendance() {
                         <SelectItem value="Leave">Leave</SelectItem>
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  <TableCell>{rec.checkIn || "-"}</TableCell>
+                  <TableCell>{rec.checkOut || "-"}</TableCell>
+                  <TableCell className="flex gap-2">
+                    <Button size="sm" onClick={() => handleCheckIn(rec.id)} disabled={!!rec.checkIn}>
+                      Check-In
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleCheckOut(rec.id)} disabled={!rec.checkIn || !!rec.checkOut}>
+                      Check-Out
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

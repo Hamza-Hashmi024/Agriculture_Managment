@@ -19,6 +19,10 @@ const Settings: FC = () => {
     navigate('/preferences');
   };
 
+  const handleTax = () => {
+    navigate('/tax');
+  };
+
   return (
     <div className="p-8 space-y-6">
       <h1 className="text-2xl font-bold">Settings</h1>
@@ -42,6 +46,14 @@ const Settings: FC = () => {
           <CardContent className="flex flex-col items-start gap-4">
             <CardTitle>App Preferences</CardTitle>
             <Button onClick={handleAppPreferencesClick}>Go</Button>
+          </CardContent>
+        </Card>
+
+
+           <Card>
+          <CardContent className="flex flex-col items-start gap-4">
+            <CardTitle>Add Salaries Tax</CardTitle>
+            <Button onClick={handleTax}>Go</Button>
           </CardContent>
         </Card>
       </div>

@@ -721,4 +721,47 @@ export const GetAllRoles = async () => {
   }
 };
 
+//  1. Get All Tax Rules
+export const GetAllTaxRules = async (): Promise<TaxRule[]> => {
+  try {
+    const res = await api.get(`${Base_Url}/api/tax-rules`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error while fetching tax rules:", error);
+    throw error.response?.data || error;
+  }
+};
+
+//  2. Create New Tax Rule
+export const CreateTaxRule = async (data: Omit<TaxRule, "id">) => {
+  try {
+    const res = await api.post(`${Base_Url}/api/tax-rules`, data);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error while creating tax rule:", error);
+    throw error.response?.data || error;
+  }
+};
+
+//  3. Update Tax Rule
+export const UpdateTaxRule = async (id: number, data: Partial<TaxRule>) => {
+  try {
+    const res = await api.put(`${Base_Url}/api/tax-rules/${id}`, data);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error while updating tax rule:", error);
+    throw error.response?.data || error;
+  }
+};
+
+//  4. Delete Tax Rule
+export const DeleteTaxRule = async (id: number) => {
+  try {
+    const res = await api.delete(`${Base_Url}/api/tax-rules/${id}`);
+    return res.data;
+  } catch (error: any) {
+    console.error("Error while deleting tax rule:", error);
+    throw error.response?.data || error;
+  }
+};
 

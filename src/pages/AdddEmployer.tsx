@@ -25,6 +25,9 @@ export function AddEmployer() {
     cnic: "",
     address: "",
     designation: "",
+    joiningDate: "",
+    tax: "",
+    allowance: "",
     contacts: [""],
     salary: "",
     profilePhoto: null as File | null,
@@ -195,165 +198,215 @@ const validatePhone = (phone: string): boolean => {
         <form onSubmit={handleSubmit}>
           {/* Basic Info */}
            {/* Basic Info */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Name */}
-              <div>
-                <Label htmlFor="name">Full Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  placeholder="Enter employee full name"
-                  required
-                />
-              </div>
+         <Card className="mb-6">
+  <CardHeader>
+    <CardTitle>Basic Information</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    {/* Name */}
+    <div>
+      <Label htmlFor="name">Full Name *</Label>
+      <Input
+        id="name"
+        value={formData.name}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, name: e.target.value }))
+        }
+        placeholder="Enter employee full name"
+        required
+      />
+    </div>
 
-              {/* CNIC */}
-                  
-                  <div>
-  <Label htmlFor="cnic">CNIC *</Label>
-  <Input
-    id="cnic"
-    value={formData.cnic}
-    onChange={(e) => {
-      let value = e.target.value.replace(/[^0-9]/g, ""); // सिर्फ digits allow
+    {/* CNIC */}
+    <div>
+      <Label htmlFor="cnic">CNIC *</Label>
+      <Input
+        id="cnic"
+        value={formData.cnic}
+        onChange={(e) => {
+          let value = e.target.value.replace(/[^0-9]/g, ""); // सिर्फ digits allow
 
-      // Auto add dashes → XXXXX-XXXXXXX-X
-      if (value.length > 5 && value.length <= 12) {
-        value = value.slice(0, 5) + "-" + value.slice(5);
-      }
-      if (value.length > 13) {
-        value = value.slice(0, 5) + "-" + value.slice(5, 12) + "-" + value.slice(12, 13);
-      }
+          // Auto add dashes → XXXXX-XXXXXXX-X
+          if (value.length > 5 && value.length <= 12) {
+            value = value.slice(0, 5) + "-" + value.slice(5);
+          }
+          if (value.length > 13) {
+            value =
+              value.slice(0, 5) +
+              "-" +
+              value.slice(5, 12) +
+              "-" +
+              value.slice(12, 13);
+          }
 
-      setFormData((prev) => ({ ...prev, cnic: value }));
-    }}
-    onBlur={(e) => {
-      if (!validateCNIC(e.target.value)) {
-        toast({
-          title: "Invalid CNIC",
-          description: "CNIC must follow format 12345-1234567-1 and rules.",
-          variant: "destructive",
-        });
-      }
-    }}
-    placeholder="35201-1234567-1"
-    required
-    maxLength={15}
-  />
-</div>
+          setFormData((prev) => ({ ...prev, cnic: value }));
+        }}
+        onBlur={(e) => {
+          if (!validateCNIC(e.target.value)) {
+            toast({
+              title: "Invalid CNIC",
+              description: "CNIC must follow format 12345-1234567-1 and rules.",
+              variant: "destructive",
+            });
+          }
+        }}
+        placeholder="35201-1234567-1"
+        required
+        maxLength={15}
+      />
+    </div>
 
+    {/* Address */}
+    <div>
+      <Label htmlFor="address">Address *</Label>
+      <Input
+        id="address"
+        value={formData.address}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, address: e.target.value }))
+        }
+        placeholder="House #, Street, City"
+        required
+      />
+    </div>
 
-              {/* Address */}
-              <div>
-                <Label htmlFor="address">Address *</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, address: e.target.value }))
-                  }
-                  placeholder="House #, Street, City"
-                  required
-                />
-              </div>
+    {/* Designation */}
+    <div>
+      <Label htmlFor="designation">Designation *</Label>
+      <Input
+        id="designation"
+        value={formData.designation}
+        onChange={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            designation: e.target.value,
+          }))
+        }
+        placeholder="e.g. Accountant, Sales Executive, Operations Manager"
+        required
+      />
+    </div>
 
-              {/* Designation */}
-              <div>
-                <Label htmlFor="designation">Designation *</Label>
-                <Input
-                  id="designation"
-                  value={formData.designation}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      designation: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g. Accountant, Sales Executive, Operations Manager"
-                  required
-                />
-              </div>
+    {/* Joining Date */}
+    <div>
+      <Label htmlFor="joiningDate">Joining Date *</Label>
+      <Input
+        id="joiningDate"
+        type="date"
+        value={formData.joiningDate}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, joiningDate: e.target.value }))
+        }
+        required
+      />
+    </div>
 
-              {/* Salary */}
-              <div>
-                <Label htmlFor="salary">Salary</Label>
-                <Input
-                  id="salary"
-                  value={formData.salary}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, salary: e.target.value }))
-                  }
-                  placeholder="$4000"
-                />
-              </div>
+    {/* Salary */}
+    <div>
+      <Label htmlFor="salary">Salary</Label>
+      <Input
+        id="salary"
+        value={formData.salary}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, salary: e.target.value }))
+        }
+        placeholder="$4000"
+      />
+    </div>
 
-              {/* Contacts */}
-              <div>
-                <Label>Contacts * (At least one required)</Label>
-                <div className="space-y-2">
-                  {formData.contacts.map((contact, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        value={contact}
-                        onChange={(e) => updateContact(index, e.target.value)}
-                        placeholder="03XX-XXXXXXX"
-                        required={index === 0}
-                      />
-                      {formData.contacts.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeContact(index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addContact}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Contact
-                  </Button>
-                </div>
-              </div>
+    {/* Tax Selection */}
+    <div>
+      <Label htmlFor="tax">Tax Deduction *</Label>
+      <select
+        id="tax"
+        className="w-full border rounded p-2"
+        value={formData.tax}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, tax: e.target.value }))
+        }
+        required
+      >
+        <option value="">Select Tax</option>
+        <option value="Exempted">Exempted</option>
+        <option value="5%">5%</option>
+        <option value="10%">10%</option>
+        <option value="15%">15%</option>
+      </select>
+    </div>
 
-              {/* Profile Photo */}
-              <div>
-                <Label htmlFor="photo">Profile Photo</Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="photo"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        profilePhoto: e.target.files?.[0] || null,
-                      }))
-                    }
-                  />
-                  <Button type="button" variant="outline" size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    {/* Allowance */}
+    <div>
+      <Label htmlFor="allowance">Allowance</Label>
+      <Input
+        id="allowance"
+        type="number"
+        value={formData.allowance}
+        onChange={(e) =>
+          setFormData((prev) => ({ ...prev, allowance: e.target.value }))
+        }
+        placeholder="Enter Allowance (e.g. 5000)"
+      />
+    </div>
 
+    {/* Contacts */}
+    <div>
+      <Label>Contacts * (At least one required)</Label>
+      <div className="space-y-2">
+        {formData.contacts.map((contact, index) => (
+          <div key={index} className="flex gap-2">
+            <Input
+              value={contact}
+              onChange={(e) => updateContact(index, e.target.value)}
+              placeholder="03XX-XXXXXXX"
+              required={index === 0}
+            />
+            {formData.contacts.length > 1 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => removeContact(index)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addContact}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Contact
+        </Button>
+      </div>
+    </div>
+
+    {/* Profile Photo */}
+    <div>
+      <Label htmlFor="photo">Profile Photo</Label>
+      <div className="flex items-center gap-4">
+        <Input
+          id="photo"
+          type="file"
+          accept="image/*"
+          onChange={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              profilePhoto: e.target.files?.[0] || null,
+            }))
+          }
+        />
+        <Button type="button" variant="outline" size="sm">
+          <Upload className="h-4 w-4 mr-2" />
+          Upload
+        </Button>
+      </div>
+    </div>
+  </CardContent>
+</Card>
 
           {/* Bank Accounts */}
           <Card className="mb-6">

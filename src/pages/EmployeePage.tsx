@@ -111,6 +111,12 @@ export function EmployeePage() {
               Add New Employer
             </Link>
           </Button>
+               <Button asChild>
+            <Link to="/attendance">
+              <Plus className="h-4 w-4 mr-2" />
+              Mark Attendance
+            </Link>
+          </Button>
         </div>
       </div>
 

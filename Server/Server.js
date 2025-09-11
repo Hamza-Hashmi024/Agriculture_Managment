@@ -16,6 +16,7 @@ const CheckListRouter = require("./Routes/CheckList_Routes");
 const ThemeRoutes = require("./Routes/ThemeRoutes");
 const authRoutes = require("./Routes/auth");
 const userRoutes = require("./Routes/users");
+const TaxRoutes = require("./Routes/TaxRoutes");
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use("/api/v1", DashboardRouter);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/tax-rules", TaxRoutes);
 
 app.get("/", (req, res) => {
   res.send("Server is running");

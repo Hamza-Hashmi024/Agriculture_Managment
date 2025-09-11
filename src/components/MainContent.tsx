@@ -40,6 +40,8 @@ import { AddEmployer } from "@/pages/AdddEmployer";
 import { EmployeeProfile } from "@/pages/EmployeeProfile";
 // ProtectedRoute Component
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import { ManageAttendance } from "@/pages/ManageAttendance";
+import { TaxSettings } from "@/components/TaxSetting";
 
 export function MainContent() {
   const { user } = useContext(AuthContext);
@@ -118,6 +120,8 @@ export function MainContent() {
         <Route path="/employees" element={<ProtectedRoute><EmployeePage /></ProtectedRoute>} />
         <Route path="/employees/add" element={<ProtectedRoute><AddEmployer /></ProtectedRoute>} />
         <Route path="/employees/:id" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
+        <Route path="/attendance" element={<ProtectedRoute><ManageAttendance /></ProtectedRoute>} />
+        <Route path="/tax" element={<ProtectedRoute><TaxSettings /></ProtectedRoute>} />
        
 
         {/* Cash / Bank */}
