@@ -25,6 +25,14 @@ import {
   DeleteTaxRule,
 } from "@/Api/Api";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 type TaxRule = {
   id: string;
   name: string;
@@ -88,7 +96,7 @@ export const TaxSettings = () => {
     }
   };
 
-  // ✅ Edit Tax (prefill form + open dialog)
+  
   const handleEdit = (id: string) => {
     const taxToEdit = taxes.find((t) => t.id === id);
     if (!taxToEdit) return;
@@ -99,7 +107,7 @@ export const TaxSettings = () => {
       notes: taxToEdit.notes || "",
     });
     setEditingId(id);
-    setOpen(true); // ✅ open dialog directly
+    setOpen(true); 
   };
 
   return (
@@ -136,22 +144,27 @@ export const TaxSettings = () => {
                 placeholder="e.g. Professional Tax"
               />
             </div>
-            <div>
-              <Label>Type</Label>
-              <select
-                className="w-full border rounded-md p-2"
-                value={form.type}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    type: e.target.value as "percentage" | "fixed",
-                  })
-                }
-              >
-                <option value="percentage">Percentage</option>
-                <option value="fixed">Fixed</option>
-              </select>
-            </div>
+           <div>
+  <Label>Type</Label>
+  <Select
+    value={form.type}
+    onValueChange={(value) =>
+      setForm({
+        ...form,
+        type: value as "percentage" | "fixed",
+      })
+    }
+  >
+    <SelectTrigger className="w-full">
+      <SelectValue placeholder="Select Type" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="percentage">Percentage</SelectItem>
+      <SelectItem value="fixed">Fixed</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+
             <div>
               <Label>Value</Label>
               <Input

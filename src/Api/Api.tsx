@@ -765,3 +765,23 @@ export const DeleteTaxRule = async (id: number) => {
   }
 };
 
+export const GetTaxRuleById = async (id: number) => {
+  try {
+    const res = await api.get(`${Base_Url}/api/tax-rules/${id}`);
+    return res.data;
+  } catch (error: any) {
+    console.error(` Error while fetching tax rule with ID ${id}:`, error);
+    throw error.response?.data || error;
+  }
+};
+
+export const CreateEmployee = async (data: FormData) => {
+  try {
+    const response = await api.post(`${Base_Url}/api/employees/create`, data);
+    return response.data;
+  } catch (error) {
+    console.error("CreateEmployee API error:", error);
+    throw error;
+  }
+
+}
