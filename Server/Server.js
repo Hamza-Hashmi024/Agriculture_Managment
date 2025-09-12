@@ -17,6 +17,8 @@ const ThemeRoutes = require("./Routes/ThemeRoutes");
 const authRoutes = require("./Routes/auth");
 const userRoutes = require("./Routes/users");
 const TaxRoutes = require("./Routes/TaxRoutes");
+const EmployeeRoute = require("./Routes/EmployeeRoute");
+const path = require("path");
 
 dotenv.config();
 
@@ -26,6 +28,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use("/api/farmer", FarmerRoutes);
 app.use("/api/vendor", VendorRoutes);
 app.use("/api/buyer", BuyerRoute);
@@ -41,6 +44,7 @@ app.use("/api/theme", ThemeRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tax-rules", TaxRoutes);
+app.use("/api/employees", EmployeeRoute);
 
 app.get("/", (req, res) => {
   res.send("Server is running");

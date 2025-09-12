@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState  ,  useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,12 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { GetAllTaxRules ,  CreateEmployee } from "@/Api/Api";
 
 export function AddEmployer() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [taxes ,  setTaxes] = useState<any[]>([]);
   const isEditing = !!id;
   const [formData, setFormData] = useState({
     name: "",
@@ -36,33 +38,64 @@ export function AddEmployer() {
   });
 
 
-  // ---------- Form Submission ----------
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const showError = (msg: string) => {
+  toast({
+    title: "Validation Error",
+    description: msg,
+    variant: "destructive",
+  });
+};
 
-    if (
-      !formData.name ||
-      !formData.employeeId ||
-      !formData.department ||
-      !formData.contacts[0]
-    ) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // validation
+  if (!formData.name.trim()) return showError("Name is required");
+  if (formData.contacts.every(c => !c.trim())) return showError("At least one valid contact is required");
+  if (!validateCNIC(formData.cnic)) return showError("Invalid CNIC format");
+  if (formData.contacts.some(c => !validatePhone(c))) return showError("Invalid phone number format");
+
+  try {
+    // 👇 FormData instead of plain object
+    const formDataToSend = new FormData();
+    formDataToSend.append("name", formData.name);
+    formDataToSend.append("cnic", formData.cnic);
+    formDataToSend.append("address", formData.address);
+    formDataToSend.append("designation", formData.designation);
+    formDataToSend.append("joiningDate", formData.joiningDate);
+    formDataToSend.append("tax", formData.tax);
+    formDataToSend.append("allowance", formData.allowance);
+    formDataToSend.append("salary", formData.salary);
+
+    // ✅ file append
+    if (formData.profilePhoto) {
+      formDataToSend.append("profilePhoto", formData.profilePhoto);
     }
 
+    // ✅ arrays/objects must be stringified
+    formDataToSend.append("contacts", JSON.stringify(formData.contacts.filter(c => c.trim() !== "")));
+    formDataToSend.append("bankAccounts", JSON.stringify(formData.bankAccounts));
+    formDataToSend.append("wallets", JSON.stringify(formData.wallets));
+    for (let pair of formDataToSend.entries()) {
+  console.log(pair[0], pair[1]);
+}
+
+    await CreateEmployee(formDataToSend);
+
     toast({
-      title: isEditing ? "Employer Updated" : "Employer Added",
-      description: `${formData.name} has been ${
-        isEditing ? "updated" : "added"
-      } successfully.`,
+      title: "Employer Added",
+      description: `${formData.name} has been added successfully.`,
     });
 
     navigate("/employees");
-  };
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error?.response?.data?.error || "Something went wrong while saving employee.",
+      variant: "destructive",
+    });
+  }
+};
 
   // ---------- Contact Handlers ----------
   const addContact = () => {
@@ -168,6 +201,20 @@ const validatePhone = (phone: string): boolean => {
       ),
     }));
   };
+
+  useEffect(() => {
+    const fetchTaxes = async () =>{
+      try {
+        const response = await GetAllTaxRules();
+        console.log("Fetched tax rules:", response);
+         setTaxes(response);
+      }catch(error){
+        console.error("Failed to fetch tax rules:", error);
+      }
+    }
+
+    fetchTaxes();
+  },[])
 
   return (
     <div className="p-6">
@@ -306,6 +353,7 @@ const validatePhone = (phone: string): boolean => {
       <Label htmlFor="salary">Salary</Label>
       <Input
         id="salary"
+        type="number"
         value={formData.salary}
         onChange={(e) =>
           setFormData((prev) => ({ ...prev, salary: e.target.value }))
@@ -315,24 +363,27 @@ const validatePhone = (phone: string): boolean => {
     </div>
 
     {/* Tax Selection */}
-    <div>
-      <Label htmlFor="tax">Tax Deduction *</Label>
-      <select
-        id="tax"
-        className="w-full border rounded p-2"
-        value={formData.tax}
-        onChange={(e) =>
-          setFormData((prev) => ({ ...prev, tax: e.target.value }))
-        }
-        required
-      >
-        <option value="">Select Tax</option>
-        <option value="Exempted">Exempted</option>
-        <option value="5%">5%</option>
-        <option value="10%">10%</option>
-        <option value="15%">15%</option>
-      </select>
-    </div>
+<div>
+  <Label htmlFor="tax">Tax Deduction *</Label>
+  <Select
+    value={formData.tax}
+    onValueChange={(value) =>
+      setFormData((prev) => ({ ...prev, tax: value }))
+    }
+  >
+    <SelectTrigger className="w-full">
+      <SelectValue placeholder="Select Tax" />
+    </SelectTrigger>
+    <SelectContent>
+      {taxes.map((tax) => (
+        <SelectItem key={tax.id} value={String(tax.id)}>
+          {tax.name} ({tax.type === "percentage" ? `${tax.value}%` : `Rs. ${tax.value}`})
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+
 
     {/* Allowance */}
     <div>
@@ -399,10 +450,15 @@ const validatePhone = (phone: string): boolean => {
             }))
           }
         />
-        <Button type="button" variant="outline" size="sm">
-          <Upload className="h-4 w-4 mr-2" />
-          Upload
-        </Button>
+      <Button
+  type="button"
+  variant="outline"
+  size="sm"
+  onClick={() => document.getElementById("photo")?.click()}
+>
+  <Upload className="h-4 w-4 mr-2" />
+  Upload
+</Button>
       </div>
     </div>
   </CardContent>

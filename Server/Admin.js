@@ -14,10 +14,11 @@ bcrypt.hash(rawPassword, 10, (err, hashed) => {
   const sql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)";
   db.query(sql, [name, email, hashed, "admin"], (err, result) => {
     if (err) {
-      console.error("❌ Error creating admin:", err.message);
+      console.error(" Error creating admin:", err.message);
       process.exit(1);
     }
-    console.log("✅ Admin created successfully!");
+    console.log(" Admin created successfully!");
     process.exit(0);
   });
 });
+

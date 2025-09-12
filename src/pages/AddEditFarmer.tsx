@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState ,  useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { RegisterFarmer } from "@/Api/Api";
+
 
 export function AddEditFarmer() {
   const navigate = useNavigate();
@@ -200,6 +201,9 @@ export function AddEditFarmer() {
       ),
     }));
   };
+
+
+      // Fetch existing farmer data by ID and populate form 
 
   return (
     <div className="p-6">
